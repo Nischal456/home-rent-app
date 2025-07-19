@@ -11,10 +11,13 @@ import { toast } from 'react-hot-toast';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
+// --- THE CORE FIX IS HERE ---
+// The `.min(20)` validation has been removed from the description.
 const formSchema = z.object({
   issue: z.string().min(5, 'Please provide a brief title for the issue.'),
-  description: z.string().min(20, 'Please describe the issue in detail (at least 20 characters).'),
+  description: z.string().min(1, 'Please describe the issue.'), // Now only requires 1 character
 });
+// --- END OF FIX ---
 
 type MaintenanceFormValues = z.infer<typeof formSchema>;
 
@@ -59,4 +62,3 @@ export function RequestMaintenanceForm({ onSuccess }: { onSuccess: () => void })
     </Form>
   );
 }
-

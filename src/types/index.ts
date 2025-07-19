@@ -7,8 +7,6 @@ export interface IUser {
   password?: string;
   role: 'ADMIN' | 'TENANT';
   phoneNumber?: string;
-  permanentAddress?: string;
-  idProofUrl?: string;
   roomId?: Schema.Types.ObjectId | IRoom;
   leaseStartDate?: Date;
   leaseEndDate?: Date;
@@ -43,20 +41,8 @@ export interface IUtilityBill {
     billingMonthBS: string;
     billDateBS: string;
     billDateAD: Date;
-    electricity: {
-        previousReading: number;
-        currentReading: number;
-        unitsConsumed: number;
-        ratePerUnit: number;
-        amount: number;
-    };
-    water: {
-        previousReading: number;
-        currentReading: number;
-        unitsConsumed: number;
-        ratePerUnit: number;
-        amount: number;
-    };
+    electricity: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; };
+    water: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; };
     serviceCharge: number;
     securityCharge: number;
     totalAmount: number;

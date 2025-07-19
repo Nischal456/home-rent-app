@@ -2,20 +2,22 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, Loader2, Wrench, FileText, CreditCard, Hourglass } from 'lucide-react';
+import { DollarSign, Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { IRentBill, IUtilityBill, IUser, IMaintenanceRequest, IRoom, IPayment } from '@/types'; // <-- Correct import
+import { IRentBill, IUtilityBill, IUser, IMaintenanceRequest, IRoom, IPayment } from '@/types';
 import { RequestMaintenanceForm } from './request-maintenance-form';
 import { PaymentDialog } from './payment-dialog';
+import { BillDetailsDialog } from './bill-details-dialog';
 import { motion } from 'framer-motion';
 import NepaliDate from 'nepali-date-converter';
-import { useAuth } from '@/context/AuthContext';
-import { authFetch } from '@/lib/authFetch';
 import { toast } from 'react-hot-toast';
 
+type CombinedBill = (IRentBill | IUtilityBill) & { type: 'Rent' | 'Utility' };
+
+// A professional badge component to show the status of bills and requests
 const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED') => {
     const variants = {
         PAID: "bg-green-100 text-green-800 border-green-200",
@@ -25,72 +27,94 @@ const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE' | 'PENDING' | 'IN_PRO
         OVERDUE: "bg-red-100 text-red-800 border-red-200",
         IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
     };
+    // Format the status text to be more readable (e.g., "IN_PROGRESS" becomes "In Progress")
     const formattedStatus = status.replace('_', ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
     return <Badge variant="outline" className={`capitalize ${variants[status] || "bg-gray-100 text-gray-800"}`}>{formattedStatus}</Badge>;
 };
 
 export function TenantDashboard() {
-  const { token } = useAuth();
+  // State management for all tenant-specific data
   const [user, setUser] = useState<IUser | null>(null);
   const [rentBills, setRentBills] = useState<IRentBill[]>([]);
   const [utilityBills, setUtilityBills] = useState<IUtilityBill[]>([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState<IMaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMaintDialogOpen, setMaintDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<IPayment | null>(null);
+  const [selectedBill, setSelectedBill] = useState<CombinedBill | null>(null);
 
+  // A single, robust function to fetch all necessary data for the dashboard
   const fetchAllData = useCallback(async (isInitialLoad = false) => {
-    if (!token) {
-        if (isInitialLoad) setLoading(false);
-        return;
-    }
     if (isInitialLoad) setLoading(true);
+    setError(null);
     try {
-      const [userData, rentData, utilityData, maintData, pendingPaymentData] = await Promise.all([
-        authFetch('/api/auth/me', token),
-        authFetch('/api/my-bills/rent', token),
-        authFetch('/api/my-bills/utility', token),
-        authFetch('/api/my-maintenance', token),
-        authFetch('/api/my-pending-payment', token),
+      const [userRes, rentRes, utilityRes, maintRes, pendingPaymentRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/my-bills/rent'),
+        fetch('/api/my-bills/utility'),
+        fetch('/api/my-maintenance'),
+        fetch('/api/my-pending-payment'),
       ]);
+
+      if (!userRes.ok) throw new Error("Session expired. Please log in again.");
+      
+      const userData = await userRes.json();
+      const rentData = await rentRes.json();
+      const utilityData = await utilityRes.json();
+      const maintData = await maintRes.json();
+      const pendingPaymentData = await pendingPaymentRes.json();
 
       if (userData.success) setUser(userData.user);
       if (rentData.success) setRentBills(rentData.data);
       if (utilityData.success) setUtilityBills(utilityData.data);
       if (maintData.success) setMaintenanceRequests(maintData.data);
       if (pendingPaymentData.success) setPendingPayment(pendingPaymentData.pendingPayment);
-    } catch (error: any) {
-      console.error("Failed to fetch dashboard data", error);
-      toast.error(error.message);
+
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard data", err);
+      setError(err.message);
+      toast.error(err.message);
     } finally {
       if (isInitialLoad) setLoading(false);
     }
-  }, [token]);
+  }, []);
 
+  // Fetch data on initial component load
   useEffect(() => {
     fetchAllData(true);
-    const interval = setInterval(() => fetchAllData(false), 30000);
-    return () => clearInterval(interval);
   }, [fetchAllData]);
   
+  // Calculate derived state for display
   const rentBillsDue = rentBills.filter(b => b.status === 'DUE');
   const utilityBillsDue = utilityBills.filter(b => b.status === 'DUE');
   const totalDue = rentBillsDue.reduce((acc, bill) => acc + bill.amount, 0) + utilityBillsDue.reduce((acc, bill) => acc + bill.totalAmount, 0);
+  const roomInfo = user?.roomId as IRoom | undefined;
 
+  // Animation variants for a staggered fade-in effect
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  
+  if (error) {
+    return <div className="flex flex-col items-center justify-center h-full text-red-600"><AlertTriangle className="h-8 w-8 mb-2" /><p>Failed to load data. Please try refreshing the page.</p><p className="text-sm text-muted-foreground">{error}</p></div>;
+  }
 
-  const roomInfo = user?.roomId as IRoom | undefined;
+  if (!user) {
+    return <div className="flex justify-center items-center h-full">Please log in to view your dashboard.</div>;
+  }
 
   return (
     <>
       <div className="space-y-8">
         <motion.div variants={cardVariants} initial="hidden" animate="visible" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Total Due Card */}
           <motion.div variants={cardVariants}>
             <Card className="hover:shadow-lg transition-shadow h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Total Amount Due</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader>
@@ -109,6 +133,8 @@ export function TenantDashboard() {
                 </CardContent>
             </Card>
           </motion.div>
+          
+          {/* Lease & Rent Info Card */}
           <motion.div variants={cardVariants}>
             <Card className="hover:shadow-lg transition-shadow h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">My Room & Lease</CardTitle><FileText className="h-4 w-4 text-muted-foreground" /></CardHeader>
@@ -121,6 +147,8 @@ export function TenantDashboard() {
                 </CardContent>
             </Card>
           </motion.div>
+
+          {/* Maintenance Request Button/Card */}
           <motion.div variants={cardVariants}>
             <Dialog open={isMaintDialogOpen} onOpenChange={setMaintDialogOpen}>
                 <DialogTrigger asChild>
@@ -133,21 +161,30 @@ export function TenantDashboard() {
             </Dialog>
           </motion.div>
         </motion.div>
+
+        {/* Combined Bills Table */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <Card>
-            <CardHeader><CardTitle>My Bills</CardTitle><CardDescription>A combined history of your rent and utility bills.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>My Bills</CardTitle><CardDescription>A combined history of your rent and utility bills. Click a row for details.</CardDescription></CardHeader>
             <CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Period/Month</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>
-              {[...rentBills, ...utilityBills].sort((a, b) => new Date(b.billDateAD).getTime() - new Date(a.billDateAD).getTime()).map(bill => (
-                  <TableRow key={bill._id}>
-                    <TableCell><Badge variant="secondary">{(bill as IRentBill).rentForPeriod ? 'Rent' : 'Utility'}</Badge></TableCell>
-                    <TableCell>{(bill as IRentBill).rentForPeriod || (bill as IUtilityBill).billingMonthBS}</TableCell>
-                    <TableCell>Rs {(bill as IRentBill).amount?.toLocaleString() || (bill as IUtilityBill).totalAmount?.toLocaleString()}</TableCell>
-                    <TableCell>{getStatusBadge(bill.status)}</TableCell>
-                  </TableRow>
-              ))}
+              {[...rentBills, ...utilityBills]
+                .sort((a, b) => new Date(b.billDateAD).getTime() - new Date(a.billDateAD).getTime())
+                .map(bill => {
+                    const combinedBill: CombinedBill = { ...bill, type: (bill as IRentBill).rentForPeriod ? 'Rent' : 'Utility' };
+                    return (
+                      <TableRow key={bill._id} onClick={() => setSelectedBill(combinedBill)} className="cursor-pointer hover:bg-gray-50">
+                        <TableCell><Badge variant="secondary">{combinedBill.type}</Badge></TableCell>
+                        <TableCell>{(bill as IRentBill).rentForPeriod || (bill as IUtilityBill).billingMonthBS}</TableCell>
+                        <TableCell>Rs {(bill as IRentBill).amount?.toLocaleString() || (bill as IUtilityBill).totalAmount?.toLocaleString()}</TableCell>
+                        <TableCell>{getStatusBadge(bill.status)}</TableCell>
+                      </TableRow>
+                    );
+                })}
             </TableBody></Table></CardContent>
           </Card>
         </motion.div>
+
+        {/* Maintenance Requests Table */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <Card>
             <CardHeader><CardTitle>My Maintenance Requests</CardTitle><CardDescription>Track the status of your submitted requests.</CardDescription></CardHeader>
@@ -155,6 +192,8 @@ export function TenantDashboard() {
           </Card>
         </motion.div>
       </div>
+      
+      {/* The Dialogs, which are only rendered when needed */}
       <PaymentDialog 
         isOpen={isPaymentDialogOpen} 
         onClose={() => { setPaymentDialogOpen(false); fetchAllData(); }} 
@@ -162,6 +201,7 @@ export function TenantDashboard() {
         rentBillsDue={rentBillsDue}
         utilityBillsDue={utilityBillsDue}
       />
+      <BillDetailsDialog isOpen={!!selectedBill} onClose={() => setSelectedBill(null)} bill={selectedBill} />
     </>
   );
 }
