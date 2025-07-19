@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { IRentBill } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { printBill } from '@/lib/printBill'; // <-- Import the new utility
+import { printBill } from '@/lib/printBill';
 
 export type RentBillData = IRentBill;
 

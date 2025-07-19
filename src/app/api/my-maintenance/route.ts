@@ -1,13 +1,16 @@
-import { NextResponse as MaintNextResponse } from 'next/server';
+import { NextRequest as MaintNextRequest, NextResponse as MaintNextResponse } from 'next/server';
 import dbConnectMaint from '@/lib/dbConnect';
 import MaintenanceRequest from '@/models/MaintenanceRequest';
-import { getTokenData as getMaintTokenData } from '@/lib/getTokenData';
+import jwtMaint from 'jsonwebtoken';
 
-export async function GET(request: Request) {
+interface MaintTokenPayload { id: string; }
+
+export async function GET(request: MaintNextRequest) {
   await dbConnectMaint();
   try {
-    const tokenData = getMaintTokenData(request);
-    if (!tokenData) return MaintNextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    const token = request.cookies.get('token')?.value || '';
+    if (!token) return MaintNextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    const tokenData = jwtMaint.verify(token, process.env.JWT_SECRET!) as MaintTokenPayload;
 
     const requests = await MaintenanceRequest.find({ tenantId: tokenData.id }).sort({ createdAt: -1 });
     return MaintNextResponse.json({ success: true, data: requests });

@@ -1,39 +1,69 @@
-import { NextResponse as RentBillIdNextResponse } from 'next/server';
-import dbConnectRentId from '@/lib/dbConnect';
-import RentBillId from '@/models/RentBill';
-import NepaliDateId from 'nepali-date-converter';
-import { createNotification as createRentIdNotification } from '@/lib/createNotification';
-import { getTokenData as getRentIdTokenData } from '@/lib/getTokenData';
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/dbConnect';
+import RentBill from '@/models/RentBill';
+import NepaliDate from 'nepali-date-converter';
+import { createNotification } from '@/lib/createNotification';
+import jwt from 'jsonwebtoken';
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  await dbConnectRentId();
+interface TokenPayload {
+  id: string;
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  await dbConnect();
   try {
     const billId = params.id;
     const todayAD = new Date();
-    const todayBS = new NepaliDateId(todayAD).format('YYYY-MM-DD');
+    const todayBS = new NepaliDate(todayAD).format('YYYY-MM-DD');
 
-    const updatedBill = await RentBillId.findByIdAndUpdate(billId, { status: 'PAID', paidOnBS: todayBS }, { new: true });
-    
-    if (updatedBill) {
-        const adminUser = getRentIdTokenData(request);
-        await createRentIdNotification(updatedBill.tenantId, 'Rent Bill Paid!', `Your rent bill of Rs ${updatedBill.amount} has been marked as paid. Thank you!`, '/dashboard');
+    const updatedBill = await RentBill.findByIdAndUpdate(
+      billId,
+      { status: 'PAID', paidOnBS: todayBS },
+      { new: true }
+    );
+
+    if (!updatedBill) {
+      return NextResponse.json({ success: false, message: 'Bill not found' }, { status: 404 });
+    }
+
+    // --- THE CORE FIX IS HERE ---
+    // We get the admin's token directly from the request cookies.
+    const token = request.cookies.get('token')?.value || '';
+    if (token) {
+        const adminUser = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+        
+        // Notify the tenant
+        await createNotification(
+            updatedBill.tenantId,
+            'Rent Bill Paid!',
+            `Your rent bill of Rs ${updatedBill.amount} has been marked as paid. Thank you!`,
+            '/dashboard'
+        );
+        // Notify the admin who performed the action
         if (adminUser) {
-            await createRentIdNotification(adminUser.id as any, 'Payment Recorded', `You marked a rent bill of Rs ${updatedBill.amount} as paid.`, '/dashboard/rent-bills');
+            await createNotification(
+                adminUser.id as any,
+                'Payment Recorded',
+                `You marked a rent bill of Rs ${updatedBill.amount} as paid.`,
+                '/dashboard/rent-bills'
+            );
         }
     }
-    
-    return RentBillIdNextResponse.json({ success: true, message: 'Bill marked as paid', data: updatedBill });
+    // --- END OF FIX ---
+
+    return NextResponse.json({ success: true, message: 'Bill marked as paid', data: updatedBill });
   } catch (error) {
-    return RentBillIdNextResponse.json({ success: false, message: 'Error updating bill' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Error updating bill' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-    await dbConnectRentId();
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+    await dbConnect();
     try {
-        await RentBillId.findByIdAndDelete(params.id);
-        return RentBillIdNextResponse.json({ success: true, message: 'Bill deleted successfully' });
+        const billId = params.id;
+        await RentBill.findByIdAndDelete(billId);
+        return NextResponse.json({ success: true, message: 'Bill deleted successfully' });
     } catch (error) {
-        return RentBillIdNextResponse.json({ success: false, message: 'Error deleting bill' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'Error deleting bill' }, { status: 500 });
     }
 }

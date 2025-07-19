@@ -1,18 +1,10 @@
 import { Schema, model, models, Document, Model } from 'mongoose';
-import { IUser, IRoom } from '@/types';
+import { IMaintenanceRequest as IMaintenanceRequestType } from '@/types';
 
-export interface IMaintenanceRequest extends Document {
-  _id: string;
-  tenantId: Schema.Types.ObjectId | IUser;
-  roomId: Schema.Types.ObjectId | IRoom;
-  issue: string;
-  description: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
-  createdAt: Date;
-  completedAt?: Date;
-}
+// This creates the Mongoose Document type using a type alias
+type IMaintenanceRequestDocument = IMaintenanceRequestType & Document;
 
-const MaintenanceRequestSchema = new Schema<IMaintenanceRequest>({
+const MaintenanceRequestSchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   roomId: { type: Schema.Types.ObjectId, ref: 'Room', required: true },
   issue: { type: String, required: true, trim: true },
@@ -22,5 +14,5 @@ const MaintenanceRequestSchema = new Schema<IMaintenanceRequest>({
   completedAt: { type: Date },
 });
 
-const MaintenanceRequest: Model<IMaintenanceRequest> = models.MaintenanceRequest || model<IMaintenanceRequest>('MaintenanceRequest', MaintenanceRequestSchema);
+const MaintenanceRequest: Model<IMaintenanceRequestDocument> = models.MaintenanceRequest || model<IMaintenanceRequestDocument>('MaintenanceRequest', MaintenanceRequestSchema);
 export default MaintenanceRequest;

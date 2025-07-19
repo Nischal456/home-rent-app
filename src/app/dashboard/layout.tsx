@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from 'react-hot-toast';
 import { IUser } from '@/types';
+import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
 type ClientNotification = {
@@ -20,19 +21,47 @@ type ClientNotification = {
   createdAt: string;
 };
 
-function NavLinks({ user, onLinkClick }: { user: IUser | null, onLinkClick?: () => void }) {
+function NavLink({ href, onLinkClick, children, pathname }: { href: string, onLinkClick?: () => void, children: React.ReactNode, pathname: string }) {
+  const isActive = pathname === href;
+  return (
+    <Link
+      href={href}
+      onClick={onLinkClick}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${isActive ? 'bg-muted text-primary' : 'text-muted-foreground hover:text-primary'}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser | null, onLinkClick?: () => void, unreadPaymentsCount: number }) {
+  const pathname = usePathname();
   return (
     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-      <Link href="/dashboard" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><Home className="h-4 w-4" />Dashboard</Link>
+      <NavLink href="/dashboard" onLinkClick={onLinkClick} pathname={pathname}><Home className="h-4 w-4" />Dashboard</NavLink>
+      
       {user?.role === 'ADMIN' && (
         <>
-          <Link href="/dashboard/tenants" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><Users className="h-4 w-4" />Tenants</Link>
-          <Link href="/dashboard/rooms" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><Building className="h-4 w-4" />Rooms</Link>
-          <Link href="/dashboard/rent-bills" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><ReceiptText className="h-4 w-4" />Rent Bills</Link>
-          <Link href="/dashboard/utility-bills" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><ReceiptText className="h-4 w-4" />Utility Bills</Link>
+          <NavLink href="/dashboard/payments" onLinkClick={onLinkClick} pathname={pathname}>
+            <Banknote className="h-4 w-4" />Payments
+            {unreadPaymentsCount > 0 && <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">{unreadPaymentsCount}</Badge>}
+          </NavLink>
+          <NavLink href="/dashboard/tenants" onLinkClick={onLinkClick} pathname={pathname}><Users className="h-4 w-4" />Tenants</NavLink>
+          <NavLink href="/dashboard/rooms" onLinkClick={onLinkClick} pathname={pathname}><Building className="h-4 w-4" />Rooms</NavLink>
+          <NavLink href="/dashboard/rent-bills" onLinkClick={onLinkClick} pathname={pathname}><ReceiptText className="h-4 w-4" />Rent Bills</NavLink>
+          <NavLink href="/dashboard/utility-bills" onLinkClick={onLinkClick} pathname={pathname}><ReceiptText className="h-4 w-4" />Utility Bills</NavLink>
         </>
       )}
-      <Link href="#" onClick={onLinkClick} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"><Settings className="h-4 w-4" />Settings</Link>
+      
+      {user?.role === 'TENANT' && (
+          <>
+            <NavLink href="/dashboard/statement" onLinkClick={onLinkClick} pathname={pathname}><FileClock className="h-4 w-4" />My Statement</NavLink>
+          </>
+      )}
+
+      <DropdownMenuSeparator className="my-2" />
+      <NavLink href="/dashboard/settings" onLinkClick={onLinkClick} pathname={pathname}><Settings className="h-4 w-4" />Settings</NavLink>
+      <NavLink href="/dashboard/support" onLinkClick={onLinkClick} pathname={pathname}><LifeBuoy className="h-4 w-4" />Support</NavLink>
     </nav>
   );
 }
@@ -43,17 +72,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+
+  const fetchAdminData = useCallback(async () => {
+    const res = await fetch('/api/payments');
+    const data = await res.json();
+    if (data.success) {
+      setPendingPaymentsCount(data.data.length);
+    }
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch('/api/notifications');
-      const data = await res.json();
-      if (data.success) {
-        setNotifications(data.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch notifications", error);
-    }
+    const res = await fetch('/api/notifications');
+    const data = await res.json();
+    if (data.success) setNotifications(data.data);
   }, []);
 
   useEffect(() => {
@@ -65,63 +97,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (userData.success) {
           setUser(userData.user);
           await fetchNotifications();
+          if (userData.user.role === 'ADMIN') {
+            await fetchAdminData();
+          }
         } else {
           router.push('/login');
         }
       } catch (error) {
         console.error('Failed to fetch initial data', error);
-        router.push('/login');
       } finally {
         setIsLoading(false);
       }
     };
     fetchInitialData();
-  }, [router, fetchNotifications]);
+  }, [router, fetchNotifications, fetchAdminData]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-
+  const handleLogout = async () => {
+    document.cookie = 'token=; path=/; max-age=0';
+    router.push('/login');
+  };
   const handleMarkAllAsRead = async () => {
     if (unreadCount === 0) return;
     setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     await fetch('/api/notifications', { method: 'PATCH' });
   };
 
-  const handleLogout = async () => {
-    document.cookie = 'token=; path=/; max-age=0';
-    router.push('/login');
-  };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] font-sans bg-gray-50/40">
-      <div className="hidden border-r bg-white md:block dark:bg-gray-950 dark:border-gray-800">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-white md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="https://placehold.co/32x32/7c3aed/ffffff?text=HRM" alt="Logo" className="rounded-md" /><span>Rent Manager</span></Link>
-          </div>
-          <div className="flex-1"><NavLinks user={user} /></div>
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6"><Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" /><span>STG Tower</span></Link></div>
+          <div className="flex-1"><NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} /></div>
         </div>
       </div>
-      
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-white px-4 lg:h-[60px] lg:px-6 dark:bg-gray-950">
+        <header className="flex h-14 items-center gap-4 border-b bg-white px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 md:hidden"><Menu className="h-5 w-5" /><span className="sr-only">Toggle navigation menu</span></Button>
-            </SheetTrigger>
+            <SheetTrigger asChild><Button variant="outline" size="icon" className="shrink-0 md:hidden"><Menu className="h-5 w-5" /></Button></SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                <Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="https://placehold.co/32x32/7c3aed/ffffff?text=HRM" alt="Logo" className="rounded-md" /><span>Rent Manager</span></Link>
-              </div>
-              <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} />
+              <div className="flex h-14 items-center border-b px-4"><Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" /><span>STG Tower</span></Link></div>
+              <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} unreadPaymentsCount={pendingPaymentsCount} />
             </SheetContent>
           </Sheet>
-
           <div className="w-full flex-1"></div>
-          
           <DropdownMenu onOpenChange={(open) => { if(open) fetchNotifications() }}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8 relative">
@@ -157,14 +178,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.fullName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/dashboard/support">Support</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /><span>Logout</span></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">{children}</main>
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-gray-50/40">{children}</main>
         <Toaster />
       </div>
     </div>

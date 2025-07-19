@@ -1,21 +1,24 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import { NextRequest as UtilNextRequest, NextResponse as UtilNextResponse } from 'next/server';
+import dbConnectUtil from '@/lib/dbConnect';
 import UtilityBill from '@/models/UtilityBill';
-import { getTokenData } from '@/lib/getTokenData';
+import jwtUtil from 'jsonwebtoken';
 
-export async function GET(request: Request) {
+interface UtilTokenPayload { id: string; role: string; }
+
+export async function GET(request: UtilNextRequest) {
   try {
-    await dbConnect();
-    const tokenData = await getTokenData(request);
+    await dbConnectUtil();
+    const token = request.cookies.get('token')?.value || '';
+    if (!token) return UtilNextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    const tokenData = jwtUtil.verify(token, process.env.JWT_SECRET!) as UtilTokenPayload;
 
     if (!tokenData || tokenData.role !== 'TENANT') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return UtilNextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const utilityBills = await UtilityBill.find({ tenantId: tokenData.id }).sort({ billDateAD: -1 });
-
-    return NextResponse.json({ success: true, data: utilityBills });
+    return UtilNextResponse.json({ success: true, data: utilityBills });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return UtilNextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

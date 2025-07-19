@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import RentBill from '@/models/RentBill';
+import Payment from '@/models/Payment';
 import jwt from 'jsonwebtoken';
 
-interface TokenPayload { id: string; role: string; }
+interface TokenPayload { id: string; }
 
 export async function GET(request: NextRequest) {
+  await dbConnect();
   try {
-    await dbConnect();
     const token = request.cookies.get('token')?.value || '';
     if (!token) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     const tokenData = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
 
-    if (!tokenData || tokenData.role !== 'TENANT') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const rentBills = await RentBill.find({ tenantId: tokenData.id }).sort({ billDateAD: -1 });
-    return NextResponse.json({ success: true, data: rentBills });
+    const pendingPayment = await Payment.findOne({ tenantId: tokenData.id, status: 'PENDING' });
+    
+    return NextResponse.json({ success: true, hasPendingPayment: !!pendingPayment });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

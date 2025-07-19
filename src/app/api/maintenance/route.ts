@@ -1,13 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import MaintenanceRequest from '@/models/MaintenanceRequest';
-import { getTokenData } from '@/lib/getTokenData';
 import User from '@/models/User';
+import jwt from 'jsonwebtoken';
 
-export async function POST(request: Request) {
+interface TokenPayload {
+  id: string;
+}
+
+export async function POST(request: NextRequest) {
   await dbConnect();
   try {
-    const tokenData = getTokenData(request);
+    // --- THE CORE FIX IS HERE ---
+    const token = request.cookies.get('token')?.value || '';
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const tokenData = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    // --- END OF FIX ---
+
     if (!tokenData) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
 
     const user = await User.findById(tokenData.id);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { IUser } from '@/models/User';
+import { IUser } from '@/types'; // <-- CORRECTED IMPORT
 import { AdminDashboard } from './admin-dashboard';
 import { TenantDashboard } from './tenant-dashboard';
 
