@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock } from 'lucide-react';
+// ✅ FIX: Imported the Wrench icon
+import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,8 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser | nu
           <NavLink href="/dashboard/rooms" onLinkClick={onLinkClick} pathname={pathname}><Building className="h-4 w-4" />Rooms</NavLink>
           <NavLink href="/dashboard/rent-bills" onLinkClick={onLinkClick} pathname={pathname}><ReceiptText className="h-4 w-4" />Rent Bills</NavLink>
           <NavLink href="/dashboard/utility-bills" onLinkClick={onLinkClick} pathname={pathname}><ReceiptText className="h-4 w-4" />Utility Bills</NavLink>
+          {/* ✅ FIX: Added the new link for Maintenance */}
+          <NavLink href="/dashboard/maintenance" onLinkClick={onLinkClick} pathname={pathname}><Wrench className="h-4 w-4" />Maintenance</NavLink>
         </>
       )}
       
@@ -132,7 +135,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              {/* ✅ FIX: Added h-auto to maintain aspect ratio */}
               <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-auto object-contain" />
               <span>STG Tower</span>
             </Link>
@@ -147,7 +149,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SheetContent side="left" className="flex flex-col">
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                  {/* ✅ FIX: Added h-auto to maintain aspect ratio */}
                   <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-auto object-contain" />
                   <span>STG Tower</span>
                 </Link>
