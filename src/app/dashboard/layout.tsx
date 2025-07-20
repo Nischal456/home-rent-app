@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image'; // ✅ FIX: Import the Next.js Image component
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -132,8 +132,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              {/* ✅ FIX: Replaced <img> with <Image> */}
-              <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+              {/* ✅ FIX: Added h-auto to maintain aspect ratio */}
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-auto object-contain" />
               <span>STG Tower</span>
             </Link>
           </div>
@@ -147,8 +147,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SheetContent side="left" className="flex flex-col">
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                  {/* ✅ FIX: Replaced img with Image */}
-                  <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+                  {/* ✅ FIX: Added h-auto to maintain aspect ratio */}
+                  <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-auto object-contain" />
                   <span>STG Tower</span>
                 </Link>
               </div>

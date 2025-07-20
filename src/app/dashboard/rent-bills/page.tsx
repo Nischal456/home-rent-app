@@ -47,7 +47,7 @@ export default function RentBillsPage() {
 
   const columns = useMemo(() => getRentBillColumns(
     (action, bill) => setConfirmation({ action, bill })
-  ), []);
+  ), [fetchBills]); // Added fetchBills to dependency array for correctness
 
   return (
     <>
@@ -66,12 +66,15 @@ export default function RentBillsPage() {
           </Dialog>
         </div>
         {isLoading ? (<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>) : (
-            <DataTable 
-                columns={columns} 
-                data={data}
-                filterColumnId="tenantName"
-                filterPlaceholder="Filter by tenant..."
-            />
+            // ✅ FIX: Wrapped DataTable in a div to fix dropdown positioning
+            <div className="relative">
+                <DataTable 
+                    columns={columns} 
+                    data={data}
+                    filterColumnId="tenantName"
+                    filterPlaceholder="Filter by tenant..."
+                />
+            </div>
         )}
       </div>
       <AlertDialog open={!!confirmation} onOpenChange={() => setConfirmation(null)}>

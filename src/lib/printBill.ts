@@ -47,7 +47,6 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
             <h3 class="text-lg font-semibold text-black-700 mb-2 border-b pb-1">Utility Details</h3>
             <div class="grid grid-cols-2 gap-x-8 gap-y-4">
                 <div>
-                    {/* ✅ FEATURE: Added Per Unit Rate */}
                     <h4 class="font-bold text-md text-gray-800">Electricity (@ Rs ${ELECTRICITY_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.electricity.previousReading}</p></div>
@@ -56,8 +55,7 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
                     </div>
                 </div>
                 <div>
-                    {/* ✅ FEATURE: Added Per Unit Rate */}
-                    <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${WATER_RATE_PER_UNIT}/unit)</h4>
+                    <h4 class="font-bold text-md text-gray-800">Water (Per Rs ${WATER_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.water.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.water.currentReading}</p></div>
@@ -74,7 +72,6 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
     <html lang="en">
     <head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-      {/* ✅ FIX: Added fallback for tenant name */}
       <title>${billTitle} Bill - ${tenant?.fullName || 'N/A'}</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
@@ -103,9 +100,8 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
         <section class="grid grid-cols-2 gap-8 mt-8">
           <div>
             <p class="font-bold">To,</p>
-            {/* ✅ FIX: Added fallbacks for undefined values */}
             <p>${tenant?.fullName || 'N/A'}</p>
-            <p>${room?.floor || ''}, ${room?.roomNumber || 'Unassigned'}</p>
+            <p>${room?.floor || ''} ${room?.roomNumber || 'Unassigned'}</p>
             <p>Bhotebahal, Kathmandu</p>
           </div>
           <div class="flex justify-end">
