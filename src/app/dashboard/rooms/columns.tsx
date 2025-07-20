@@ -2,7 +2,7 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
-import { IRoom } from '@/models/Room';
+import { IRoom } from '@/types'; // ✅ FIX: Corrected the import path
 
 export type RoomData = IRoom & {
   tenantId?: { fullName: string };
