@@ -267,7 +267,6 @@ export function TenantDashboard() {
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-800">Welcome, {user?.fullName.split(' ')[0]}!</h1>
                 <p className="text-muted-foreground mt-1">Here's what's new for you today.</p>
             </div>
-            <NotificationBell notifications={notifications} onDismiss={handleDismissNotification} onClearAll={handleClearAllNotifications} />
         </motion.header>
 
         {/* --- Metric Cards --- */}

@@ -346,7 +346,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           <div className="w-full flex-1" />
           
-          <NotificationBell notifications={notifications} onMarkAllAsRead={handleMarkAllAsRead} />
+          <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
           <UserNav user={user} onLogout={handleLogout} />
         </header>
 
