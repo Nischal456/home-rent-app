@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image'; // ✅ FIX: Import the Next.js Image component
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -129,7 +130,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-white md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6"><Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" /><span>STG Tower</span></Link></div>
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+              {/* ✅ FIX: Replaced <img> with <Image> */}
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+              <span>STG Tower</span>
+            </Link>
+          </div>
           <div className="flex-1"><NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} /></div>
         </div>
       </div>
@@ -138,7 +145,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild><Button variant="outline" size="icon" className="shrink-0 md:hidden"><Menu className="h-5 w-5" /></Button></SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <div className="flex h-14 items-center border-b px-4"><Link href="/dashboard" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" /><span>STG Tower</span></Link></div>
+              <div className="flex h-14 items-center border-b px-4">
+                <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                  {/* ✅ FIX: Replaced img with Image */}
+                  <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+                  <span>STG Tower</span>
+                </Link>
+              </div>
               <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} unreadPaymentsCount={pendingPaymentsCount} />
             </SheetContent>
           </Sheet>

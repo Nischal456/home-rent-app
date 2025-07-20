@@ -5,7 +5,7 @@ import { MoreHorizontal as UtilMoreHorizontal } from 'lucide-react';
 import { Button as UtilButton } from '@/components/ui/button';
 import { DropdownMenu as UtilDropdownMenu, DropdownMenuContent as UtilDropdownMenuContent, DropdownMenuItem as UtilDropdownMenuItem, DropdownMenuLabel as UtilDropdownMenuLabel, DropdownMenuSeparator as UtilDropdownMenuSeparator, DropdownMenuTrigger as UtilDropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge as UtilBadge } from '@/components/ui/badge';
-import { IUtilityBill } from '@/types';
+import { IUtilityBill, IUser } from '@/types'; // ✅ FIX: Import IUser
 import { printBill as printUtilityBill } from '@/lib/printBill';
 
 export type UtilityBillData = IUtilityBill;
@@ -17,7 +17,8 @@ const getUtilStatusBadge = (status: 'DUE' | 'PAID') => {
 export const getUtilityBillColumns = (
     openConfirmation: (action: 'pay' | 'delete', bill: UtilityBillData) => void
 ): UtilColumnDef<UtilityBillData>[] => [
-    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({ row }) => (row.original.tenantId as any)?.fullName || 'N/A' },
+    // ✅ FIX: Use a safe, explicit cast to the expected populated type
+    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({ row }) => (row.original.tenantId as unknown as IUser)?.fullName || 'N/A' },
     { accessorKey: 'billingMonthBS', header: 'Billing Month' },
     { accessorKey: 'totalAmount', header: 'Total Amount', cell: ({ row }) => `Rs ${row.original.totalAmount.toLocaleString('en-IN')}` },
     { accessorKey: 'electricity.unitsConsumed', header: 'Elec. Units' },

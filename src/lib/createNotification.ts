@@ -1,8 +1,8 @@
 import Notification from "@/models/Notification";
-import { Schema } from "mongoose";
+import { Types } from "mongoose"; // 1. Change import from Schema to Types
 
 export const createNotification = async (
-    userId: Schema.Types.ObjectId,
+    userId: Types.ObjectId, // 2. Change the type here
     title: string,
     message: string,
     link?: string

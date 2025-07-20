@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { IRentBill, IUtilityBill } from '@/types';
+import { IRentBill, IUtilityBill, IUser, IRoom } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import { Separator } from '@/components/ui/separator';
 import { printBill } from '@/lib/printBill';
@@ -20,8 +20,9 @@ export function BillDetailsDialog({ isOpen, onClose, bill }: BillDetailsDialogPr
   if (!bill) return null;
 
   const isRentBill = bill.type === 'Rent';
-  const tenant = (bill.tenantId as any);
-  const room = (bill.roomId as any);
+  // ✅ FIX: Use a safe, explicit cast to the expected populated type
+  const tenant = bill.tenantId as unknown as IUser;
+  const room = bill.roomId as unknown as IRoom;
   const totalAmount = isRentBill ? (bill as IRentBill).amount : (bill as IUtilityBill).totalAmount;
 
   return (

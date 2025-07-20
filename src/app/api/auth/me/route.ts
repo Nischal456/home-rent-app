@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
-import Room from '@/models/Room';
+import Room from '@/models/Room'; // Keep this import, it's used by Mongoose populate
 
 interface TokenPayload {
   id: string;
@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
     
-    // --- THE CORE FIX IS HERE ---
-    // We use the `request.cookies` store to reliably get the token.
     const token = request.cookies.get('token')?.value || '';
-    // --- END OF FIX ---
 
     if (!token) {
       return NextResponse.json({ success: false, message: 'Authentication token not found.' }, { status: 401 });
@@ -28,8 +25,7 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
     
-    const _ = Room; 
-    
+    // The 'Room' model is needed for the .populate('roomId') to work correctly
     const user = await User.findById(decoded.id)
       .select('-password')
       .populate('roomId');
@@ -39,8 +35,13 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, user });
-  } catch (error: any) {
-    console.error('Error in /api/auth/me:', error.message);
+  } catch (error) {
+    // Check if the error is an instance of Error to safely access .message
+    if (error instanceof Error) {
+        console.error('Error in /api/auth/me:', error.message);
+    } else {
+        console.error('An unknown error occurred in /api/auth/me:', error);
+    }
     return NextResponse.json({ success: false, message: 'Invalid token or server error.' }, { status: 401 });
   }
 }

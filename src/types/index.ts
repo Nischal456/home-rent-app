@@ -1,30 +1,30 @@
-import { Schema } from 'mongoose';
+import { Types, Schema } from 'mongoose';
 
 export interface IUser {
-  _id: string;
+  _id: Types.ObjectId; // Corrected
   fullName: string;
   email: string;
   password?: string;
   role: 'ADMIN' | 'TENANT';
   phoneNumber?: string;
-  roomId?: Schema.Types.ObjectId | IRoom;
+  roomId?: Types.ObjectId | IRoom; // Corrected
   leaseStartDate?: Date;
   leaseEndDate?: Date;
   createdAt: Date;
 }
 
 export interface IRoom {
-  _id: string;
+  _id: Types.ObjectId; // Corrected
   roomNumber: string;
   floor: string;
   rentAmount: number;
-  tenantId?: Schema.Types.ObjectId | IUser;
+  tenantId?: Types.ObjectId | IUser; // Corrected
 }
 
 export interface IRentBill {
-    _id: string;
-    tenantId: Schema.Types.ObjectId | IUser;
-    roomId: Schema.Types.ObjectId | IRoom;
+    _id: Types.ObjectId; // Corrected
+    tenantId: Types.ObjectId | IUser; // Corrected
+    roomId: Types.ObjectId | IRoom; // Corrected
     billDateBS: string;
     billDateAD: Date;
     rentForPeriod: string;
@@ -35,9 +35,9 @@ export interface IRentBill {
 }
 
 export interface IUtilityBill {
-    _id: string;
-    tenantId: Schema.Types.ObjectId | IUser;
-    roomId: Schema.Types.ObjectId | IRoom;
+    _id: Types.ObjectId; // Corrected
+    tenantId: Types.ObjectId | IUser; // Corrected
+    roomId: Types.ObjectId | IRoom; // Corrected
     billingMonthBS: string;
     billDateBS: string;
     billDateAD: Date;
@@ -52,9 +52,9 @@ export interface IUtilityBill {
 }
 
 export interface IMaintenanceRequest {
-  _id: string;
-  tenantId: Schema.Types.ObjectId | IUser;
-  roomId: Schema.Types.ObjectId | IRoom;
+  _id: Types.ObjectId; // Corrected
+  tenantId: Types.ObjectId | IUser; // Corrected
+  roomId: Types.ObjectId | IRoom; // Corrected
   issue: string;
   description: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
@@ -63,8 +63,8 @@ export interface IMaintenanceRequest {
 }
 
 export interface IPayment {
-    _id: string;
-    tenantId: Schema.Types.ObjectId | IUser;
+    _id: Types.ObjectId; // Corrected
+    tenantId: Types.ObjectId | IUser; // Corrected
     amount: number;
     status: 'PENDING' | 'VERIFIED';
     createdAt: Date;

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+// ✅ FIX: Removed unused imports
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileClock } from 'lucide-react';
@@ -80,7 +81,8 @@ export default function StatementPage() {
                   <TableRow><TableCell colSpan={6} className="h-48 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></TableCell></TableRow>
                 ) : bills.length > 0 ? (
                   bills.map(bill => (
-                    <TableRow key={bill._id}>
+                    // ✅ FIX: Convert ObjectId to string for the key prop
+                    <TableRow key={bill._id.toString()}>
                       <TableCell><Badge variant="secondary">{bill.type}</Badge></TableCell>
                       <TableCell>{new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</TableCell>
                       <TableCell>{(bill as IRentBill).rentForPeriod || (bill as IUtilityBill).billingMonthBS}</TableCell>

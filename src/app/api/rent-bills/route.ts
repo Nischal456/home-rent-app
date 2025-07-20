@@ -1,20 +1,25 @@
-import { NextResponse as RentBillNextResponse } from 'next/server';
+import { NextRequest, NextResponse as RentBillNextResponse } from 'next/server';
 import dbConnectRent from '@/lib/dbConnect';
 import RentBill from '@/models/RentBill';
-import User from '@/models/User'; // <-- Corrected import
-import Room from '@/models/Room'; // <-- Corrected import
+import User from '@/models/User';
+import Room from '@/models/Room';
 import NepaliDate from 'nepali-date-converter';
 import { createNotification } from '@/lib/createNotification';
+import { Types } from 'mongoose'; // Import Types for ObjectId
 
 export async function GET() {
   await dbConnectRent();
   try {
-    // Pre-load models by referencing them
-    const _ = User;
-    const __ = Room;
-    const bills = await RentBill.find({}).populate('tenantId', 'fullName').populate('roomId', 'roomNumber').sort({ billDateAD: -1 });
+    // By importing User and Room above, Mongoose is aware of them.
+    // The .populate() calls will work without needing to reference the models here.
+    const bills = await RentBill.find({})
+      .populate('tenantId', 'fullName')
+      .populate('roomId', 'roomNumber')
+      .sort({ billDateAD: -1 });
+
     return RentBillNextResponse.json({ success: true, data: bills });
   } catch (error) {
+    console.error("Error fetching rent bills:", error); // Use the error variable
     return RentBillNextResponse.json({ success: false, message: 'Error fetching rent bills' }, { status: 500 });
   }
 }
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
     await newBill.save();
 
     await createNotification(
-        tenantId,
+        new Types.ObjectId(tenantId), // Convert string ID to ObjectId
         'New Rent Bill Created',
         `A new rent bill of Rs ${amount} for "${rentForPeriod}" has been added.`,
         '/dashboard'

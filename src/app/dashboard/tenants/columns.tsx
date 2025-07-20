@@ -12,18 +12,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { IUser } from '@/types';
+import { IUser, IRoom } from '@/types'; // ✅ FIX: Import IRoom
 
-// The Tenant type uses the central IUser interface
 export type Tenant = IUser;
 
-// This function generates the column definitions for the tenants table.
-// It takes callback functions for handling actions like assigning a room or deleting a tenant.
 export const getTenantColumns = (
   onAssignRoom: (tenant: Tenant) => void,
   onDeleteTenant: (tenant: Tenant) => void
 ): ColumnDef<Tenant>[] => [
-    // Column for the tenant's full name, with sorting capability.
     { 
       accessorKey: 'fullName', 
       header: ({ column }) => (
@@ -33,35 +29,30 @@ export const getTenantColumns = (
         </Button>
       ) 
     },
-    // Column for the tenant's email address.
     { 
       accessorKey: 'email', 
       header: 'Email' 
     },
-    // Column for the tenant's phone number.
     { 
       accessorKey: 'phoneNumber', 
       header: 'Phone Number' 
     },
-    // Column for the assigned room, which displays a badge.
     { 
       accessorKey: 'roomId.roomNumber', 
       header: 'Room', 
       cell: ({ row }) => {
-        // The 'any' cast here is a safe way to access populated data from Mongoose.
-        const room = row.original.roomId as any;
+        // ✅ FIX: Use a safe, explicit cast to the expected populated type
+        const room = row.original.roomId as unknown as IRoom;
         return room ? 
           <Badge variant="outline">{room.roomNumber}</Badge> : 
           <Badge variant="destructive">Unassigned</Badge>;
       }
     },
-    // Column for the date the tenant joined, formatted for readability.
     { 
       accessorKey: 'createdAt', 
       header: 'Joined On', 
       cell: ({ row }) => new Date(row.getValue('createdAt')).toLocaleDateString('en-CA') 
     },
-    // Column for actions, containing a dropdown menu.
     {
         id: 'actions',
         cell: ({ row }) => {

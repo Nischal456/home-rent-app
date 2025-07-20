@@ -1,9 +1,9 @@
-import { NextResponse as AssignNextResponse } from 'next/server';
+import { NextResponse as AssignNextResponse, NextRequest } from 'next/server';
 import dbConnectAssign from '@/lib/dbConnect';
 import User from '@/models/User';
 import RoomAssign from '@/models/Room';
 
-export async function PATCH(request: Request, { params }: { params: { tenantId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: { tenantId: string } }) {
   await dbConnectAssign();
   try {
     const { tenantId } = params;
@@ -31,10 +31,9 @@ export async function PATCH(request: Request, { params }: { params: { tenantId: 
       await RoomAssign.findByIdAndUpdate(tenant.roomId, { $unset: { tenantId: 1 } });
     }
 
-    // Assign the new room (CORRECTED LINES)
-    // We cast to 'any' to resolve the TypeScript type mismatch. Mongoose will handle the conversion.
-    tenant.roomId = newRoom._id as any;
-    newRoom.tenantId = tenant._id as any;
+    // Assign the new room
+    tenant.roomId = newRoom._id;
+    newRoom.tenantId = tenant._id;
 
     await tenant.save();
     await newRoom.save();

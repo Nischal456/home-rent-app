@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import UtilityBill from '@/models/UtilityBill';
 
-export async function GET(request: Request, { params }: { params: { tenantId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { tenantId: string } }) {
   await dbConnect();
   try {
     const { tenantId } = params;
@@ -18,7 +18,12 @@ export async function GET(request: Request, { params }: { params: { tenantId: st
     }
 
     return NextResponse.json({ success: true, data: lastBill });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  } catch (error) {
+    let errorMessage = "An unknown error occurred.";
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    console.error("Error fetching last utility bill:", errorMessage);
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }

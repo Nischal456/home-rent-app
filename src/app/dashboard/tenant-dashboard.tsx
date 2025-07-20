@@ -17,7 +17,6 @@ import { toast } from 'react-hot-toast';
 
 type CombinedBill = (IRentBill | IUtilityBill) & { type: 'Rent' | 'Utility' };
 
-// A professional badge component to show the status of bills and requests
 const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED') => {
     const variants = {
         PAID: "bg-green-100 text-green-800 border-green-200",
@@ -27,13 +26,11 @@ const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE' | 'PENDING' | 'IN_PRO
         OVERDUE: "bg-red-100 text-red-800 border-red-200",
         IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
     };
-    // Format the status text to be more readable (e.g., "IN_PROGRESS" becomes "In Progress")
     const formattedStatus = status.replace('_', ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
     return <Badge variant="outline" className={`capitalize ${variants[status] || "bg-gray-100 text-gray-800"}`}>{formattedStatus}</Badge>;
 };
 
 export function TenantDashboard() {
-  // State management for all tenant-specific data
   const [user, setUser] = useState<IUser | null>(null);
   const [rentBills, setRentBills] = useState<IRentBill[]>([]);
   const [utilityBills, setUtilityBills] = useState<IUtilityBill[]>([]);
@@ -45,7 +42,6 @@ export function TenantDashboard() {
   const [pendingPayment, setPendingPayment] = useState<IPayment | null>(null);
   const [selectedBill, setSelectedBill] = useState<CombinedBill | null>(null);
 
-  // A single, robust function to fetch all necessary data for the dashboard
   const fetchAllData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setLoading(true);
     setError(null);
@@ -72,27 +68,29 @@ export function TenantDashboard() {
       if (maintData.success) setMaintenanceRequests(maintData.data);
       if (pendingPaymentData.success) setPendingPayment(pendingPaymentData.pendingPayment);
 
-    } catch (err: any) {
-      console.error("Failed to fetch dashboard data", err);
-      setError(err.message);
-      toast.error(err.message);
+    } catch (err) {
+      // ✅ FIX: Safely handle the error type
+      let errorMessage = "An unknown error occurred.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      console.error("Failed to fetch dashboard data", errorMessage);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       if (isInitialLoad) setLoading(false);
     }
   }, []);
 
-  // Fetch data on initial component load
   useEffect(() => {
     fetchAllData(true);
   }, [fetchAllData]);
   
-  // Calculate derived state for display
   const rentBillsDue = rentBills.filter(b => b.status === 'DUE');
   const utilityBillsDue = utilityBills.filter(b => b.status === 'DUE');
   const totalDue = rentBillsDue.reduce((acc, bill) => acc + bill.amount, 0) + utilityBillsDue.reduce((acc, bill) => acc + bill.totalAmount, 0);
   const roomInfo = user?.roomId as IRoom | undefined;
 
-  // Animation variants for a staggered fade-in effect
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } }
@@ -114,7 +112,6 @@ export function TenantDashboard() {
     <>
       <div className="space-y-8">
         <motion.div variants={cardVariants} initial="hidden" animate="visible" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {/* Total Due Card */}
           <motion.div variants={cardVariants}>
             <Card className="hover:shadow-lg transition-shadow h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">Total Amount Due</CardTitle><DollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader>
@@ -134,7 +131,6 @@ export function TenantDashboard() {
             </Card>
           </motion.div>
           
-          {/* Lease & Rent Info Card */}
           <motion.div variants={cardVariants}>
             <Card className="hover:shadow-lg transition-shadow h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium">My Room & Lease</CardTitle><FileText className="h-4 w-4 text-muted-foreground" /></CardHeader>
@@ -148,21 +144,20 @@ export function TenantDashboard() {
             </Card>
           </motion.div>
 
-          {/* Maintenance Request Button/Card */}
           <motion.div variants={cardVariants}>
             <Dialog open={isMaintDialogOpen} onOpenChange={setMaintDialogOpen}>
                 <DialogTrigger asChild>
                     <Button size="lg" className="w-full h-full text-lg shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-orange-500 to-red-500 text-white"><Wrench className="mr-2 h-5 w-5"/> Request Maintenance</Button>
                 </DialogTrigger>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>New Maintenance Request</DialogTitle><DialogDescription>Describe the issue you're facing in your room.</DialogDescription></DialogHeader>
+                    {/* ✅ FIX: Escaped the apostrophe */}
+                    <DialogHeader><DialogTitle>New Maintenance Request</DialogTitle><DialogDescription>Describe the issue you&apos;re facing in your room.</DialogDescription></DialogHeader>
                     <RequestMaintenanceForm onSuccess={() => { setMaintDialogOpen(false); fetchAllData(); }} />
                 </DialogContent>
             </Dialog>
           </motion.div>
         </motion.div>
 
-        {/* Combined Bills Table */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <Card>
             <CardHeader><CardTitle>My Bills</CardTitle><CardDescription>A combined history of your rent and utility bills. Click a row for details.</CardDescription></CardHeader>
@@ -172,7 +167,8 @@ export function TenantDashboard() {
                 .map(bill => {
                     const combinedBill: CombinedBill = { ...bill, type: (bill as IRentBill).rentForPeriod ? 'Rent' : 'Utility' };
                     return (
-                      <TableRow key={bill._id} onClick={() => setSelectedBill(combinedBill)} className="cursor-pointer hover:bg-gray-50">
+                      // ✅ FIX: Convert ObjectId to string for the key prop
+                      <TableRow key={bill._id.toString()} onClick={() => setSelectedBill(combinedBill)} className="cursor-pointer hover:bg-gray-50">
                         <TableCell><Badge variant="secondary">{combinedBill.type}</Badge></TableCell>
                         <TableCell>{(bill as IRentBill).rentForPeriod || (bill as IUtilityBill).billingMonthBS}</TableCell>
                         <TableCell>Rs {(bill as IRentBill).amount?.toLocaleString() || (bill as IUtilityBill).totalAmount?.toLocaleString()}</TableCell>
@@ -184,16 +180,22 @@ export function TenantDashboard() {
           </Card>
         </motion.div>
 
-        {/* Maintenance Requests Table */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <Card>
             <CardHeader><CardTitle>My Maintenance Requests</CardTitle><CardDescription>Track the status of your submitted requests.</CardDescription></CardHeader>
-            <CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Issue</TableHead><TableHead>Submitted</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{maintenanceRequests.length > 0 ? maintenanceRequests.map(req => (<TableRow key={req._id}><TableCell className="font-medium">{req.issue}</TableCell><TableCell>{new NepaliDate(req.createdAt).format('YYYY-MM-DD')}</TableCell><TableCell>{getStatusBadge(req.status)}</TableCell></TableRow>)) : <TableRow><TableCell colSpan={3} className="text-center h-24">No maintenance requests found.</TableCell></TableRow>}</TableBody></Table></CardContent>
+            <CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Issue</TableHead><TableHead>Submitted</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{maintenanceRequests.length > 0 ? maintenanceRequests.map(req => (
+              // ✅ FIX: Convert ObjectId to string for the key prop
+              <TableRow key={req._id.toString()}>
+                <TableCell className="font-medium">{req.issue}</TableCell>
+                <TableCell>{new NepaliDate(req.createdAt).format('YYYY-MM-DD')}</TableCell>
+                <TableCell>{getStatusBadge(req.status)}</TableCell>
+              </TableRow>
+              )) : <TableRow><TableCell colSpan={3} className="text-center h-24">No maintenance requests found.</TableCell></TableRow>}
+            </TableBody></Table></CardContent>
           </Card>
         </motion.div>
       </div>
       
-      {/* The Dialogs, which are only rendered when needed */}
       <PaymentDialog 
         isOpen={isPaymentDialogOpen} 
         onClose={() => { setPaymentDialogOpen(false); fetchAllData(); }} 

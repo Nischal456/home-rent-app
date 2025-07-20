@@ -1,21 +1,22 @@
-import { IRentBill, IUtilityBill } from '@/types';
+import { IRentBill, IUtilityBill, IUser, IRoom } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import { numberToWords } from './numberToWords';
 
+// Define rates here to be used in the template
+const ELECTRICITY_RATE_PER_UNIT = 19;
+const WATER_RATE_PER_UNIT = 0.40;
+
 export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'utility') => {
   const isRentBill = billType === 'rent';
-  const tenant = (bill.tenantId as any);
-  const room = (bill.roomId as any);
+  // ✅ FIX: Use safe, explicit casting
+  const tenant = bill.tenantId as unknown as IUser;
+  const room = bill.roomId as unknown as IRoom;
   
   const billDateAD = new Date(bill.billDateAD);
   const billDateBS = new NepaliDate(billDateAD).format('YYYY/MM/DD');
   const billDateADFormatted = `${billDateAD.getFullYear()}/${String(billDateAD.getMonth() + 1).padStart(2, '0')}/${String(billDateAD.getDate()).padStart(2, '0')}`;
   
-  let receiptMonthDate = billDateAD;
-  if (!isRentBill) {
-      receiptMonthDate = new Date(billDateAD.getFullYear(), billDateAD.getMonth() - 1, 1);
-  }
-  const receiptMonth = new NepaliDate(receiptMonthDate).format('MMMM');
+  const receiptMonth = new NepaliDate(billDateAD).format('MMMM');
 
   const totalAmount = isRentBill ? (bill as IRentBill).amount : (bill as IUtilityBill).totalAmount;
   const amountInWords = numberToWords(totalAmount);
@@ -46,7 +47,8 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
             <h3 class="text-lg font-semibold text-black-700 mb-2 border-b pb-1">Utility Details</h3>
             <div class="grid grid-cols-2 gap-x-8 gap-y-4">
                 <div>
-                    <h4 class="font-bold text-md text-gray-800">Electricity</h4>
+                    {/* ✅ FEATURE: Added Per Unit Rate */}
+                    <h4 class="font-bold text-md text-gray-800">Electricity (@ Rs ${ELECTRICITY_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.electricity.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.electricity.currentReading}</p></div>
@@ -54,7 +56,8 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
                     </div>
                 </div>
                 <div>
-                    <h4 class="font-bold text-md text-gray-800">Water</h4>
+                    {/* ✅ FEATURE: Added Per Unit Rate */}
+                    <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${WATER_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.water.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.water.currentReading}</p></div>
@@ -71,7 +74,8 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
     <html lang="en">
     <head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Rental Bill - ${tenant?.fullName}</title>
+      {/* ✅ FIX: Added fallback for tenant name */}
+      <title>${billTitle} Bill - ${tenant?.fullName || 'N/A'}</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -89,7 +93,7 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
       <div class="bill-container bg-white p-10 text-sm">
         <header class="flex justify-between items-start border-b-2 border-black pb-4">
           <div class="flex items-center gap-4">
-            <img src="/logo.png" alt="Logo" class="h-40 w-80 object-contain">
+             <img src="/logo.png" alt="Logo" class="h-20 w-auto object-contain">
           </div>
           <div class="text-center">
             <h2 class="text-4xl font-bold">${billTitle}</h2>
@@ -99,8 +103,9 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
         <section class="grid grid-cols-2 gap-8 mt-8">
           <div>
             <p class="font-bold">To,</p>
-            <p>${tenant?.fullName}</p>
-            <p>${room?.floor}, ${room?.roomNumber}</p>
+            {/* ✅ FIX: Added fallbacks for undefined values */}
+            <p>${tenant?.fullName || 'N/A'}</p>
+            <p>${room?.floor || ''}, ${room?.roomNumber || 'Unassigned'}</p>
             <p>Bhotebahal, Kathmandu</p>
           </div>
           <div class="flex justify-end">
@@ -132,7 +137,7 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
             <p class="font-bold">Amount In words:</p>
             <p class="italic">${amountInWords}</p>
             <p class="font-bold mt-6">Remarks:</p>
-            <p>${bill.remarks || 'Please Clear all'}</p>
+            <p>${bill.remarks || 'Please Clear all dues.'}</p>
           </div>
           <div>
             <table class="w-full">
@@ -166,6 +171,7 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
     printWindow.document.write(billContent);
     printWindow.document.close();
   } else {
+    // A simple alert is okay for a developer-facing error like this.
     alert('Please allow popups for this website to print the bill.');
   }
 };

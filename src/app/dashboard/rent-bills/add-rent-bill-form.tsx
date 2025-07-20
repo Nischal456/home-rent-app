@@ -17,10 +17,11 @@ type TenantForSelect = {
   roomId?: { _id: string; roomNumber: string; };
 };
 
+// ✅ FIX: Removed the invalid 'required_error' property.
 const formSchema = z.object({
   tenantId: z.string().min(1, { message: 'Please select a tenant.' }),
   rentForPeriod: z.string().min(3, { message: 'Please specify the billing period.' }),
-  amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
+  amount: z.number().min(1, 'Amount must be greater than 0.'),
   remarks: z.string().optional(),
 });
 
@@ -46,11 +47,11 @@ export function AddRentBillForm({ onSuccess }: AddRentBillFormProps) {
   const form = useForm<RentBillFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-        tenantId: '',
-        rentForPeriod: '',
-        amount: 0,
-        remarks: ''
-    }
+      tenantId: '',
+      rentForPeriod: '',
+      amount: undefined,
+      remarks: '',
+    },
   });
 
   async function onSubmit(values: RentBillFormValues) {
@@ -72,8 +73,12 @@ export function AddRentBillForm({ onSuccess }: AddRentBillFormProps) {
       toast.success('Rent bill created successfully!');
       form.reset();
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      let errorMessage = "An unknown error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +98,19 @@ export function AddRentBillForm({ onSuccess }: AddRentBillFormProps) {
           </FormItem>
         )} />
         <FormField control={form.control} name="amount" render={({ field }) => (
-          <FormItem><FormLabel>Amount (Rs)</FormLabel><FormControl><Input type="number" placeholder="15000" {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem>
+            <FormLabel>Amount (Rs)</FormLabel>
+            <FormControl>
+              <Input 
+                type="number" 
+                placeholder="15000" 
+                {...field} 
+                onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))}
+                value={field.value ?? ''}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )} />
         <FormField control={form.control} name="rentForPeriod" render={({ field }) => (
             <FormItem><FormLabel>Rent For Period</FormLabel><FormControl><Input placeholder="e.g., Ashadh 2081" {...field} /></FormControl><FormMessage /></FormItem>

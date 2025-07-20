@@ -1,20 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import UtilityBill from '@/models/UtilityBill';
 import User from '@/models/User';
 import Room from '@/models/Room';
-import NepaliDate from 'nepali-date-converter'; // <-- The critical missing import
+import NepaliDate from 'nepali-date-converter';
 import { createNotification } from '@/lib/createNotification';
+import { Types } from 'mongoose'; // Import Types for ObjectId
 
 export async function GET() {
   await dbConnect();
   try {
-    // Pre-load models to prevent schema errors on populate
-    const _ = User;
-    const __ = Room;
-    const bills = await UtilityBill.find({}).populate('tenantId', 'fullName').populate('roomId', 'roomNumber').sort({ billDateAD: -1 });
+    // By importing User and Room above, Mongoose is aware of them.
+    // The .populate() calls will work without needing to reference the models here.
+    const bills = await UtilityBill.find({})
+      .populate('tenantId', 'fullName')
+      .populate('roomId', 'roomNumber')
+      .sort({ billDateAD: -1 });
+      
     return NextResponse.json({ success: true, data: bills });
   } catch (error) {
+    console.error("Error fetching utility bills:", error); // Use the error variable
     return NextResponse.json({ success: false, message: 'Error fetching utility bills' }, { status: 500 });
   }
 }
@@ -26,7 +31,6 @@ export async function POST(request: Request) {
     
     const { tenantId, roomId, billingMonthBS, electricity, water, serviceCharge, securityCharge, totalAmount } = body;
 
-    // More robust validation
     if (!tenantId || !roomId || !billingMonthBS || totalAmount === undefined || totalAmount === null) {
       return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
     }
@@ -50,9 +54,8 @@ export async function POST(request: Request) {
 
     await newBill.save();
 
-    // Create a notification for the tenant
     await createNotification(
-        tenantId,
+        new Types.ObjectId(tenantId), // ✅ FIX: Convert string ID to ObjectId
         'New Utility Bill',
         `Your utility bill of Rs ${totalAmount.toLocaleString('en-IN')} for ${billingMonthBS} is ready.`,
         '/dashboard'
@@ -60,8 +63,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Utility bill created successfully', data: newBill }, { status: 201 });
 
-  } catch (error: any) {
-    console.error('Error creating utility bill:', error.message);
-    return NextResponse.json({ success: false, message: 'Error creating utility bill', error: error.message }, { status: 500 });
+  } catch (error) {
+    let errorMessage = "An unknown error occurred.";
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    console.error('Error creating utility bill:', errorMessage);
+    return NextResponse.json({ success: false, message: 'Error creating utility bill' }, { status: 500 });
   }
 }

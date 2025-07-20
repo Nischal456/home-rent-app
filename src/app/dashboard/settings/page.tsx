@@ -52,8 +52,13 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error(data.message || 'Failed to change password.');
       toast.success('Password changed successfully!');
       form.reset();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      // ✅ FIX: Safely handle the error type
+      let errorMessage = "An unknown error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,12 +74,9 @@ export default function SettingsPage() {
         <CardHeader><CardTitle className="flex items-center gap-2"><User /> My Profile</CardTitle><CardDescription>Your personal and contact information.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* --- THE CORE FIX IS HERE --- */}
-            {/* Replaced crashing <FormLabel> with a styled <p> tag for static text */}
             <div><p className="text-sm font-medium text-muted-foreground">Full Name</p><p>{user?.fullName}</p></div>
             <div><p className="text-sm font-medium text-muted-foreground">Email</p><p>{user?.email}</p></div>
             <div><p className="text-sm font-medium text-muted-foreground">Phone Number</p><p>{user?.phoneNumber || 'N/A'}</p></div>
-            {/* --- END OF FIX --- */}
           </div>
         </CardContent>
       </Card>

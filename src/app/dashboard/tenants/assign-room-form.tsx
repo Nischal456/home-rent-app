@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { IRoom } from '@/models/Room';
+import { IRoom } from '@/types'; // ✅ FIX: Import type from the correct file
 import { Tenant } from './columns';
 
 const formSchema = z.object({
@@ -51,8 +51,13 @@ export function AssignRoomForm({ tenant, onSuccess }: AssignRoomFormProps) {
       if (!response.ok) throw new Error(data.message || 'Failed to assign room.');
       toast.success('Room assigned successfully!');
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      // ✅ FIX: Safely handle the error type
+      let errorMessage = "An unknown error occurred.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +76,10 @@ export function AssignRoomForm({ tenant, onSuccess }: AssignRoomFormProps) {
               <FormControl><SelectTrigger><SelectValue placeholder="Select a vacant room" /></SelectTrigger></FormControl>
               <SelectContent>
                 {vacantRooms.length > 0 ? vacantRooms.map(room => (
-                  <SelectItem key={room._id} value={room._id}>{room.roomNumber} ({room.floor})</SelectItem>
+                  // ✅ FIX: Convert ObjectId to string for key and value props
+                  <SelectItem key={room._id.toString()} value={room._id.toString()}>
+                    {room.roomNumber} ({room.floor})
+                  </SelectItem>
                 )) : <p className="p-2 text-sm text-muted-foreground">No vacant rooms available.</p>}
               </SelectContent>
             </Select>

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/context/AuthContext';
+// AuthContext was removed, so useAuth is no longer available.
 import { IUser, IRentBill, IUtilityBill, IMaintenanceRequest, IPayment } from '@/types';
 import { toast } from 'react-hot-toast';
 
-// A robust fetch utility that automatically adds the auth token.
+// This function is no longer used within this hook without a token
 const authFetch = async (url: string, token: string, options: RequestInit = {}) => {
     const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
     const response = await fetch(url, { ...options, headers });
@@ -17,19 +17,23 @@ const authFetch = async (url: string, token: string, options: RequestInit = {}) 
 };
 
 export function useTenantData() {
-  const { token } = useAuth();
+  // Since useAuth was removed, the token is no longer available here.
+  const token = null;
+
   const [user, setUser] = useState<IUser | null>(null);
   const [rentBills, setRentBills] = useState<IRentBill[]>([]);
   const [utilityBills, setUtilityBills] = useState<IUtilityBill[]>([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState<IMaintenanceRequest[]>([]);
   const [pendingPayment, setPendingPayment] = useState<IPayment | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Default loading to false since we can't fetch data.
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAllData = useCallback(async (isInitialLoad = false) => {
+    // This condition will always be true now, so this function will not do anything.
     if (!token) {
         if (isInitialLoad) setLoading(false);
-        return; // Do not fetch if there's no token.
+        return;
     }
 
     if (isInitialLoad) setLoading(true);
@@ -50,31 +54,34 @@ export function useTenantData() {
       if (maintData.success) setMaintenanceRequests(maintData.data);
       if (pendingPaymentData.success) setPendingPayment(pendingPaymentData.pendingPayment);
 
-    } catch (err: any) {
-      console.error("Failed to fetch dashboard data:", err);
-      setError(err.message);
-      toast.error(err.message);
+    } catch (err) {
+      // ✅ FIX: Safely handle the error type
+      let errorMessage = "An unknown error occurred.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      console.error("Failed to fetch dashboard data:", errorMessage);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       if (isInitialLoad) setLoading(false);
     }
   }, [token]);
-
-  // Fetch data only when the token becomes available.
+  
+  // These effects will not run because there is no token.
   useEffect(() => {
     if (token) {
       fetchAllData(true);
     } else {
-      // If there's no token on initial check, stop loading.
       setLoading(false);
     }
   }, [token, fetchAllData]);
   
-  // Set up an interval to automatically refresh the data.
   useEffect(() => {
-    if (!token) return; // Don't start polling without a token.
+    if (!token) return;
     const interval = setInterval(() => {
-      fetchAllData(false); // Fetch data without showing the main loader
-    }, 30000); // 30 seconds
+      fetchAllData(false);
+    }, 30000); 
 
     return () => clearInterval(interval);
   }, [token, fetchAllData]);
