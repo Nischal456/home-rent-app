@@ -1,17 +1,15 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import UtilityBill from '@/models/UtilityBill';
-import User from '@/models/User';
-import Room from '@/models/Room';
+import '@/models/User'; // ✅ FIX: Import for side-effects to register schema
+import '@/models/Room'; // ✅ FIX: Import for side-effects to register schema
 import NepaliDate from 'nepali-date-converter';
 import { createNotification } from '@/lib/createNotification';
-import { Types } from 'mongoose'; // Import Types for ObjectId
+import { Types } from 'mongoose';
 
 export async function GET() {
   await dbConnect();
   try {
-    // By importing User and Room above, Mongoose is aware of them.
-    // The .populate() calls will work without needing to reference the models here.
     const bills = await UtilityBill.find({})
       .populate('tenantId', 'fullName')
       .populate('roomId', 'roomNumber')
@@ -19,7 +17,7 @@ export async function GET() {
       
     return NextResponse.json({ success: true, data: bills });
   } catch (error) {
-    console.error("Error fetching utility bills:", error); // Use the error variable
+    console.error("Error fetching utility bills:", error);
     return NextResponse.json({ success: false, message: 'Error fetching utility bills' }, { status: 500 });
   }
 }
@@ -55,7 +53,7 @@ export async function POST(request: Request) {
     await newBill.save();
 
     await createNotification(
-        new Types.ObjectId(tenantId), // ✅ FIX: Convert string ID to ObjectId
+        new Types.ObjectId(tenantId),
         'New Utility Bill',
         `Your utility bill of Rs ${totalAmount.toLocaleString('en-IN')} for ${billingMonthBS} is ready.`,
         '/dashboard'

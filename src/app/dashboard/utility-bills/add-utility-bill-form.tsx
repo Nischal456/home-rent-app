@@ -16,7 +16,7 @@ import { IUser, IRoom } from '@/types';
 
 type TenantForSelect = Pick<IUser, '_id' | 'fullName'> & { roomId?: Pick<IRoom, '_id' | 'roomNumber'> };
 
-// ✅ FINAL FIX: Simplify the boolean fields
+// ✅ FIX: Changed number and boolean schemas to resolve form errors
 const formSchema = z.object({
   tenantId: z.string().min(1, 'Please select a tenant.'),
   billingMonthBS: z.string().min(3, 'Please specify the billing month.'),
@@ -44,6 +44,7 @@ const SECURITY_CHARGE_AMOUNT = 1000;
 export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
   const [isLoading, setIsLoading] = useState(false);
   const [tenants, setTenants] = useState<TenantForSelect[]>([]);
+  const [hasPreviousBill, setHasPreviousBill] = useState(false);
   const [calculatedTotals, setCalculatedTotals] = useState({
       elecUnits: 0, elecAmount: 0, waterUnits: 0, waterAmount: 0, totalAmount: 0
   });
@@ -85,13 +86,19 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
             if (data.success && data.data) {
               setValue('elecPrevReading', data.data.electricity.currentReading);
               setValue('waterPrevReading', data.data.water.currentReading);
+              setHasPreviousBill(true);
+              toast.success("Fetched previous meter readings.");
             } else {
               setValue('elecPrevReading', 0);
               setValue('waterPrevReading', 0);
+              setHasPreviousBill(false);
             }
           } catch (error) {
+            // ✅ FIX: Use the 'error' variable to fix the warning
+            console.error("Failed to fetch last bill:", error);
             setValue('elecPrevReading', 0);
             setValue('waterPrevReading', 0);
+            setHasPreviousBill(false);
           }
         };
         fetchLastBill();
@@ -180,14 +187,14 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
         <Separator />
         <h4 className="font-medium">Electricity</h4>
         <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="elecPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly className="bg-gray-100" value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="elecPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly={hasPreviousBill} className={hasPreviousBill ? "bg-gray-100" : ""} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="elecCurrReading" render={({ field }) => (<FormItem><FormLabel>Curr. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <p className="text-sm text-muted-foreground">Units: {calculatedTotals.elecUnits}, Amount: Rs {calculatedTotals.elecAmount.toLocaleString('en-IN')}</p>
         <Separator />
         <h4 className="font-medium">Water</h4>
         <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="waterPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly className="bg-gray-100" value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="waterPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly={hasPreviousBill} className={hasPreviousBill ? "bg-gray-100" : ""} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="waterCurrReading" render={({ field }) => (<FormItem><FormLabel>Curr. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <p className="text-sm text-muted-foreground">Units: {calculatedTotals.waterUnits}, Amount: Rs {calculatedTotals.waterAmount.toLocaleString('en-IN')}</p>

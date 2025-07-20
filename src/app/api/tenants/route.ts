@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
-import Room from '@/models/Room';
+import '@/models/Room'; // ✅ FIX: Import for side-effects to register schema
 
 export async function GET() {
   await dbConnect();
   try {
-    // By importing the Room model above, it's already registered with Mongoose.
-    // This makes the .populate() call work without needing extra variables.
     const tenants = await User.find({ role: 'TENANT' })
       .populate('roomId', 'roomNumber floor')
       .select('-password');

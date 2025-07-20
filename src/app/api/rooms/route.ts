@@ -1,7 +1,7 @@
 import { NextResponse as RoomNextResponse, NextRequest } from 'next/server';
 import dbConnectRoom from '@/lib/dbConnect';
 import RoomModel from '@/models/Room';
-import UserModel from '@/models/User';
+import '@/models/User'; // ✅ FIX: Import for side-effects to register schema
 
 export async function GET(request: NextRequest) {
   await dbConnectRoom();
@@ -13,12 +13,10 @@ export async function GET(request: NextRequest) {
       query.tenantId = null;
     }
 
-    // By importing UserModel above, Mongoose is aware of it.
-    // This line is not needed.
     const rooms = await RoomModel.find(query).populate('tenantId', 'fullName');
     return RoomNextResponse.json({ success: true, data: rooms });
   } catch (error) {
-    console.error("Error fetching rooms:", error); // Use the error variable
+    console.error("Error fetching rooms:", error);
     return RoomNextResponse.json({ success: false, message: 'Error fetching rooms' }, { status: 500 });
   }
 }

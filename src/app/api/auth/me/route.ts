@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
-import Room from '@/models/Room'; // Keep this import, it's used by Mongoose populate
+// ✅ FIX: Import 'Room' model for its side-effect (registers schema) without creating an unused variable.
+import '@/models/Room';
 
 interface TokenPayload {
   id: string;
@@ -25,7 +26,6 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
     
-    // The 'Room' model is needed for the .populate('roomId') to work correctly
     const user = await User.findById(decoded.id)
       .select('-password')
       .populate('roomId');
@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    // Check if the error is an instance of Error to safely access .message
     if (error instanceof Error) {
         console.error('Error in /api/auth/me:', error.message);
     } else {

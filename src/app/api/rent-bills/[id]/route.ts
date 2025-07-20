@@ -32,7 +32,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         if (token) {
             const adminUser = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
             
-            // This now works because the types are correct
             await createNotification(
                 updatedBill.tenantId as Types.ObjectId,
                 'Rent Bill Paid!',
@@ -58,10 +57,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// ✅ FIX: Rewrote the function signature to be more explicit for the type checker.
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
     await dbConnect();
     try {
-        const billId = params.id;
+        const billId = context.params.id; // Get id from the context object
         await RentBill.findByIdAndDelete(billId);
         return NextResponse.json({ success: true, message: 'Bill deleted successfully' });
     } catch (error) {
