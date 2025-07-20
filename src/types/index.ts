@@ -46,7 +46,7 @@ export interface IUtilityBill {
     serviceCharge: number;
     securityCharge: number;
     totalAmount: number;
-    status: 'DUE' | 'PAID';
+    status: 'DUE' | 'PAID' | 'OVERDUE';
     paidOnBS?: string;
     remarks?: string;
 }
