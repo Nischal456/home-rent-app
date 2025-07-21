@@ -8,7 +8,7 @@ import { Loader2, CheckCircle } from 'lucide-react';
 import { IRentBill, IUtilityBill } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { requestPaymentVerification } from './actions';
-import Image from 'next/image'; // ✅ FIX: Import the Image component
+import Image from 'next/image';
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -32,11 +32,7 @@ export function PaymentDialog({ isOpen, onClose, rentBillsDue, utilityBillsDue, 
       toast.success('Confirmation sent to admin! Your bills will be updated shortly.');
       onClose();
     } catch (error) {
-      // ✅ FIX: Safely handle the error type
-      let errorMessage = "An unknown error occurred.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -54,36 +50,39 @@ export function PaymentDialog({ isOpen, onClose, rentBillsDue, utilityBillsDue, 
         </DialogHeader>
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 py-4">
           <div className="flex-shrink-0">
-            {/* ✅ FIX: Replaced <img> with <Image> */}
             <Image 
               src="/payment-qr.png" 
               alt="Payment QR Code" 
               width={192}
               height={192}
               className="rounded-lg shadow-md"
-              onError={(e) => { e.currentTarget.src = 'https://placehold.co/192x192/e2e8f0/e2e8f0?text=QR'; e.currentTarget.alt = 'QR code placeholder'; }}
+              onError={(e) => { e.currentTarget.src = 'https://placehold.co/192x192/eee/eee?text=QR'; e.currentTarget.alt = 'QR code placeholder'; }}
             />
           </div>
           <div className="w-full space-y-2 text-sm">
             <h3 className="font-semibold mb-2">Itemized Dues</h3>
             {rentBillsDue.map(bill => (
-              // ✅ FIX: Convert ObjectId to string for the key prop
               <div key={bill._id.toString()} className="flex justify-between items-center">
-                <span className="text-muted-foreground">{bill.rentForPeriod}</span>
-                <span className="font-medium">Rs {bill.amount.toLocaleString('en-IN')}</span>
+                {/* ✅ FIX: Added fallback text in case the period is missing */}
+                <span className="text-muted-foreground">{bill.rentForPeriod ?? 'Rent Charge'}</span>
+                
+                {/* ✅ FIX: Added optional chaining and a fallback for the amount */}
+                <span className="font-medium">Rs {bill.amount?.toLocaleString('en-IN') ?? 'N/A'}</span>
               </div>
             ))}
             {utilityBillsDue.map(bill => (
-              // ✅ FIX: Convert ObjectId to string for the key prop
               <div key={bill._id.toString()} className="flex justify-between items-center">
-                <span className="text-muted-foreground">Utility: {bill.billingMonthBS}</span>
-                <span className="font-medium">Rs {bill.totalAmount.toLocaleString('en-IN')}</span>
+                {/* ✅ FIX: Added fallback text in case the month is missing */}
+                <span className="text-muted-foreground">Utility: {bill.billingMonthBS ?? 'N/A'}</span>
+                
+                {/* ✅ FIX: Added optional chaining and a fallback for the amount */}
+                <span className="font-medium">Rs {bill.totalAmount?.toLocaleString('en-IN') ?? 'N/A'}</span>
               </div>
             ))}
             <Separator className="my-2"/>
             <div className="flex justify-between items-center text-lg font-bold">
               <span>Total Amount</span>
-              <span>Rs {totalDue.toLocaleString('en-IN')}</span>
+              <span>Rs {totalDue?.toLocaleString('en-IN') ?? '0'}</span>
             </div>
           </div>
         </div>

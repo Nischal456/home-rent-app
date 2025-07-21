@@ -1,46 +1,46 @@
 'use client';
 
-import { ColumnDef as UtilColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal as UtilMoreHorizontal } from 'lucide-react';
-import { Button as UtilButton } from '@/components/ui/button';
-import { DropdownMenu as UtilDropdownMenu, DropdownMenuContent as UtilDropdownMenuContent, DropdownMenuItem as UtilDropdownMenuItem, DropdownMenuLabel as UtilDropdownMenuLabel, DropdownMenuSeparator as UtilDropdownMenuSeparator, DropdownMenuTrigger as UtilDropdownMenuTrigger, DropdownMenuPortal as UtilDropdownMenuPortal } from '@/components/ui/dropdown-menu';
-import { Badge as UtilBadge } from '@/components/ui/badge';
+import { ColumnDef } from '@tanstack/react-table';
+import { MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { IUtilityBill, IUser } from '@/types';
-import { printBill as printUtilityBill } from '@/lib/printBill';
+import { printBill } from '@/lib/printBill';
 
 export type UtilityBillData = IUtilityBill;
 
-const getUtilStatusBadge = (status: 'DUE' | 'PAID') => {
-    return status === 'PAID' ? <UtilBadge className="bg-green-500 text-white hover:bg-green-600">PAID</UtilBadge> : <UtilBadge variant="secondary">DUE</UtilBadge>;
+const getStatusBadge = (status: 'DUE' | 'PAID') => {
+    return status === 'PAID' ? <Badge className="bg-green-500 text-white hover:bg-green-600">PAID</Badge> : <Badge variant="secondary">DUE</Badge>;
 };
 
 export const getUtilityBillColumns = (
     openConfirmation: (action: 'pay' | 'delete', bill: UtilityBillData) => void
-): UtilColumnDef<UtilityBillData>[] => [
-    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({ row }) => (row.original.tenantId as unknown as IUser)?.fullName || 'N/A' },
+): ColumnDef<UtilityBillData>[] => [
+    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({ row }) => (row.original.tenantId as IUser)?.fullName || 'N/A' },
     { accessorKey: 'billingMonthBS', header: 'Billing Month' },
     { accessorKey: 'totalAmount', header: 'Total Amount', cell: ({ row }) => `Rs ${row.original.totalAmount.toLocaleString('en-IN')}` },
     { accessorKey: 'electricity.unitsConsumed', header: 'Elec. Units' },
     { accessorKey: 'water.unitsConsumed', header: 'Water Units' },
-    { accessorKey: 'status', header: 'Status', cell: ({ row }) => getUtilStatusBadge(row.getValue('status')) },
+    { accessorKey: 'status', header: 'Status', cell: ({ row }) => getStatusBadge(row.getValue('status')) },
     {
         id: 'actions',
         cell: ({ row }) => {
             const bill = row.original;
             return (
-                <UtilDropdownMenu>
-                    <UtilDropdownMenuTrigger asChild><UtilButton variant="ghost" className="h-8 w-8 p-0"><UtilMoreHorizontal className="h-4 w-4" /></UtilButton></UtilDropdownMenuTrigger>
-                     {/* ✅ FIX: Use a Portal to render the menu outside the table's clipping context */}
-                    <UtilDropdownMenuPortal>
-                        <UtilDropdownMenuContent align="end">
-                            <UtilDropdownMenuLabel>Actions</UtilDropdownMenuLabel>
-                            <UtilDropdownMenuItem onClick={() => printUtilityBill(bill, 'utility')}>Print Bill</UtilDropdownMenuItem>
-                            {bill.status === 'DUE' && (<UtilDropdownMenuItem onClick={() => openConfirmation('pay', bill)}>Mark as Paid</UtilDropdownMenuItem>)}
-                            <UtilDropdownMenuSeparator />
-                            <UtilDropdownMenuItem className="text-red-600" onClick={() => openConfirmation('delete', bill)}>Delete Bill</UtilDropdownMenuItem>
-                        </UtilDropdownMenuContent>
-                    </UtilDropdownMenuPortal>
-                </UtilDropdownMenu>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuPortal>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            {/* ✅ FIX: Call printBill with only one argument */}
+                            <DropdownMenuItem onClick={() => printBill(bill)}>Print Bill</DropdownMenuItem>
+                            {bill.status === 'DUE' && (<DropdownMenuItem onClick={() => openConfirmation('pay', bill)}>Mark as Paid</DropdownMenuItem>)}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600" onClick={() => openConfirmation('delete', bill)}>Delete Bill</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenuPortal>
+                </DropdownMenu>
             );
         },
     },

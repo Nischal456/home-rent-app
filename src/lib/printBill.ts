@@ -2,38 +2,40 @@ import { IRentBill, IUtilityBill, IUser, IRoom } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import { numberToWords } from './numberToWords';
 
+const isPopulated = (field: any): field is IUser | IRoom => {
+  return field && typeof field === 'object' && '_id' in field;
+};
+
 // Define rates here to be used in the template
 const ELECTRICITY_RATE_PER_UNIT = 19;
 const WATER_RATE_PER_UNIT = 0.40;
 
-export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'utility') => {
-  const isRentBill = billType === 'rent';
-  // ✅ FIX: Use safe, explicit casting
-  const tenant = bill.tenantId as unknown as IUser;
-  const room = bill.roomId as unknown as IRoom;
+export const printBill = (bill: IRentBill | IUtilityBill) => {
+  const tenant = isPopulated(bill.tenantId) ? bill.tenantId : null;
+  const room = isPopulated(bill.roomId) ? bill.roomId : null;
+
+  const isRentBill = 'rentForPeriod' in bill;
+  const billType = isRentBill ? 'Rent Bill' : 'Utility Bill';
   
   const billDateAD = new Date(bill.billDateAD);
-  const billDateBS = new NepaliDate(billDateAD).format('YYYY/MM/DD');
+  const billDateBS = bill.billDateBS || new NepaliDate(billDateAD).format('YYYY/MM/DD');
   const billDateADFormatted = `${billDateAD.getFullYear()}/${String(billDateAD.getMonth() + 1).padStart(2, '0')}/${String(billDateAD.getDate()).padStart(2, '0')}`;
   
-  const receiptMonth = new NepaliDate(billDateAD).format('MMMM');
-
-  const totalAmount = isRentBill ? (bill as IRentBill).amount : (bill as IUtilityBill).totalAmount;
+  const totalAmount = isRentBill ? bill.amount : bill.totalAmount;
   const amountInWords = numberToWords(totalAmount);
   
   const billTitle = isRentBill ? "RENTAL" : "UTILITY";
 
   let descriptionRows = '';
   if (isRentBill) {
-    const rentBill = bill as IRentBill;
     descriptionRows = `
-      <tr class="border-b border-black"><td class="border-r border-black p-2">${rentBill.rentForPeriod}</td><td class="p-2 text-right">Rs ${rentBill.amount.toLocaleString('en-IN')}/-</td></tr>
+      <tr class="border-b border-black"><td class="border-r border-black p-2">${bill.rentForPeriod}</td><td class="p-2 text-right">Rs ${bill.amount.toLocaleString('en-IN')}/-</td></tr>
     `;
   } else {
     const utilityBill = bill as IUtilityBill;
     descriptionRows = `
-      ${utilityBill.electricity.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Electricity Bill</td><td class="p-2 text-right">Rs ${utilityBill.electricity.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
-      ${utilityBill.water.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Water Bill</td><td class="p-2 text-right">Rs ${utilityBill.water.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
+      ${utilityBill.electricity.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Electricity Charge</td><td class="p-2 text-right">Rs ${utilityBill.electricity.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
+      ${utilityBill.water.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Water Charge</td><td class="p-2 text-right">Rs ${utilityBill.water.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
       ${utilityBill.serviceCharge > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Service Charge</td><td class="p-2 text-right">Rs ${utilityBill.serviceCharge.toLocaleString('en-IN')}/-</td></tr>` : ''}
       ${utilityBill.securityCharge > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Security Charge</td><td class="p-2 text-right">Rs ${utilityBill.securityCharge.toLocaleString('en-IN')}/-</td></tr>` : ''}
     `;
@@ -42,24 +44,27 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
   let utilityDetailsSection = '';
   if (!isRentBill) {
     const utilityBill = bill as IUtilityBill;
+    // ✅ FIX: Restored the total amount and rate to the utility details section.
     utilityDetailsSection = `
         <section class="mt-8">
-            <h3 class="text-lg font-semibold text-black-700 mb-2 border-b pb-1">Utility Details</h3>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2 border-b pb-1">Utility Meter Readings</h3>
             <div class="grid grid-cols-2 gap-x-8 gap-y-4">
                 <div>
                     <h4 class="font-bold text-md text-gray-800">Electricity (@ Rs ${ELECTRICITY_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.electricity.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.electricity.currentReading}</p></div>
-                        <div class="flex justify-between font-semibold border-t pt-1 mt-1 border-gray-300"><p>Units Consumed:</p><p>${utilityBill.electricity.unitsConsumed}</p></div>
+                        <div class="flex justify-between font-semibold"><p>Units Consumed:</p><p>${utilityBill.electricity.unitsConsumed}</p></div>
+                        <div class="flex justify-between font-bold text-black border-t pt-1 mt-1 border-gray-300"><p>Total Amount:</p><p>Rs ${utilityBill.electricity.amount.toLocaleString('en-IN')}</p></div>
                     </div>
                 </div>
                 <div>
-                    <h4 class="font-bold text-md text-gray-800">Water (Per Rs ${WATER_RATE_PER_UNIT}/unit)</h4>
+                    <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${WATER_RATE_PER_UNIT}/Litre)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.water.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.water.currentReading}</p></div>
-                        <div class="flex justify-between font-semibold border-t pt-1 mt-1 border-gray-300"><p>Units Consumed:</p><p>${utilityBill.water.unitsConsumed}</p></div>
+                        <div class="flex justify-between font-semibold"><p>Litres Consumed:</p><p>${utilityBill.water.unitsConsumed}</p></div>
+                        <div class="flex justify-between font-bold text-black border-t pt-1 mt-1 border-gray-300"><p>Total Amount:</p><p>Rs ${utilityBill.water.amount.toLocaleString('en-IN')}</p></div>
                     </div>
                 </div>
             </div>
@@ -72,11 +77,11 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
     <html lang="en">
     <head>
       <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${billTitle} Bill - ${tenant?.fullName || 'N/A'}</title>
+      <title>${billType} - ${tenant?.fullName || 'Bill'}</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        body { font-family: 'Roboto', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         .bill-container { width: 210mm; min-height: 297mm; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         @page { size: A4; margin: 0; }
         @media print {
@@ -87,38 +92,44 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
       </style>
     </head>
     <body class="bg-gray-100 flex justify-center items-center p-4">
-      <div class="bill-container bg-white p-10 text-sm">
+      <div class="bill-container bg-white p-10 text-sm text-gray-800">
         <header class="flex justify-between items-start border-b-2 border-black pb-4">
           <div class="flex items-center gap-4">
              <img src="/logo.png" alt="Logo" class="h-20 w-auto object-contain">
           </div>
-          <div class="text-center">
-            <h2 class="text-4xl font-bold">${billTitle}</h2>
-            <p class="text-3xl font-semibold">BILL</p>
+          <div class="text-right">
+            <h2 class="text-4xl font-bold uppercase">${billTitle}</h2>
+            <p class="text-lg font-semibold text-gray-600">Bill</p>
           </div>
         </header>
         <section class="grid grid-cols-2 gap-8 mt-8">
           <div>
-            <p class="font-bold">To,</p>
-            <p>${tenant?.fullName || 'N/A'}</p>
-            <p>${room?.floor || ''} ${room?.roomNumber || 'Unassigned'}</p>
+            <p class="font-bold text-gray-500">BILL FROM:</p>
+            <p class="font-bold text-lg">STG Tower</p>
             <p>Bhotebahal, Kathmandu</p>
+            <p>stgtowerhouse@gmail.com</p>
           </div>
-          <div class="flex justify-end">
-            <table class="w-full">
-              <tr><td class="font-bold pr-4">Date (B.S.)</td><td>: ${billDateBS}</td></tr>
-              <tr><td class="font-bold pr-4">Date (A.D.)</td><td>: ${billDateADFormatted}</td></tr>
-              <tr><td class="font-bold pr-4">Receipt Month</td><td>: ${receiptMonth}</td></tr>
-            </table>
+          <div class="text-right">
+            <p class="font-bold text-gray-500">BILL TO:</p>
+            <p class="font-bold text-lg">${tenant?.fullName || 'N/A'}</p>
+            <p>Room: ${room?.roomNumber || 'N/A'}</p>
+            ${tenant?.phone ? `<p>${tenant.phone}</p>` : ''}
           </div>
         </section>
-        ${utilityDetailsSection}
+        <section class="mt-4 text-right">
+            <table class="w-1/2 ml-auto">
+              <tr><td class="font-bold pr-4 text-gray-500">Date (B.S.) :</td><td>${billDateBS}</td></tr>
+              <tr><td class="font-bold pr-4 text-gray-500">Date (A.D.) :</td><td>${billDateADFormatted}</td></tr>
+              <tr><td class="font-bold pr-4 text-gray-500">Status :</td><td class="font-bold ${bill.status === 'PAID' ? 'text-green-600' : 'text-red-600'}">${bill.status}</td></tr>
+            </table>
+        </section>
+        
         <section class="mt-8">
           <table class="w-full border-collapse border border-black">
-            <thead class="bg-gray-200">
+            <thead class="bg-gray-100">
               <tr>
-                <th class="border border-black p-2 text-left">DESCRIPTION</th>
-                <th class="border border-black p-2 text-right">TOTAL</th>
+                <th class="border border-black p-2 text-left font-bold">DESCRIPTION</th>
+                <th class="border border-black p-2 text-right font-bold">TOTAL</th>
               </tr>
             </thead>
             <tbody>
@@ -128,30 +139,27 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
             </tbody>
           </table>
         </section>
-        <section class="grid grid-cols-2 gap-8 mt-4">
+        ${utilityDetailsSection}
+        <section class="grid grid-cols-2 gap-8 mt-8">
           <div>
-            <p class="font-bold">Amount In words:</p>
-            <p class="italic">${amountInWords}</p>
-            <p class="font-bold mt-6">Remarks:</p>
-            <p>${bill.remarks || 'Please Clear all dues.'}</p>
+            <p class="font-bold text-gray-500">Amount In words:</p>
+            <p class="italic capitalize">${amountInWords}</p>
+            <p class="font-bold mt-6 text-gray-500">Remarks:</p>
+            <p>${bill.remarks || 'Please clear all dues on time.'}</p>
           </div>
           <div>
-            <table class="w-full">
-              <tr><td class="font-bold pr-4">Sub - Total</td><td class="text-right">Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
-              <tr><td class="font-bold pr-4">Partial Payment</td><td class="text-right">Rs 0.00/-</td></tr>
-              <tr><td class="font-bold pr-4">Previous Balance</td><td class="text-right">Rs 0.00/-</td></tr>
-              <tr class="font-bold border-t-2 border-b-2 border-black my-2 py-1"><td class="pr-4">Balance Due</td><td class="text-right">Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
+            <table class="w-full text-right">
+              <tr><td class="pr-4">Sub - Total</td><td>Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
+              <tr class="font-bold border-t-2 border-b-2 border-black my-2 py-2 text-lg"><td class="pr-4">Balance Due</td><td>Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
             </table>
           </div>
         </section>
-        <footer class="mt-24 flex justify-between items-end">
+        <footer class="mt-16 flex justify-between items-end text-xs text-gray-500">
           <div>
-            <p class="text-xs">stgtowerhouse@gmail.com</p>
-            <p class="text-xs">Bhotebahal, Kathmandu</p>
+            <p>Thank you </p>
           </div>
           <div class="text-center">
             <p class="border-t-2 border-black pt-1 px-8">Authorized Signature</p>
-            <p class="text-xs">(Accountant)</p>
           </div>
         </footer>
       </div>
@@ -167,7 +175,6 @@ export const printBill = (bill: IRentBill | IUtilityBill, billType: 'rent' | 'ut
     printWindow.document.write(billContent);
     printWindow.document.close();
   } else {
-    // A simple alert is okay for a developer-facing error like this.
     alert('Please allow popups for this website to print the bill.');
   }
 };

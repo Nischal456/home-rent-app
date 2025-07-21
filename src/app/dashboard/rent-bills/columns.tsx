@@ -21,8 +21,8 @@ const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE') => {
 export const getRentBillColumns = (
     openConfirmation: (action: 'pay' | 'delete', bill: RentBillData) => void
 ): ColumnDef<RentBillData>[] => [
-    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({row}) => (row.original.tenantId as unknown as IUser)?.fullName || 'N/A' },
-    { accessorKey: 'roomId.roomNumber', header: 'Room', cell: ({row}) => (row.original.roomId as unknown as IRoom)?.roomNumber || 'N/A' },
+    { accessorKey: 'tenantId.fullName', header: 'Tenant', id: 'tenantName', cell: ({row}) => (row.original.tenantId as IUser)?.fullName || 'N/A' },
+    { accessorKey: 'roomId.roomNumber', header: 'Room', cell: ({row}) => (row.original.roomId as IRoom)?.roomNumber || 'N/A' },
     { accessorKey: 'amount', header: 'Amount', cell: ({ row }) => `Rs ${row.getValue('amount')}` },
     { accessorKey: 'billDateBS', header: 'Bill Date (B.S.)' },
     { accessorKey: 'rentForPeriod', header: 'Period' },
@@ -34,11 +34,11 @@ export const getRentBillColumns = (
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                    {/* ✅ FIX: Use a Portal to render the menu outside the table's clipping context */}
                     <DropdownMenuPortal>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => printBill(bill, 'rent')}>Print Bill</DropdownMenuItem>
+                            {/* ✅ FIX: Call printBill with only one argument */}
+                            <DropdownMenuItem onClick={() => printBill(bill)}>Print Bill</DropdownMenuItem>
                             {bill.status === 'DUE' && (<DropdownMenuItem onClick={() => openConfirmation('pay', bill)}>Mark as Paid</DropdownMenuItem>)}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-600" onClick={() => openConfirmation('delete', bill)}>Delete Bill</DropdownMenuItem>

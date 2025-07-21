@@ -150,7 +150,6 @@ function NotificationBell({ notifications, onMarkAllRead }: { notifications: Cli
         <DropdownMenuLabel className="flex justify-between items-center px-3 py-2">
           <span className="font-bold text-base">Notifications</span>
           {unreadCount > 0 && 
-            // ✅ FIX: Wrapped the call in an arrow function to resolve the type mismatch.
             <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => onMarkAllRead()}>
                 Mark all as read
             </Button>
@@ -238,11 +237,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
 
+  // ✅ FIX: Restored the logic inside these functions.
   const fetchAdminData = useCallback(async () => {
-    // This logic remains unchanged
+    try {
+      const res = await fetch('/api/payments'); // Assuming this fetches pending payments
+      const data = await res.json();
+      if (data.success) {
+        setPendingPaymentsCount(data.data.length);
+      }
+    } catch (error) {
+      console.error("Failed to fetch admin data:", error);
+    }
   }, []);
+
   const fetchNotifications = useCallback(async () => {
-    // This logic remains unchanged
+    try {
+      const res = await fetch('/api/notifications');
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -345,7 +362,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Sheet>
           
           <div className="w-full flex-1" />
-          
           <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
           <UserNav user={user} onLogout={handleLogout} />
         </header>
