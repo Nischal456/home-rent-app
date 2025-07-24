@@ -11,7 +11,6 @@ export interface IUser {
   leaseStartDate?: Date;
   leaseEndDate?: Date;
   createdAt: Date;
-  phone?: string;
 }
 
 export interface IRoom {

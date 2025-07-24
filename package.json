@@ -31,6 +31,7 @@
     "mongoose": "^8.16.4",
     "nepali-date-converter": "^3.4.0",
     "next": "14.2.5",
+    "papaparse": "^5.5.3",
     "react": "^18",
     "react-day-picker": "^9.8.0",
     "react-dom": "^18",
@@ -38,6 +39,8 @@
     "react-hot-toast": "^2.5.2",
     "react-to-print": "^3.1.1",
     "tailwind-merge": "^3.3.1",
+    "usehooks-ts": "^3.1.1",
+    "vaul": "^1.1.2",
     "zod": "^4.0.5"
   },
   "devDependencies": {
@@ -46,6 +49,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.8",
+    "@types/papaparse": "^5.3.16",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8.57.0",

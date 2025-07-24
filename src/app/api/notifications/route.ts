@@ -26,8 +26,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const notifications = await Notification.find({ userId: tokenData.id }).sort({ createdAt: -1 }).limit(20);
+    // ✅ **1. Calculate the date from 7 days ago.**
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // ✅ **2. Add the date filter to the database query.**
+    const notifications = await Notification.find({ 
+      userId: tokenData.id,
+      createdAt: { $gte: sevenDaysAgo } // Only find notifications created on or after this date
+    }).sort({ createdAt: -1 }).limit(20);
+    
     return NextResponse.json({ success: true, data: notifications });
+
   } catch (error) {
     let errorMessage = 'An unknown server error occurred.';
     if (error instanceof Error) {
@@ -57,6 +67,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
+        // This logic remains correct for marking notifications as read.
         await Notification.updateMany({ userId: tokenData.id, isRead: false }, { $set: { isRead: true } });
         return NextResponse.json({ success: true, message: 'All notifications marked as read' });
     } catch (error) {

@@ -12,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { IUser, IRoom } from '@/types'; // ✅ FIX: Import IRoom
+import { IUser, IRoom } from '@/types';
+import Link from 'next/link'; // ✅ Import the Link component
 
 export type Tenant = IUser;
 
@@ -38,12 +39,11 @@ export const getTenantColumns = (
       header: 'Phone Number' 
     },
     { 
-      accessorKey: 'roomId.roomNumber', 
+      accessorKey: 'roomId', // Keep accessor key for data access
       header: 'Room', 
       cell: ({ row }) => {
-        // ✅ FIX: Use a safe, explicit cast to the expected populated type
-        const room = row.original.roomId as unknown as IRoom;
-        return room ? 
+        const room = row.original.roomId as IRoom | undefined; // Safe cast
+        return room?.roomNumber ? 
           <Badge variant="outline">{room.roomNumber}</Badge> : 
           <Badge variant="destructive">Unassigned</Badge>;
       }
@@ -67,13 +67,16 @@ export const getTenantColumns = (
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        {/* ✅ FIX: Wrap the menu item in a Link component */}
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/tenants/${tenant._id}`}>View Details</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onAssignRoom(tenant)}>
                           Assign Room
                         </DropdownMenuItem>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
-                          className="text-red-600 hover:!text-red-600 hover:!bg-red-50" 
+                          className="text-red-600 focus:text-red-600 focus:bg-red-50"
                           onClick={() => onDeleteTenant(tenant)}
                         >
                           Delete Tenant
