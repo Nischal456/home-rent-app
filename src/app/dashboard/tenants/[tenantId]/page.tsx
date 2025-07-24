@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
     Loader2, User, Building, Receipt, Zap, Calendar, Phone, Mail, AlertCircle, Download, ArrowLeft,
-    IndianRupee, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield
+    IndianRupee, Banknote, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield
 } from 'lucide-react';
 
 // --- Types ---
@@ -179,9 +179,9 @@ export default function TenantDetailPage() {
                         <>
                             <h4 className="font-semibold pt-4 text-primary">Utility Breakdown</h4>
                             <DetailRow icon={<Zap size={16} />} label="Elec. Units Consumed" value={selectedBill.electricity.unitsConsumed} />
-                            <DetailRow icon={<IndianRupee size={16} />} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
+                            <DetailRow icon={<Banknote size={16} />} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
                             <DetailRow icon={<Droplets size={16} />} label="Water Units Consumed" value={selectedBill.water.unitsConsumed} />
-                            <DetailRow icon={<IndianRupee size={16} />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
+                            <DetailRow icon={<Banknote size={16} />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
                             <h4 className="font-semibold pt-4 text-primary">Other Charges</h4>
                             <DetailRow icon={<Wrench size={16} />} label="Service Charge" value={`Rs ${selectedBill.serviceCharge.toLocaleString()}`} />
                             <DetailRow icon={<Shield size={16} />} label="Security Charge" value={`Rs ${selectedBill.securityCharge.toLocaleString()}`} />
@@ -229,7 +229,7 @@ export default function TenantDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard icon={<Scale className="text-red-500"/>} title="Total Due" value={financialSummary.totalDue} />
                 <StatCard icon={<TrendingUp className="text-green-500"/>} title="Total Paid" value={financialSummary.totalPaid} />
-                <StatCard icon={<IndianRupee className="text-blue-500"/>} title="Total Billed" value={financialSummary.totalBilled} />
+                <StatCard icon={<Banknote className="text-blue-500"/>} title="Total Billed" value={financialSummary.totalBilled} />
             </div>
         </motion.div>
 

@@ -10,9 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton'; // ✅ Added for faster loading UI
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // ✅ Added for error display
 
 // --- Icons from lucide-react ---
-import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building } from 'lucide-react'; // ✅ Added Zap, Building
+import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building, AlertCircle as AlertCircleIcon } from 'lucide-react';
 
 // --- Animation with Framer Motion ---
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
@@ -85,7 +87,7 @@ export function TenantDashboard() {
         fetch('/api/my-maintenance'), fetch('/api/my-pending-payment'),
       ]);
       for (const res of responses) {
-        if (!res.ok) throw new Error(`A request failed with status ${res.status}`);
+        if (!res.ok) throw new Error(`Failed to load some resources.`);
       }
       const [userData, rentData, utilityData, maintData, pendingPaymentData] = await Promise.all(responses.map(res => res.json()));
       if (userData.success) setUser(userData.user);
@@ -152,18 +154,40 @@ export function TenantDashboard() {
     );
   };
 
-  if (loading) { /* ... loading state ... */ }
-  if (error) { /* ... error state ... */ }
+  // ✅ FIX: Replace the blank screen with a professional skeleton loader for a faster feel.
+  if (loading) {
+    return (
+      <div className="space-y-8 p-4 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div><Skeleton className="h-9 w-48" /><Skeleton className="h-5 w-64 mt-2" /></div>
+          <Skeleton className="h-12 w-full sm:w-52 rounded-xl" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-40 rounded-xl" /><Skeleton className="h-40 rounded-xl" /><Skeleton className="h-40 rounded-xl" /></div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6"><Skeleton className="h-80 rounded-xl lg:col-span-3" /><Skeleton className="h-80 rounded-xl lg:col-span-2" /></div>
+      </div>
+    );
+  }
+  
+  // ✅ FIX: Show a clear error message to the user if data fetching fails.
+  if (error) {
+    return (
+      <div className="p-8">
+        <Alert variant="destructive">
+            <AlertCircleIcon className="h-4 w-4" />
+            <AlertTitle>Error Loading Dashboard</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <>
-      {/* --- Other Dialogs (Controlled) --- */}
       <Suspense fallback={<div />}>
         <PaymentDialog isOpen={isPaymentDialogOpen} onClose={() => { setPaymentDialogOpen(false); fetchAllData(); }} totalDue={totalDue} rentBillsDue={rentBillsDue} utilityBillsDue={utilityBillsDue} />
         <BillDetailsDialog isOpen={!!selectedBill} onClose={() => setSelectedBill(null)} bill={selectedBill} user={user} />
       </Suspense>
 
-      {/* --- Background --- */}
       <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden bg-gray-50">
         <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] bg-purple-300/20 rounded-full filter blur-3xl animate-blob"></div>
         <div className="absolute top-[0%] right-[10%] w-[600px] h-[600px] bg-blue-300/20 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -180,66 +204,47 @@ export function TenantDashboard() {
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">Welcome, {user?.fullName?.split(' ')[0]}!</h1>
             <p className="text-muted-foreground mt-1">Today is {new NepaliDate().format('ddd, MMMM D, YYYY')}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* ✅ FIX: Wrapped the Trigger and Content inside the parent Dialog component */}
-            <Dialog open={isMaintDialogOpen} onOpenChange={setMaintDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="group w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm sm:text-base font-semibold text-gray-800 shadow-md hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 active:scale-[0.97] transition-all duration-300"
-                >
-                  <Wrench
-                    className="h-5 w-5 text-gray-500 transition-all duration-300 group-hover:rotate-12 group-hover:scale-125 group-hover:text-orange-500"
-                  />
-                  <span className="tracking-wide">Request Maintenance</span>
-                </Button>
-
-
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>New Maintenance Request</DialogTitle>
-                  <DialogDescription>Describe the issue you're facing. Our team will get back to you shortly.</DialogDescription>
-                </DialogHeader>
-                <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>}>
-                  <RequestMaintenanceForm onSuccess={() => { setMaintDialogOpen(false); fetchAllData(); toast.success('Maintenance request submitted!', { icon: '🛠️' }); }} />
-                </Suspense>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <Dialog open={isMaintDialogOpen} onOpenChange={setMaintDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="group w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm sm:text-base font-semibold text-gray-800 shadow-md hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 active:scale-[0.97] transition-all duration-300"
+              >
+                <Wrench className="h-5 w-5 text-gray-500 transition-all duration-300 group-hover:rotate-12 group-hover:scale-125 group-hover:text-orange-500" />
+                <span className="tracking-wide">Request Maintenance</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>New Maintenance Request</DialogTitle><DialogDescription>Describe the issue you're facing. Our team will get back to you shortly.</DialogDescription></DialogHeader>
+              <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>}>
+                <RequestMaintenanceForm onSuccess={() => { setMaintDialogOpen(false); fetchAllData(); toast.success('Maintenance request submitted!', { icon: '🛠️' }); }} />
+              </Suspense>
+            </DialogContent>
+          </Dialog>
         </motion.header>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <motion.div whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300 } }} className="lg:col-span-1">
             <Card className="h-full border-2 border-primary/40 shadow-xl shadow-primary/10 bg-white/60 backdrop-blur-xl">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-md font-semibold text-gray-600">Total Amount Due</CardTitle>
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-md font-semibold text-gray-600">Total Amount Due</CardTitle><CreditCard className="h-5 w-5 text-muted-foreground" /></CardHeader>
               <CardContent>{renderDueCardContent()}</CardContent>
             </Card>
           </motion.div>
 
           <motion.div whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300 } }}>
             <Card className="h-full shadow-lg bg-white/60 backdrop-blur-xl border-gray-200/80">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-md font-semibold text-gray-600">My Room</CardTitle>
-                <Building className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-md font-semibold text-gray-600">My Room</CardTitle><Building className="h-5 w-5 text-muted-foreground" /></CardHeader>
               <CardContent className="pt-4 text-sm space-y-2">
                 <p><strong>Room Number:</strong> <span className="text-primary font-bold text-base">{roomInfo?.roomNumber || 'N/A'}</span></p>
                 <p><strong>Monthly Rent:</strong> <span className="font-semibold">Rs {roomInfo?.rentAmount.toLocaleString('en-IN') || 'N/A'}</span></p>
-                <p><strong>Lease End Date:</strong> {user?.leaseEndDate ? new NepaliDate(user.leaseEndDate).format('ddd, MMMM D, YYYY') : 'N/A'}</p>
+                <p><strong>Lease End Date:</strong> {user?.leaseEndDate ? new NepaliDate(new Date(user.leaseEndDate)).format('ddd, MMMM D, YYYY') : 'N/A'}</p>
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div whileHover={{ y: -5, transition: { type: 'spring', stiffness: 300 } }}>
             <Card className="h-full shadow-lg bg-white/60 backdrop-blur-xl border-gray-200/80">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-md font-semibold text-gray-600">Active Maintenance</CardTitle>
-                <Wrench className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-md font-semibold text-gray-600">Active Maintenance</CardTitle><Wrench className="h-5 w-5 text-muted-foreground" /></CardHeader>
               <CardContent className="pt-4">
                 <div className="text-4xl font-extrabold text-purple-600">{activeMaintenanceCount}</div>
                 <p className="text-xs text-muted-foreground mt-1">{activeMaintenanceCount === 1 ? 'Request is currently active' : 'Requests are currently active'}</p>
@@ -251,10 +256,7 @@ export function TenantDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3">
             <Card className="shadow-lg bg-white/60 backdrop-blur-xl border-gray-200/80">
-              <CardHeader>
-                <CardTitle>Recent Bill History</CardTitle>
-                <CardDescription>A snapshot of your latest bills. Click a row for details.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle>Recent Bill History</CardTitle><CardDescription>A snapshot of your latest bills. Click a row for details.</CardDescription></CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <Table>
                   <TableHeader><TableRow><TableHead className="w-12"></TableHead><TableHead>Period</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Status</TableHead></TableRow></TableHeader>
@@ -281,11 +283,7 @@ export function TenantDashboard() {
               </CardContent>
               {allBills.length > 5 && (
                 <CardFooter className="p-4">
-                  <Button asChild variant="secondary" className="w-full">
-                    <Link href="/dashboard/statement">
-                      View Full Statement <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <Button asChild variant="secondary" className="w-full"><Link href="/dashboard/statement">View Full Statement <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
                 </CardFooter>
               )}
             </Card>
@@ -293,49 +291,29 @@ export function TenantDashboard() {
 
           <div className="lg:col-span-2">
             <Card className="shadow-xl bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-lg sm:text-xl font-bold text-gray-800">Recent Maintenance</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">Status of your last 5 requests.</CardDescription>
-              </CardHeader>
-
+              <CardHeader className="p-0 mb-4"><CardTitle className="text-lg sm:text-xl font-bold text-gray-800">Recent Maintenance</CardTitle><CardDescription className="text-sm text-muted-foreground">Status of your last 5 requests.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 <AnimatePresence>
                   {maintenanceRequests.slice(0, 5).map((req) => (
                     <motion.div
-                      key={req._id.toString()}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      whileHover={{ scale: 1.01 }}
+                      key={req._id.toString()} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} whileHover={{ scale: 1.01 }}
                       className="flex flex-col rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition-all duration-200 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="text-sm font-medium text-gray-800">{req.issue}</div>
-                      <div className="mt-2 sm:mt-0 sm:text-right">
-                        <StatusBadge status={req.status} />
-                      </div>
+                      <div className="mt-2 sm:mt-0 sm:text-right"><StatusBadge status={req.status} /></div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
-
                 {maintenanceRequests.length === 0 && (
                   <div className="text-center text-muted-foreground py-6">
-                    <XCircle className="mx-auto mb-2 h-6 w-6" />
-                    <p className="text-sm">No maintenance requests found.</p>
+                    <XCircle className="mx-auto mb-2 h-6 w-6" /><p className="text-sm">No maintenance requests found.</p>
                   </div>
                 )}
               </CardContent>
-
               {maintenanceRequests.length > 5 && (
-                <CardFooter className="mt-4 p-0">
-                  <Button variant="secondary" className="w-full text-sm sm:text-base">
-                    View All Requests <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
+                <CardFooter className="mt-4 p-0"><Button variant="secondary" className="w-full text-sm sm:text-base">View All Requests <ArrowRight className="ml-2 h-4 w-4" /></Button></CardFooter>
               )}
             </Card>
-
           </div>
         </motion.div>
       </motion.div>
