@@ -26,6 +26,9 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
   
   const billTitle = isRentBill ? "RENTAL" : "UTILITY";
 
+  // ✅ Generate the unique, shareable URL for the bill
+  const billUrl = `${window.location.origin}/bill/${bill._id}`;
+
   let descriptionRows = '';
   if (isRentBill) {
     descriptionRows = `
@@ -44,7 +47,6 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
   let utilityDetailsSection = '';
   if (!isRentBill) {
     const utilityBill = bill as IUtilityBill;
-    // ✅ FIX: Restored the total amount and rate to the utility details section.
     utilityDetailsSection = `
         <section class="mt-8">
             <h3 class="text-lg font-semibold text-gray-700 mb-2 border-b pb-1">Utility Meter Readings</h3>
@@ -91,7 +93,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
         }
       </style>
     </head>
-    <body class="bg-gray-100 flex justify-center items-center p-4">
+    <body class="bg-gray-100 flex flex-col justify-center items-center p-4">
       <div class="bill-container bg-white p-10 text-sm text-gray-800">
         <header class="flex justify-between items-start border-b-2 border-black pb-4">
           <div class="flex items-center gap-4">
@@ -113,7 +115,8 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
             <p class="font-bold text-gray-500">BILL TO:</p>
             <p class="font-bold text-lg">${tenant?.fullName || 'N/A'}</p>
             <p>Room: ${room?.roomNumber || 'N/A'}</p>
-            ${tenant?.phone ? `<p>${tenant.phone}</p>` : ''}
+            
+            ${tenant?.phoneNumber ? `<p>${tenant.phoneNumber}</p>` : ''}
           </div>
         </section>
         <section class="mt-4 text-right">
@@ -163,9 +166,44 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
           </div>
         </footer>
       </div>
-       <div class="text-center my-4 no-print">
+       <div class="text-center my-4 no-print flex justify-center items-center gap-4">
         <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-700">Print Bill</button>
+        <button id="share-btn" class="bg-green-600 text-white px-6 py-2 rounded-md shadow-md hover:bg-green-700">Share Bill</button>
       </div>
+
+      <script>
+        const shareBtn = document.getElementById('share-btn');
+        const shareData = {
+          title: '${billType}',
+          text: 'Here is the bill for ${tenant?.fullName || 'your account'}.',
+          url: '${billUrl}'
+        };
+
+        shareBtn.addEventListener('click', async () => {
+          if (navigator.share) {
+            try {
+              await navigator.share(shareData);
+            } catch (err) {
+              console.error("Share failed:", err);
+            }
+          } else {
+            // Fallback for desktop: copy link to clipboard
+            try {
+              await navigator.clipboard.writeText(shareData.url);
+              shareBtn.textContent = 'Link Copied!';
+              setTimeout(() => {
+                shareBtn.textContent = 'Share Bill';
+              }, 2000);
+            } catch (err) {
+              console.error('Failed to copy text: ', err);
+              shareBtn.textContent = 'Copy Failed';
+               setTimeout(() => {
+                shareBtn.textContent = 'Share Bill';
+              }, 2000);
+            }
+          }
+        });
+      </script>
     </body>
     </html>
   `;
