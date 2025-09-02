@@ -3,6 +3,10 @@ import dbConnect from '@/lib/dbConnect';
 import Expense from '@/models/Expense';
 // import { getToken } from 'next-auth/jwt'; // Uncomment to secure this route
 
+// ✅ THE FIX: This line tells Vercel to always run this function on the server
+// and never cache its response. This guarantees you always get fresh data.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   // const token = await getToken({ req: request });
   // if (!token || token.role !== 'ADMIN') {

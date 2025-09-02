@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Expense from '@/models/Expense';
-// import { checkAdminAuth } from '@/lib/auth';
+
+// ✅ ADD THE SAME FIX HERE
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   // await checkAdminAuth(request);
