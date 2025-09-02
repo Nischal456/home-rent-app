@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useMediaQuery } from 'usehooks-ts';
-import NepaliDate from 'nepali-date-converter'; // ✅ For Nepali Dates
-import { toast } from 'react-hot-toast'; // ✅ For Share feedback
+import NepaliDate from 'nepali-date-converter';
+import { toast } from 'react-hot-toast';
 
 // --- UI Components ---
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 // --- Utilities & Types ---
 import { cn } from '@/lib/utils';
 import { IRentBill, IUtilityBill, IUser } from '@/types';
-import { IndianRupee, Zap, Droplets, Wrench, Shield, Share2, Link2 } from 'lucide-react'; // ✅ Added Share icons
+import { IndianRupee, Zap, Droplets, Wrench, Shield, Share2, Link2, FileText } from 'lucide-react'; // ✅ Added FileText icon
 
 // Define a union type for the bill
 type StatementEntry = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
@@ -27,7 +27,7 @@ const formatNepaliDate = (date: Date | string | undefined): string => {
 };
 
 const DetailRow = ({ label, value, className }: { label: string, value: React.ReactNode, className?: string }) => (
-  <div className={cn("flex justify-between items-center py-2", className)}>
+  <div className={cn("flex justify-between items-start py-2", className)}>
     <p className="text-sm text-muted-foreground">{label}</p>
     <div className="font-semibold text-sm text-right">{value}</div>
   </div>
@@ -36,7 +36,6 @@ const DetailRow = ({ label, value, className }: { label: string, value: React.Re
 const UtilityDetails = ({ bill }: { bill: IUtilityBill }) => (
   <div className="space-y-6">
     <div>
-      {/* ✅ Replaced emoji with icon */}
       <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><Zap size={14} /> ELECTRICITY</h4>
       <div className="border-l-2 pl-4 space-y-1">
         <DetailRow label="Previous Reading" value={bill.electricity.previousReading} />
@@ -73,7 +72,6 @@ const BillContent = ({ bill, tenant }: { bill: StatementEntry, tenant: IUser }) 
       <div className="grid gap-6">
         <div className="grid gap-2 p-4 rounded-lg bg-muted/50">
            <DetailRow label="Tenant" value={tenant.fullName} />
-           {/* ✅ Formatted date in Nepali */}
            <DetailRow label="Bill Date (B.S.)" value={formatNepaliDate(bill.billDateAD)} />
            <DetailRow label="Status" value={<Badge variant={bill.status === 'PAID' ? 'default' : 'destructive'}>{bill.status}</Badge>} />
         </div>
@@ -86,6 +84,16 @@ const BillContent = ({ bill, tenant }: { bill: StatementEntry, tenant: IUser }) 
             <div className="border-l-2 pl-4"><DetailRow label="For Period" value={bill.rentForPeriod} /></div>
           </div>
         )}
+
+        {/* ✅ ADDED: Remarks Section */}
+        <div className="pt-2">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
+                <FileText size={14} /> REMARKS
+            </h4>
+            <div className="text-sm text-foreground bg-muted/50 p-3 rounded-md border italic">
+                {bill.remarks && bill.remarks.trim() !== '' ? bill.remarks : 'No remarks provided for this bill.'}
+            </div>
+        </div>
 
         <div className="flex items-center justify-between border-t-2 pt-4 mt-2">
             <p className="text-lg font-bold">Grand Total</p>
@@ -107,7 +115,6 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
   const description = `Detailed breakdown for the bill issued on ${formatNepaliDate(bill.billDateAD)}.`;
   const billUrl = typeof window !== 'undefined' ? `${window.location.origin}/bill/${bill._id}` : '';
 
-  // ✅ Share functionality
   const handleShare = async () => {
     const shareText = `Bill for ${tenant.fullName}. View details here: ${billUrl}`;
     if (navigator.share) {
@@ -131,11 +138,8 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <BillContent bill={bill} tenant={tenant} />
-          {/* ✅ Added Share Button to Footer */}
           <DialogFooter className="pt-4 border-t">
-            <Button onClick={handleShare} className="w-full">
-              <Share2 className="mr-2 h-4 w-4" /> Share Bill
-            </Button>
+            <Button onClick={handleShare} className="w-full"><Share2 className="mr-2 h-4 w-4" /> Share Bill</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -150,12 +154,9 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
           <DrawerDescription>{description}</DrawerDescription>
         </DrawerHeader>
         <div className="px-4"><BillContent bill={bill} tenant={tenant} /></div>
-        <DrawerFooter className="pt-4">
-          {/* ✅ Added Share Button to Footer */}
-          <Button onClick={handleShare}>
-            <Share2 className="mr-2 h-4 w-4" /> Share Bill
-          </Button>
-          <DrawerClose asChild><Button variant="outline">Close</Button></DrawerClose>
+        <DrawerFooter className="pt-4 flex-row gap-2">
+          <Button onClick={handleShare} className="flex-1"><Share2 className="mr-2 h-4 w-4" /> Share</Button>
+          <DrawerClose asChild><Button variant="outline" className="flex-1">Close</Button></DrawerClose>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

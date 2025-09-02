@@ -70,3 +70,13 @@ export interface IPayment {
     status: 'PENDING' | 'VERIFIED';
     createdAt: Date;
 }
+
+export interface IExpense {
+  _id: Types.ObjectId;
+  type: 'INCOME' | 'EXPENSE';
+  category: 'MAINTENANCE' | 'SALARY' | 'UTILITIES' | 'RENT_INCOME' | 'OTHER';
+  amount: number;
+  description: string;
+  date: Date;
+  createdAt: Date;
+}

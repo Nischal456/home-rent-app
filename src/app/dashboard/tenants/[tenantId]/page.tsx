@@ -18,7 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
     Loader2, User, Building, Receipt, Zap, Calendar, Phone, Mail, AlertCircle, Download, ArrowLeft,
-    IndianRupee, Banknote, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield
+    IndianRupee, Banknote, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield, FileText
 } from 'lucide-react';
 
 // --- Types ---
@@ -30,7 +30,7 @@ type StatementEntry = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: '
 
 const formatNepaliDate = (date: Date | string | undefined): string => {
     if (!date) return 'N/A';
-    // As of Thursday, July 24, 2025, this will correctly format the date in Bikram Sambat.
+    // As of Tuesday, September 2, 2025, this will correctly format the date in Bikram Sambat.
     return new NepaliDate(new Date(date)).format('YYYY MMMM DD');
 };
 
@@ -61,7 +61,7 @@ const StatCard = ({ icon, title, value, isCurrency = true }: { icon: React.React
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
     <div className="flex justify-between items-center py-2.5 border-b border-border/50">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">{icon}<span>{label}</span></div>
-      <div className="font-semibold text-sm text-foreground">{value}</div>
+      <div className="font-semibold text-sm text-foreground text-right">{value}</div>
     </div>
 );
 
@@ -131,6 +131,7 @@ export default function TenantDetailPage() {
             'Elec Units': isUtility ? bill.electricity.unitsConsumed : 'N/A', 'Elec Amount': isUtility ? bill.electricity.amount : 'N/A',
             'Water Units': isUtility ? bill.water.unitsConsumed : 'N/A', 'Water Amount': isUtility ? bill.water.amount : 'N/A',
             'Service Charge': isUtility ? bill.serviceCharge : 'N/A', 'Security Charge': isUtility ? bill.securityCharge : 'N/A',
+            'Remarks': bill.remarks || ''
         };
     });
     const csv = Papa.unparse(csvData);
@@ -155,6 +156,8 @@ export default function TenantDetailPage() {
       </div>
     );
   }
+  if (error) { return <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> }
+
   return (
     <>
       <Sheet open={!!selectedBill} onOpenChange={(isOpen) => !isOpen && setSelectedBill(null)}>
@@ -188,6 +191,18 @@ export default function TenantDetailPage() {
                         </>
                     )}
                     
+                    {/* ✅ UPDATED: Remarks Section */}
+                    <div className="pt-4">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
+                            <FileText size={14} /> REMARKS
+                        </h4>
+                        <div className="text-sm text-foreground bg-muted/50 p-3 rounded-md border italic">
+                            {selectedBill.remarks && selectedBill.remarks.trim() !== '' 
+                                ? selectedBill.remarks 
+                                : 'No remarks provided for this bill.'}
+                        </div>
+                    </div>
+
                     <div className="flex justify-between items-center py-3 border-t-2 mt-4">
                         <div className="font-bold text-base">Total Amount</div>
                         <div className="font-bold text-lg text-primary">Rs {(selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount).toLocaleString()}</div>
@@ -213,13 +228,12 @@ export default function TenantDetailPage() {
                 </div>
             </div>
         </div>
-
-        {/* ✅ THIS CARD WAS THE SOURCE OF THE PREVIOUS TYPO. IT IS NOW CORRECTED. */}
+        
         <Card> 
           <CardHeader><CardTitle>Personal & Lease Information</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <InfoItem icon={<Building/>} label="Room" value={roomInfo?.roomNumber} />
-            <InfoItem icon={<Receipt/>} label="Monthly Rent" value={`Rs ${roomInfo?.rentAmount.toLocaleString()}`} />
+            <InfoItem icon={<Receipt/>} label="Monthly Rent" value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}`: 'N/A'} />
             <InfoItem icon={<Phone/>} label="Phone" value={tenant?.phoneNumber} />
             <InfoItem icon={<Calendar/>} label="Lease Ends" value={formatNepaliDate(tenant?.leaseEndDate)} />
           </CardContent>
