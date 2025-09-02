@@ -8,9 +8,10 @@ import { ArrowUpDown, MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash2 } f
 import { IExpense } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 
-// The function to generate columns, so we can pass action handlers to it
+// This function generates the columns for your data table.
+// It takes two functions as arguments: one to handle editing, and one to handle deleting.
 export const getColumns = (
-    openForm: (expense: IExpense) => void,
+    onEdit: (expense: IExpense) => void,
     onDelete: (expense: IExpense) => void
 ): ColumnDef<IExpense>[] => [
   {
@@ -60,8 +61,9 @@ export const getColumns = (
                 <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openForm(expense)}><Edit className="mr-2 h-4 w-4" /> Edit Record</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(expense)} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete Record</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(expense)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                {/* ✅ FIX: This now correctly calls the onDelete function passed from the parent page. */}
+                <DropdownMenuItem onClick={() => onDelete(expense)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

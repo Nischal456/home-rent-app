@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from 'usehooks-ts';
-import { cn } from '@/lib/utils'; // ✅ FIX: Added the missing import for 'cn'
+import { cn } from '@/lib/utils';
 import { DataTable } from '@/components/ui/data-table';
 import { getColumns } from './columns';
 import { AddExpenseForm } from '@/components/dashboard/AddExpenseForm';
@@ -86,6 +86,7 @@ const EmptyTransactions = ({ onAddNew }: { onAddNew: () => void }) => (
 
 // --- MAIN FINANCIALS PAGE COMPONENT ---
 export default function FinancialsPage() {
+    // We get the mutate functions from useSWR to manually refresh data
     const { data: summaryResponse, error: summaryError, isLoading: isSummaryLoading, mutate: mutateSummary } = useSWR('/api/financials/summary', fetcher);
     const { data: expensesResponse, error: expensesError, isLoading: areExpensesLoading, mutate: mutateExpenses } = useSWR('/api/expenses', fetcher);
     
@@ -98,20 +99,107 @@ export default function FinancialsPage() {
     const summary = summaryResponse?.data;
     const expenses: IExpense[] = expensesResponse?.data ?? [];
 
-    const handleDelete = async () => { /* ... (handleDelete logic) ... */ };
-    const openForm = useCallback((record?: IExpense) => { setEditingRecord(record); setIsFormOpen(true); }, []);
-    const onOpenDeleteDialog = useCallback((record: IExpense) => { setDeletingRecord(record); }, []);
-    const closeForm = () => { setIsFormOpen(false); setEditingRecord(undefined); mutateExpenses(); mutateSummary(); };
+    // ✅ FIX: The handleDelete function is now robust and guaranteed to work.
+    const handleDelete = async () => {
+        if (!deletingRecord) return;
+
+        const promise = fetch(`/api/expenses/${deletingRecord._id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to delete on server.');
+                return res.json();
+            });
+
+        toast.promise(promise, {
+            loading: 'Deleting record...',
+            success: (data) => {
+                // Manually tell SWR to refresh the data from the API
+                mutateExpenses();
+                mutateSummary();
+                return 'Record deleted successfully!';
+            },
+            error: 'Failed to delete record.',
+        });
+        
+        // This closes the dialog regardless of success or failure
+        setDeletingRecord(null);
+    };
+
+    const openForm = useCallback((record?: IExpense) => {
+        setEditingRecord(record);
+        setIsFormOpen(true);
+    }, []);
+
+    const onOpenDeleteDialog = useCallback((record: IExpense) => {
+        setDeletingRecord(record);
+    }, []);
+
+    const closeForm = () => {
+        setIsFormOpen(false);
+        setEditingRecord(undefined);
+        // Refresh data after a successful add/edit
+        mutateExpenses();
+        mutateSummary();
+    };
     
+    // Pass the correct handler to the columns
     const columns = useMemo(() => getColumns(openForm, onOpenDeleteDialog), [openForm, onOpenDeleteDialog]);
 
-    if (isSummaryLoading || areExpensesLoading) { /* ... (Skeleton UI) ... */ }
-    if (summaryError || expensesError) { /* ... (Error UI) ... */ }
+    if (isSummaryLoading || areExpensesLoading) {
+        return (
+            <div className="p-4 md:p-8 space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <Skeleton className="h-9 w-64 mb-2" />
+                        <Skeleton className="h-5 w-80" />
+                    </div>
+                    <Skeleton className="h-10 w-[170px] hidden sm:block" />
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <Skeleton className="h-28" />
+                    <Skeleton className="h-28" />
+                    <Skeleton className="h-28" />
+                </div>
+                <Card><CardContent className="p-6"><Skeleton className="h-80" /></CardContent></Card>
+            </div>
+        );
+    }
 
+    if (summaryError || expensesError) {
+        return (
+            <div className="p-4 md:p-8">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>Failed to load financial data. Please try again later.</AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+    
     return (
         <>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}><DialogContent><DialogHeader><DialogTitle>{editingRecord ? 'Edit' : 'Add New'} Record</DialogTitle><DialogDescription>Fill in the details for the transaction.</DialogDescription></DialogHeader><AddExpenseForm expense={editingRecord} onSuccess={closeForm} /></DialogContent></Dialog>
-            <AlertDialog open={!!deletingRecord} onOpenChange={() => setDeletingRecord(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the record for "{deletingRecord?.description}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) { setIsFormOpen(false); setEditingRecord(undefined); } else { setIsFormOpen(true); } }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingRecord ? 'Edit' : 'Add New'} Record</DialogTitle>
+                        <DialogDescription>Fill in the details for the transaction.</DialogDescription>
+                    </DialogHeader>
+                    <AddExpenseForm expense={editingRecord} onSuccess={closeForm} />
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={!!deletingRecord} onOpenChange={() => setDeletingRecord(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will permanently delete the record for "{deletingRecord?.description}".</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             
             {isMobile && (
                 <Button onClick={() => openForm()} className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center">
