@@ -114,7 +114,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
           <div class="text-right">
             <p class="font-bold text-gray-500">BILL TO:</p>
             <p class="font-bold text-lg">${tenant?.fullName || 'N/A'}</p>
-            <p>Room: ${room?.roomNumber || 'N/A'}</p>
+            <p>Flat: ${room?.roomNumber || 'N/A'}</p>
             
             ${tenant?.phoneNumber ? `<p>${tenant.phoneNumber}</p>` : ''}
           </div>

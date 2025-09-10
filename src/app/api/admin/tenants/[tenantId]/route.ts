@@ -1,28 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import dbConnect from '@/lib/dbConnect'; // This should point to your new, cached connection file
 import User from '@/models/User';
 import RentBill from '@/models/RentBill';
 import UtilityBill from '@/models/UtilityBill';
 import { IUser, IRentBill, IUtilityBill } from '@/types';
 
-// This is the App Router's way of handling dynamic GET requests
+// ✅ THE FIX: This line is crucial for Vercel. It forces this route to be dynamic,
+// preventing Vercel from caching the data and ensuring you always get fresh results.
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { tenantId: string } }
 ) {
   // --- IMPORTANT: Add your admin authentication logic here ---
-  // For example, verify a token from request.headers or cookies
+  // For example, you would verify a JWT token from the request headers or cookies.
   
-  const { tenantId } = params; // Get the tenantId from the URL parameters
+  const { tenantId } = params;
 
   if (!tenantId) {
     return NextResponse.json({ success: false, message: 'Tenant ID is required.' }, { status: 400 });
   }
 
   try {
+    // This now calls your new, robust database connection utility
     await dbConnect();
 
-    // The database logic remains the same
+    // The concurrent database fetching is efficient and correct
     const [tenantDetails, rentBills, utilityBills] = await Promise.all([
       User.findById(tenantId).populate('roomId').lean<IUser>(),
       RentBill.find({ tenantId }).sort({ billDateAD: -1 }).lean<IRentBill[]>(),
@@ -33,7 +37,7 @@ export async function GET(
       return NextResponse.json({ success: false, message: 'Tenant not found.' }, { status: 404 });
     }
 
-    // Return the data using NextResponse
+    // The response structure is correct
     return NextResponse.json({
       success: true,
       data: {

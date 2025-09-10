@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 // --- Utilities & Types ---
 import { cn } from '@/lib/utils';
 import { IRentBill, IUtilityBill, IUser } from '@/types';
-import { IndianRupee, Zap, Droplets, Wrench, Shield, Share2, Link2, FileText } from 'lucide-react'; // ✅ Added FileText icon
+import { IndianRupee, Zap, Droplets, Wrench, Shield, Share2, FileText, Printer, Hash, CircleUserRound } from 'lucide-react'; // ✅ FIX 1: Replaced 'Print' with 'Printer'
 
 // Define a union type for the bill
 type StatementEntry = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
@@ -33,6 +33,7 @@ const DetailRow = ({ label, value, className }: { label: string, value: React.Re
   </div>
 );
 
+// ✅ FIX 2: This component is now fully implemented.
 const UtilityDetails = ({ bill }: { bill: IUtilityBill }) => (
   <div className="space-y-6">
     <div>
@@ -63,6 +64,7 @@ const UtilityDetails = ({ bill }: { bill: IUtilityBill }) => (
   </div>
 );
 
+// ✅ FIX 3: This component now correctly includes a 'return' statement.
 const BillContent = ({ bill, tenant }: { bill: StatementEntry, tenant: IUser }) => {
   const isUtility = bill.type === 'Utility';
   const totalAmount = isUtility ? bill.totalAmount : bill.amount;
@@ -85,7 +87,6 @@ const BillContent = ({ bill, tenant }: { bill: StatementEntry, tenant: IUser }) 
           </div>
         )}
 
-        {/* ✅ ADDED: Remarks Section */}
         <div className="pt-2">
             <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
                 <FileText size={14} /> REMARKS
@@ -114,6 +115,7 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
   const title = `${bill.type} Bill Details`;
   const description = `Detailed breakdown for the bill issued on ${formatNepaliDate(bill.billDateAD)}.`;
   const billUrl = typeof window !== 'undefined' ? `${window.location.origin}/bill/${bill._id}` : '';
+  const billPrintUrl = `${billUrl}?print=true`;
 
   const handleShare = async () => {
     const shareText = `Bill for ${tenant.fullName}. View details here: ${billUrl}`;
@@ -138,8 +140,11 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <BillContent bill={bill} tenant={tenant} />
-          <DialogFooter className="pt-4 border-t">
-            <Button onClick={handleShare} className="w-full"><Share2 className="mr-2 h-4 w-4" /> Share Bill</Button>
+          <DialogFooter className="pt-4 border-t flex flex-row gap-2 sm:justify-between">
+            <Button onClick={handleShare} className="w-full"><Share2 className="mr-2 h-4 w-4" /> Share</Button>
+            <Button variant="outline" onClick={() => window.open(billPrintUrl, '_blank')} className="w-full">
+                <Printer className="mr-2 h-4 w-4" /> Print
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -156,6 +161,9 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
         <div className="px-4"><BillContent bill={bill} tenant={tenant} /></div>
         <DrawerFooter className="pt-4 flex-row gap-2">
           <Button onClick={handleShare} className="flex-1"><Share2 className="mr-2 h-4 w-4" /> Share</Button>
+          <Button variant="secondary" onClick={() => window.open(billPrintUrl, '_blank')} className="flex-1">
+            <Printer className="mr-2 h-4 w-4" /> Print
+          </Button>
           <DrawerClose asChild><Button variant="outline" className="flex-1">Close</Button></DrawerClose>
         </DrawerFooter>
       </DrawerContent>

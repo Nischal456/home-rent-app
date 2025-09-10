@@ -1,47 +1,48 @@
-
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import RentBill from '@/models/RentBill';
 import UtilityBill from '@/models/UtilityBill';
 import User from '@/models/User';
+import Payment from '@/models/Payment'; // It's better to get the last payment from a dedicated Payment model if available
+
+// ✅ THE FIX: This line is crucial for Vercel. It forces this route to be dynamic,
+// preventing Vercel from caching the data and ensuring you always get fresh results.
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   await dbConnect();
 
   try {
-    // Calculate total rent due (sum of amounts for all bills with 'DUE' status)
-    const rentDueAggregation = await RentBill.aggregate([
-      { $match: { status: 'DUE' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
+    // We can run all these database queries concurrently for better performance
+    const [
+      rentDueAggregation,
+      activeTenants,
+      unpaidUtilityBills,
+      lastPayment,
+    ] = await Promise.all([
+      RentBill.aggregate([
+        { $match: { status: { $in: ['DUE', 'OVERDUE'] } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      User.countDocuments({ role: 'TENANT', roomId: { $ne: null } }),
+      UtilityBill.countDocuments({ status: { $in: ['DUE', 'OVERDUE'] } }),
+      // A more reliable way to find the last payment
+      Payment.findOne({ status: 'VERIFIED' }).sort({ createdAt: -1 }).select('amount createdAt').lean()
     ]);
-    const totalRentDue = rentDueAggregation.length > 0 ? rentDueAggregation[0].total : 0;
 
-    // Count active tenants
-    const activeTenants = await User.countDocuments({ role: 'TENANT', roomId: { $ne: null } });
+    const summaryData = {
+      totalRentDue: rentDueAggregation[0]?.total || 0,
+      activeTenants: activeTenants || 0,
+      unpaidUtilityBills: unpaidUtilityBills || 0,
+      // Provide a clear fallback if no payments have been made yet
+      lastPayment: lastPayment 
+        ? { amount: lastPayment.amount, date: lastPayment.createdAt.toISOString() } 
+        : { amount: 0, date: new Date().toISOString() },
+    };
     
-    // Count unpaid utility bills
-    const unpaidUtilityBills = await UtilityBill.countDocuments({ status: 'DUE' });
-
-    // Find the most recent payment (can be from either Rent or Utility)
-    const lastRentPayment = await RentBill.findOne({ status: 'PAID' }).sort({ paidOnBS: -1 });
-    const lastUtilityPayment = await UtilityBill.findOne({ status: 'PAID' }).sort({ paidOnBS: -1 });
-
-    let lastPayment = { amount: 0, date: 'N/A' };
-    // This logic can be improved, but for now, it finds the latest of the two
-    if (lastRentPayment && (!lastUtilityPayment || lastRentPayment.paidOnBS! > lastUtilityPayment.paidOnBS!)) {
-        lastPayment = { amount: lastRentPayment.amount, date: lastRentPayment.paidOnBS! };
-    } else if (lastUtilityPayment) {
-        lastPayment = { amount: lastUtilityPayment.totalAmount, date: lastUtilityPayment.paidOnBS! };
-    }
-
     return NextResponse.json({
       success: true,
-      data: {
-        totalRentDue,
-        activeTenants,
-        unpaidUtilityBills,
-        lastPayment,
-      },
+      data: summaryData,
     });
 
   } catch (error) {
