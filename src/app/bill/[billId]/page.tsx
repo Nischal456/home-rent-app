@@ -167,9 +167,6 @@ export default function PublicBillPage() {
             </div>
           </CardFooter>
         </Card>
-        <div className="text-center my-4 print-hidden">
-          <Button onClick={() => window.print()}>Print Bill</Button>
-        </div>
       </div>
     </>
   );
