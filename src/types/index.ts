@@ -80,3 +80,13 @@ export interface IExpense {
   date: Date;
   createdAt: Date;
 }
+
+export interface ISubmission {
+  _id: Types.ObjectId;
+  name: string;
+  contact: string; // Could be email or phone
+  subject: string;
+  message: string;
+  status: 'UNREAD' | 'READ';
+  createdAt: Date;
+}

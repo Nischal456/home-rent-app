@@ -5,16 +5,19 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { motion } from 'framer-motion';
 import NepaliDate from 'nepali-date-converter';
+import Pusher from 'pusher-js';
+import { toast } from 'react-hot-toast';
 
 // --- UI Components & Icons ---
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge'; // ✅ Added Badge component
 import { 
     DollarSign, Users, FileText, Banknote, LayoutDashboard, 
     AlertCircle, Wrench, Receipt, Loader2, ArrowRight, 
-    Scale, TrendingUp, TrendingDown 
+    Scale, TrendingUp, TrendingDown, Inbox
 } from "lucide-react";
 
 // --- Types ---
@@ -46,7 +49,6 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    // Smooth animation from current value to target value
     const targetValue = value || 0;
     let animationFrameId: number;
 
@@ -62,7 +64,7 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
 
     animationFrameId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [value, displayValue]); // Added displayValue to dependency array for correctness
+  }, [value, displayValue]);
 
   const formattedValue = isCurrency 
     ? `Rs ${Math.round(displayValue).toLocaleString('en-IN')}`
@@ -134,9 +136,39 @@ export function AdminDashboard() {
   const { data: summaryResponse, error: summaryError, isLoading: isSummaryLoading } = useSWR('/api/dashboard/summary', fetcher);
   const { data: financialsResponse, error: financialsError, isLoading: areFinancialsLoading } = useSWR('/api/financials/summary', fetcher);
   
+  // ✅ SWR hook now fetches submissions and the unread count
+  const { data: submissionsResponse, mutate: mutateSubmissions } = useSWR('/api/submissions', fetcher);
+  const unreadCount = submissionsResponse?.data?.unreadCount ?? 0;
+  
   const summaryData: SummaryData | null = summaryResponse?.data ?? null;
   const financialsData: FinancialsData | null = financialsResponse?.data ?? null;
   const todayBS = new NepaliDate().format('ddd, MMMM DD, YYYY', 'np');
+
+  // ✅ useEffect hook to listen for real-time notifications
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) {
+        console.error("Pusher key is not defined.");
+        return;
+    }
+
+    const pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    });
+    
+    const channel = pusherClient.subscribe('admin-notifications');
+    
+    channel.bind('new-submission', (data: { subject: string, name: string }) => {
+      toast.success(`New Message: "${data.subject}" from ${data.name}`);
+      // When a new message arrives, tell SWR to re-fetch the data to update the unread count
+      mutateSubmissions();
+    });
+
+    return () => {
+        pusherClient.unsubscribe('admin-notifications');
+        pusherClient.disconnect();
+    };
+  }, [mutateSubmissions]);
+
 
   const isLoading = isSummaryLoading || areFinancialsLoading;
   const error = summaryError || financialsError;
@@ -198,6 +230,19 @@ export function AdminDashboard() {
               <Button asChild variant="outline"><Link href="/dashboard/financials" className="flex items-center justify-start gap-2"><Scale className="h-4 w-4"/>View Financials</Link></Button>
               <Button asChild variant="outline"><Link href="/dashboard/rent-bills" className="flex items-center justify-start gap-2"><Receipt className="h-4 w-4"/>Add Rent Bill</Link></Button>
               <Button asChild variant="outline"><Link href="/dashboard/utility-bills" className="flex items-center justify-start gap-2"><FileText className="h-4 w-4"/>Add Utility Bill</Link></Button>
+              
+              {/* ✅ UPDATED SECTION */}
+              <Button asChild variant="outline">
+                <Link href="/dashboard/inbox" className="flex items-center justify-start gap-2 relative">
+                    <Inbox className="h-4 w-4"/>
+                    View Inbox
+                    {/* The badge will now show the real-time unread count */}
+                    {unreadCount > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                    )}
+                </Link>
+              </Button>
+
               <Button asChild variant="outline"><Link href="/dashboard/maintenance" className="flex items-center justify-start gap-2"><Wrench className="h-4 w-4"/>Maintenance Requests</Link></Button>
             </CardContent>
           </Card>
