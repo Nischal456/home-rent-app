@@ -6,6 +6,7 @@ export interface IUser {
   email: string;
   password?: string;
   role: 'ADMIN' | 'TENANT';
+  status: 'ACTIVE' | 'INACTIVE'; // ✅ ADD THIS LINE
   phoneNumber?: string;
   roomId?: Types.ObjectId | IRoom;
   leaseStartDate?: Date;
