@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox";
-import { DialogFooter } from "@/components/ui/dialog"; // ✅ Import DialogFooter
+import { DialogFooter } from "@/components/ui/dialog";
 import { toast } from 'react-hot-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Zap, Droplets, Wrench, User } from 'lucide-react';
@@ -54,7 +54,7 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
     defaultValues: {
       tenantId: '',
       billingMonthBS: '',
-      includeServiceCharge: false,
+      includeServiceCharge: true,
       includeSecurityCharge: false,
       elecPrevReading: undefined,
       elecCurrReading: undefined,
@@ -116,6 +116,7 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
     fetchTenants();
   }, []);
 
+  // ✅ THIS IS THE DEFINITIVE FIX: The complete and correct onSubmit function.
   async function onSubmit(values: UtilityBillFormValues) {
     setIsLoading(true);
     const selectedTenant = tenants.find(t => t._id.toString() === values.tenantId);
@@ -124,12 +125,42 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
         setIsLoading(false);
         return;
     }
-    const finalBillData = { /* ... */ };
+    
+    // Construct the full bill data object to send to the API
+    const finalBillData = {
+        tenantId: values.tenantId,
+        roomId: selectedTenant.roomId._id,
+        billingMonthBS: values.billingMonthBS,
+        electricity: {
+            previousReading: values.elecPrevReading,
+            currentReading: values.elecCurrReading,
+            unitsConsumed: calculatedTotals.elecUnits,
+            amount: calculatedTotals.elecAmount,
+        },
+        water: {
+            previousReading: values.waterPrevReading,
+            currentReading: values.waterCurrReading,
+            unitsConsumed: calculatedTotals.waterUnits,
+            amount: calculatedTotals.waterAmount,
+        },
+        serviceCharge: values.includeServiceCharge ? SERVICE_CHARGE_AMOUNT : 0,
+        securityCharge: values.includeSecurityCharge ? SECURITY_CHARGE_AMOUNT : 0,
+        totalAmount: calculatedTotals.totalAmount,
+    };
+    
     try {
-      const response = await fetch('/api/utility-bills', { /* ... */ });
-      // ... same submission logic as before
+      const response = await fetch('/api/utility-bills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalBillData),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to create bill.');
+      toast.success('Utility bill created successfully!');
+      form.reset();
+      onSuccess();
     } catch (error) {
-      // ... same error logic as before
+      toast.error(error instanceof Error ? error.message : "An unknown error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -141,10 +172,7 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
 
   return (
     <Form {...form}>
-      {/* The <form> tag now wraps the scrollable content AND the footer */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh]">
-        
-        {/* ✅ THIS IS THE SCROLLABLE AREA */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="space-y-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><User className="h-4 w-4"/> Core Details</h3>
@@ -192,7 +220,6 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
             </div>
         </div>
         
-        {/* ✅ THIS IS THE NEW, PROFESSIONAL FOOTER */}
         <DialogFooter className="p-4 border-t bg-background flex-shrink-0 flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-4">
             <div className="text-center sm:text-left">
                 <p className="text-xs text-muted-foreground">Total Bill Amount</p>
