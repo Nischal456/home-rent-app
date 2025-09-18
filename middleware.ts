@@ -1,37 +1,40 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+// This function will run for every request that matches the `config` below.
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get('token')?.value;
+  const { pathname } = req.nextUrl;
 
-  // Define paths that are public (don't require authentication)
-  const isPublicPath = path === '/login' || path === '/register';
-
-  // Get the token from the user's cookies
-  const token = request.cookies.get('token')?.value || '';
-
-  // If the user is trying to access a public path and they ARE logged in,
-  // redirect them to the dashboard.
-  if (isPublicPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
-  }
-
-  // If the user is trying to access a protected path and they are NOT logged in,
+  // If the user is NOT logged in (no token) and is trying to access a protected route,
   // redirect them to the login page.
-  if (!isPublicPath && !token) {
-    return NextResponse.redirect(new URL('/login', request.nextUrl));
+  if (!token && pathname.startsWith('/dashboard')) {
+    // Store the page they were trying to access so we can redirect them back after login.
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // If none of the above, allow the request to proceed
+  // If the user IS logged in and tries to access the login or register page,
+  // redirect them to their dashboard.
+  if (token && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // If none of the above conditions are met, allow the request to proceed.
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// ✅ This `matcher` configuration is the most important part.
+// It specifies which pages this middleware will run on.
+// We are PROTECTING the '/dashboard' routes and handling '/login' & '/register' redirects.
+// All other routes (like your public '/' homepage, '/bill/:id', and '/report' pages) will be ignored
+// by the middleware and will remain public for anyone to see.
 export const config = {
   matcher: [
-    '/',
-    '/dashboard/:path*', // Protect all sub-routes of dashboard
+    '/dashboard/:path*',
     '/login',
-    '/register',
+    '/register'
   ],
-};
+}
+
