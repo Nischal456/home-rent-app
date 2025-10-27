@@ -172,6 +172,30 @@ export default function HomePage() {
            </div>
         </section>
 
+         <section className="py-20 lg:py-28 bg-white">
+            <div className="container mx-auto px-4">
+                <div className="text-center mb-12"><h2 className="text-3xl lg:text-4xl font-bold mb-4">Find Your Home</h2><p className="text-muted-foreground max-w-2xl mx-auto">We are conveniently located in the heart of the city. Come visit us and find your new home.</p></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                    <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6 }} className="lg:col-span-1 space-y-4">
+                        <h3 className="text-2xl font-semibold">STG Tower, Bhotebahal</h3>
+                        <p className="text-muted-foreground">Our doors are open for a tour. See for yourself why our tenants love to call this place home.</p>
+                        <Button asChild size="lg" className="group"><Link href="https://maps.app.goo.gl/8ob6mgJ2c2cxTvGc8" target="_blank">Get Directions <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link></Button>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6 }} className="lg:col-span-2 h-80 lg:h-96 rounded-2xl overflow-hidden shadow-2xl border">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.6559425031382!2d85.30725247606229!3d27.6970268761886!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1934a0ce6437%3A0x54ac6c30cd5690d6!2sStg%20Tower!5e0!3m2!1sen!2snp!4v1761551305205!5m2!1sen!2snp"
+                            width="100%" 
+                            height="100%" 
+                            style={{border:0}} 
+                            allowFullScreen={false} 
+                            loading="lazy" 
+                            referrerPolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </motion.div>
+                </div>
+            </div>
+        </section>
+
   <section className="py-20 lg:py-28 bg-white">
             <div className="container mx-auto px-4">
                  <div className="text-center mb-12">
@@ -217,6 +241,7 @@ export default function HomePage() {
                 </Button>
              </motion.div>
           </div>
+          
         </section>
 
       </main>
@@ -259,7 +284,9 @@ export default function HomePage() {
                   {/* Add your real social media links here */}
                 </div>
               </div>
+              
             </div>
+            
             <Separator className="my-8 bg-gray-700" />
             <div className="text-center text-sm">
                 <p>© {new Date().getFullYear()} STG Tower Management. All Rights Reserved.</p>
