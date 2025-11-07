@@ -17,11 +17,14 @@ import { IUser, IRoom } from '@/types';
 
 type TenantForSelect = Pick<IUser, '_id' | 'fullName'> & { roomId?: Pick<IRoom, '_id' | 'roomNumber'> };
 
+// ✅ ADDED: elecRate and waterRate to the schema
 const formSchema = z.object({
   tenantId: z.string().min(1, 'Please select a tenant.'),
   billingMonthBS: z.string().min(3, 'Please specify the billing month.'),
+  elecRate: z.number().min(0, "Rate must be positive"),
   elecPrevReading: z.number().min(0),
   elecCurrReading: z.number().min(0),
+  waterRate: z.number().min(0, "Rate must be positive"),
   waterPrevReading: z.number().min(0),
   waterCurrReading: z.number().min(0),
   includeServiceCharge: z.boolean(),
@@ -36,15 +39,13 @@ const formSchema = z.object({
 
 type UtilityBillFormValues = z.infer<typeof formSchema>;
 
-const ELECTRICITY_RATE_PER_UNIT = 19;
-const WATER_RATE_PER_UNIT = 0.40;
+// Default rates are now handled in the form's default values
 const SERVICE_CHARGE_AMOUNT = 500;
 const SECURITY_CHARGE_AMOUNT = 1000;
 
 export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
   const [isLoading, setIsLoading] = useState(false);
   const [tenants, setTenants] = useState<TenantForSelect[]>([]);
-  const [hasPreviousBill, setHasPreviousBill] = useState(false);
   const [calculatedTotals, setCalculatedTotals] = useState({
       elecUnits: 0, elecAmount: 0, waterUnits: 0, waterAmount: 0, totalAmount: 0
   });
@@ -56,8 +57,10 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
       billingMonthBS: '',
       includeServiceCharge: true,
       includeSecurityCharge: false,
+      elecRate: 19, // ✅ Set default rate
       elecPrevReading: undefined,
       elecCurrReading: undefined,
+      waterRate: 0.40, // ✅ Set default rate
       waterPrevReading: undefined,
       waterCurrReading: undefined,
     },
@@ -65,11 +68,12 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
 
   const { watch, setValue } = form;
 
+  // ✅ UPDATED: The calculation now uses the editable rates from the form
   const calculateTotals = useCallback((value: Partial<UtilityBillFormValues>) => {
       const elecUnits = Math.max(0, (value.elecCurrReading || 0) - (value.elecPrevReading || 0));
-      const elecAmount = elecUnits * ELECTRICITY_RATE_PER_UNIT;
+      const elecAmount = elecUnits * (value.elecRate || 0); // Use form rate
       const waterUnits = Math.max(0, (value.waterCurrReading || 0) - (value.waterPrevReading || 0));
-      const waterAmount = waterUnits * WATER_RATE_PER_UNIT;
+      const waterAmount = waterUnits * (value.waterRate || 0); // Use form rate
       const serviceCharge = value.includeServiceCharge ? SERVICE_CHARGE_AMOUNT : 0;
       const securityCharge = value.includeSecurityCharge ? SECURITY_CHARGE_AMOUNT : 0;
       const totalAmount = parseFloat((elecAmount + waterAmount + serviceCharge + securityCharge).toFixed(2));
@@ -86,18 +90,15 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
             if (data.success && data.data) {
               setValue('elecPrevReading', data.data.electricity.currentReading);
               setValue('waterPrevReading', data.data.water.currentReading);
-              setHasPreviousBill(true);
               toast.success("Fetched previous meter readings.");
             } else {
               setValue('elecPrevReading', 0);
               setValue('waterPrevReading', 0);
-              setHasPreviousBill(false);
             }
           } catch (error) {
             console.error("Failed to fetch last bill:", error);
             setValue('elecPrevReading', 0);
             setValue('waterPrevReading', 0);
-            setHasPreviousBill(false);
           }
         };
         fetchLastBill();
@@ -116,7 +117,6 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
     fetchTenants();
   }, []);
 
-  // ✅ THIS IS THE DEFINITIVE FIX: The complete and correct onSubmit function.
   async function onSubmit(values: UtilityBillFormValues) {
     setIsLoading(true);
     const selectedTenant = tenants.find(t => t._id.toString() === values.tenantId);
@@ -126,7 +126,8 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
         return;
     }
     
-    // Construct the full bill data object to send to the API
+    // The finalBillData already includes the correct amounts
+    // calculated using the rates you entered.
     const finalBillData = {
         tenantId: values.tenantId,
         roomId: selectedTenant.roomId._id,
@@ -191,8 +192,10 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
             <div className="space-y-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Zap className="h-4 w-4"/> Electricity</h3>
                  <div className="space-y-4 rounded-lg border p-4">
+                    <FormField control={form.control} name="elecRate" render={({ field }) => (<FormItem><FormLabel>Rate (per Unit)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="elecPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly={hasPreviousBill} className={hasPreviousBill ? "bg-muted" : ""} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                        {/* ✅ REMOVED: readOnly={hasPreviousBill} and the background color class */}
+                        <FormField control={form.control} name="elecPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="elecCurrReading" render={({ field }) => (<FormItem><FormLabel>Curr. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     <p className="text-sm text-muted-foreground text-center pt-2">Units: <span className="font-bold text-foreground">{calculatedTotals.elecUnits}</span>, Amount: <span className="font-bold text-foreground">Rs {calculatedTotals.elecAmount.toLocaleString('en-IN')}</span></p>
@@ -202,8 +205,10 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
             <div className="space-y-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Droplets className="h-4 w-4"/> Water</h3>
                  <div className="space-y-4 rounded-lg border p-4">
+                    <FormField control={form.control} name="waterRate" render={({ field }) => (<FormItem><FormLabel>Rate (per Unit)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="waterPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} readOnly={hasPreviousBill} className={hasPreviousBill ? "bg-muted" : ""} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                        {/* ✅ REMOVED: readOnly={hasPreviousBill} and the background color class */}
+                        <FormField control={form.control} name="waterPrevReading" render={({ field }) => (<FormItem><FormLabel>Prev. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="waterCurrReading" render={({ field }) => (<FormItem><FormLabel>Curr. Reading</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => handleNumberChange(e, field)} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     <p className="text-sm text-muted-foreground text-center pt-2">Units: <span className="font-bold text-foreground">{calculatedTotals.waterUnits}</span>, Amount: <span className="font-bold text-foreground">Rs {calculatedTotals.waterAmount.toLocaleString('en-IN')}</span></p>
@@ -231,4 +236,3 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
     </Form>
   );
 }
-
