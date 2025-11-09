@@ -133,6 +133,9 @@ export default function HomePage() {
                   <Button size="lg" variant="outline" asChild className="group bg-white/10 text-white border-white/50 hover:bg-white/20 backdrop-blur-md transition-all">
                     <Link href="/report">Report an Issue</Link>
                   </Button>
+                  <Button size="lg" variant="outline" asChild className="group bg-white/10 text-white border-white/50 hover:bg-white/20 backdrop-blur-md transition-all">
+                    <Link href="/terms">Terms & Conditions</Link>
+                  </Button>
                 </motion.div>
             </div>
         </section>
@@ -264,6 +267,7 @@ export default function HomePage() {
                 <ul className="space-y-2 text-sm">
                   <li><Link href="/login" className="hover:text-white transition-colors">Tenant Login</Link></li>
                   <li><Link href="/report" className="hover:text-white transition-colors">Report an Issue</Link></li>
+                  <li><Link href="/terms" className="hover:text-white transition-colors">Terms and Conditions</Link></li>
                 </ul>
               </div>
 
