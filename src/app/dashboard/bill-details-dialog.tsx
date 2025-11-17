@@ -7,6 +7,7 @@ import { printBill } from '@/lib/printBill';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 
+// ✅ ASSUMPTION: Your IUtilityBill type now includes `remarks?: string;`
 type CombinedBill = (IRentBill | IUtilityBill) & { type: 'Rent' | 'Utility' };
 
 // Helper functions to safely check if a field is a populated object
@@ -31,8 +32,6 @@ export function BillDetailsDialog({ isOpen, onClose, bill, user }: BillDetailsDi
   const totalAmount = isRentBill ? (bill as IRentBill).amount : (bill as IUtilityBill).totalAmount;
 
   // Safely get tenant and room details for display.
-  // It prioritizes populated data from the bill object (for admin view)
-  // and falls back to the user prop (for tenant view).
   const tenant = isTenantPopulated(bill.tenantId) ? bill.tenantId : user;
   const room = isRoomPopulated(bill.roomId) 
     ? bill.roomId 
@@ -77,24 +76,33 @@ export function BillDetailsDialog({ isOpen, onClose, bill, user }: BillDetailsDi
                     <span className="font-medium">Rs {(bill as IRentBill).amount.toLocaleString()}</span>
                 </div>
             ) : (
-              // ✅ This is the full, detailed breakdown for utility bills
               <div className="space-y-2">
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <h4 className="font-medium mb-2">Electricity</h4>
                       <div className="flex justify-between text-xs"><span className="text-muted-foreground">Previous Reading:</span><span>{(bill as IUtilityBill).electricity.previousReading}</span></div>
                       <div className="flex justify-between text-xs"><span className="text-muted-foreground">Current Reading:</span><span>{(bill as IUtilityBill).electricity.currentReading}</span></div>
                       <div className="flex justify-between text-xs font-semibold"><span className="text-muted-foreground">Units Consumed:</span><span>{(bill as IUtilityBill).electricity.unitsConsumed}</span></div>
                       <div className="flex justify-between mt-1 pt-1 border-t"><span className="text-muted-foreground">Amount:</span><span className="font-medium">Rs {(bill as IUtilityBill).electricity.amount.toLocaleString()}</span></div>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <h4 className="font-medium mb-2">Water</h4>
                       <div className="flex justify-between text-xs"><span className="text-muted-foreground">Previous Reading:</span><span>{(bill as IUtilityBill).water.previousReading}</span></div>
                       <div className="flex justify-between text-xs"><span className="text-muted-foreground">Current Reading:</span><span>{(bill as IUtilityBill).water.currentReading}</span></div>
                       <div className="flex justify-between text-xs font-semibold"><span className="text-muted-foreground">Units Consumed:</span><span>{(bill as IUtilityBill).water.unitsConsumed}</span></div>
                       <div className="flex justify-between mt-1 pt-1 border-t"><span className="text-muted-foreground">Amount:</span><span className="font-medium">Rs {(bill as IUtilityBill).water.amount.toLocaleString()}</span></div>
                   </div>
-                  {(bill as IUtilityBill).serviceCharge > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Service Charge</span><span className="font-medium">Rs {(bill as IUtilityBill).serviceCharge.toLocaleString()}</span></div>}
-                  {(bill as IUtilityBill).securityCharge > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Security Charge</span><span className="font-medium">Rs {(bill as IUtilityBill).securityCharge.toLocaleString()}</span></div>}
+                  {(bill as IUtilityBill).serviceCharge > 0 && <div className="flex justify-between pt-1"><span className="text-muted-foreground">Service Charge</span><span className="font-medium">Rs {(bill as IUtilityBill).serviceCharge.toLocaleString()}</span></div>}
+                  {(bill as IUtilityBill).securityCharge > 0 && <div className="flex justify-between pt-1"><span className="text-muted-foreground">Security Charge</span><span className="font-medium">Rs {(bill as IUtilityBill).securityCharge.toLocaleString()}</span></div>}
+              </div>
+            )}
+            
+            {/* ✅ ADDED: Conditionally render remarks only if they exist */}
+            {!isRentBill && (bill as IUtilityBill).remarks && (
+              <div className="pt-4">
+                <h4 className="font-semibold mb-2">Remarks</h4>
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-muted-foreground italic">
+                  <p className="whitespace-pre-wrap">{(bill as IUtilityBill).remarks}</p>
+                </div>
               </div>
             )}
 

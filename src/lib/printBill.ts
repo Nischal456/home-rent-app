@@ -8,7 +8,7 @@ const isPopulated = (field: any): field is IUser | IRoom => {
 
 // Define rates here to be used in the template
 const ELECTRICITY_RATE_PER_UNIT = 19;
-const WATER_RATE_PER_UNIT = 0.40;
+const WATER_RATE_PER_UNIT = 0.30;
 
 export const printBill = (bill: IRentBill | IUtilityBill) => {
   const tenant = isPopulated(bill.tenantId) ? bill.tenantId : null;
@@ -148,7 +148,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
             <p class="font-bold text-gray-500">Amount In words:</p>
             <p class="italic capitalize">${amountInWords}</p>
             <p class="font-bold mt-6 text-gray-500">Remarks:</p>
-            <p>${bill.remarks || 'Please clear all dues on time.'}</p>
+            <p>${bill.remarks || 'The water rate has been adjusted from Rs 0.40 to Rs 0.30 per liter .'}</p>
           </div>
           <div>
             <table class="w-full text-right">
