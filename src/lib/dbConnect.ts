@@ -11,6 +11,7 @@ if (!MONGODB_URI) {
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development and across serverless function invocations in production.
+ * This prevents connections from growing exponentially.
  */
 let cached = (global as any).mongoose;
 
@@ -47,4 +48,3 @@ async function dbConnect() {
 }
 
 export default dbConnect;
-

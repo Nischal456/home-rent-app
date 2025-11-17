@@ -4,9 +4,9 @@ import RentBill from '@/models/RentBill';
 import UtilityBill from '@/models/UtilityBill';
 import User from '@/models/User';
 import Room from '@/models/Room';
+import { IRentBill, IUtilityBill } from '@/types';
 
-// This line is crucial for Vercel. It prevents caching of stale data,
-// ensuring that the bill status is always up-to-date.
+// This line is crucial for Vercel to prevent caching stale data.
 export const dynamic = 'force-dynamic';
 
 export async function GET(
@@ -20,10 +20,8 @@ export async function GET(
   }
 
   try {
-    // This calls the robust, cached database connection from your lib/dbConnect.ts file.
     await dbConnect();
 
-    // The logic to find the bill in either collection remains the same.
     let bill: any = await RentBill.findById(billId).populate('tenantId').populate('roomId').lean();
     let billType = 'Rent';
 
@@ -36,16 +34,44 @@ export async function GET(
       return NextResponse.json({ success: false, message: 'Bill not found.' }, { status: 404 });
     }
 
-    // The response includes the bill data and its type.
+    // ✅ "NEXT LEVEL" FEATURE: Fetch all other unpaid bills for this tenant
+    const tenantId = bill.tenantId._id;
+    const [otherRentBills, otherUtilityBills] = await Promise.all([
+        RentBill.find({ 
+            tenantId: tenantId, 
+            _id: { $ne: bill._id }, // Exclude the current bill
+            status: { $in: ['DUE', 'OVERDUE'] } 
+        }).lean(),
+        UtilityBill.find({ 
+            tenantId: tenantId, 
+            _id: { $ne: bill._id }, 
+            status: { $in: ['DUE', 'OVERDUE'] } 
+        }).lean()
+    ]);
+    
+    // Calculate the total outstanding balance
+    let totalOutstandingDue = 0;
+    
+    otherRentBills.forEach(b => totalOutstandingDue += (b as IRentBill).amount);
+    otherUtilityBills.forEach(b => totalOutstandingDue += (b as IUtilityBill).totalAmount);
+    
+    // Add the current bill's amount if it's not paid
+    if (bill.status !== 'PAID') {
+        const currentBillAmount = billType === 'Rent' ? bill.amount : bill.totalAmount;
+        totalOutstandingDue += currentBillAmount;
+    }
+
     return NextResponse.json({
       success: true,
-      data: { ...bill, type: billType },
+      data: { 
+        ...bill, 
+        type: billType,
+        totalOutstandingDue: totalOutstandingDue, // ✅ Include the total balance
+      },
     });
 
   } catch (error) {
     console.error(`Error fetching public bill ${billId}:`, error);
-    // This is the error that gets triggered if the database connection fails on Vercel.
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
