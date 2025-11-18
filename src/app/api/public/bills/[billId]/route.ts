@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import RentBill from '@/models/RentBill';
 import UtilityBill from '@/models/UtilityBill';
+// ✅ IMPORT THESE TO ENSURE REGISTRATION
 import User from '@/models/User';
 import Room from '@/models/Room';
 import { IRentBill, IUtilityBill } from '@/types';
 
-// Prevent Vercel from caching this route
+// This line is crucial for Vercel to prevent caching stale data.
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,
@@ -16,39 +16,45 @@ export async function GET(
 ) {
   const { billId } = params;
 
-  console.log(`[API] Fetching bill: ${billId}`);
-
-  // 1. DEBUG: Check Environment Variable
-  if (!process.env.MONGODB_URI) {
-    console.error("[API] CRITICAL: MONGODB_URI is undefined.");
-    return NextResponse.json({ success: false, message: 'Configuration Error: Database connection string is missing.' }, { status: 500 });
+  if (!billId) {
+    return NextResponse.json({ success: false, message: 'Bill ID is required.' }, { status: 400 });
   }
 
   try {
-    // 2. Attempt Database Connection
-    console.log("[API] Connecting to database...");
+    // 1. Connect to the database
     await dbConnect();
-    console.log("[API] Database connected.");
 
-    // 3. Query the Database
-    let bill: any = await RentBill.findById(billId).populate('tenantId').populate('roomId').lean();
+    // ✅ CRITICAL FIX: Explicitly "touch" the models to ensure they are registered
+    // This forces Mongoose to know about 'User' and 'Room' before populate is called.
+    const _userModel = User;
+    const _roomModel = Room;
+
+    // 2. Search for the bill (RentBill first)
+    let bill: any = await RentBill.findById(billId)
+      .populate('tenantId')
+      .populate('roomId')
+      .lean();
     let billType = 'Rent';
 
+    // 3. If not found, search in UtilityBill
     if (!bill) {
-      bill = await UtilityBill.findById(billId).populate('tenantId').populate('roomId').lean();
+      bill = await UtilityBill.findById(billId)
+        .populate('tenantId')
+        .populate('roomId')
+        .lean();
       billType = 'Utility';
     }
 
     if (!bill) {
-      console.log(`[API] Bill not found for ID: ${billId}`);
       return NextResponse.json({ success: false, message: 'Bill not found.' }, { status: 404 });
     }
 
-    // 4. Calculate Outstanding Balance
-    const tenantId = bill.tenantId._id;
+    // 4. Calculate Total Outstanding Balance
+    // We wrap this in a try/catch so a calculation error doesn't block the whole bill
     let totalOutstandingDue = 0;
-
     try {
+      if (bill.tenantId && bill.tenantId._id) {
+        const tenantId = bill.tenantId._id;
         const [otherRentBills, otherUtilityBills] = await Promise.all([
             RentBill.find({ 
                 tenantId: tenantId, 
@@ -66,13 +72,16 @@ export async function GET(
         otherUtilityBills.forEach(b => totalOutstandingDue += (b as IUtilityBill).totalAmount);
         
         if (bill.status !== 'PAID') {
-            totalOutstandingDue += (billType === 'Rent' ? bill.amount : bill.totalAmount);
+            const currentBillAmount = billType === 'Rent' ? bill.amount : bill.totalAmount;
+            totalOutstandingDue += currentBillAmount;
         }
+      }
     } catch (calcError) {
-        console.error("[API] Warning: Failed to calculate outstanding balance", calcError);
-        // Non-fatal error, continue
+      console.error("Error calculating outstanding balance:", calcError);
+      // We don't fail the request here, just default totalOutstandingDue to 0 or current bill amount
     }
 
+    // 5. Return Success Response
     return NextResponse.json({
       success: true,
       data: { 
@@ -82,15 +91,10 @@ export async function GET(
       },
     });
 
-  } catch (error: any) {
-    // ✅ EXPOSE THE REAL ERROR
-    console.error(`[API] FATAL ERROR:`, error);
-    
-    // Return the specific error message to the frontend for debugging
-    return NextResponse.json({ 
-        success: false, 
-        message: `DB Error: ${error.message}`,
-        errorDetails: JSON.stringify(error)
-    }, { status: 500 });
+  } catch (error) {
+    console.error(`Error fetching public bill ${billId}:`, error);
+    // Return the actual error message to help debugging if it happens again
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ success: false, message: `DB Error: ${errorMessage}` }, { status: 500 });
   }
 }
