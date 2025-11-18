@@ -14,7 +14,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
-// ✅ "BEST OF BEST" ICONS: Added CheckCircle for the new 'Paid' status
+// ✅ "BEST OF BEST" ICONS
 import { 
     AlertCircle, Printer, Zap, Droplets, Banknote, Calendar, Home, User, Scale, 
     Shield, Wrench, FileText, CheckCircle 
@@ -35,14 +35,14 @@ const DetailRow = ({ label, value, isBold = false, isTotal = false }: { label: s
   )}>
     <p className={cn(
       "text-sm text-muted-foreground", 
-      isTotal && "text-base font-bold text-gray-800" // Label is bold for Total
+      isTotal && "text-base font-bold text-gray-800"
     )}>
       {label}
     </p>
     <p className={cn(
       "font-semibold text-sm text-gray-900", 
       isBold && "font-bold", 
-      isTotal && "text-2xl font-bold text-primary" // Value is extra large for Total
+      isTotal && "text-2xl font-bold text-primary"
     )}>
       {value}
     </p>
@@ -108,8 +108,12 @@ export default function PublicBillPage() {
   }
 
   const isUtility = bill.type === 'Utility';
-  const billPeriod = isUtility ? (bill as IUtilityBill).billingMonthBS : (bill as IRentBill).rentForPeriod;
-  const billAmount = isUtility ? (bill as IUtilityBill).totalAmount : (bill as IRentBill).amount;
+  // ✅ FIX: Explicit type casting to access properties safely
+  const utilityBill = bill as unknown as IUtilityBill;
+  const rentBill = bill as unknown as IRentBill;
+
+  const billPeriod = isUtility ? utilityBill.billingMonthBS : rentBill.rentForPeriod;
+  const billAmount = isUtility ? utilityBill.totalAmount : rentBill.amount;
 
   return (
     <>
@@ -144,7 +148,7 @@ export default function PublicBillPage() {
             <CardHeader className="p-6 print-header">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <Image src="/home.png" alt="Logo" width={48} height={48} className="full" />
+                  <Image src="/home.png" alt="Logo" width={48} height={48} className="rounded" />
                   <div>
                     <CardTitle className="text-2xl font-bold text-gray-900 print-title">STG Tower</CardTitle>
                     <CardDescription>Bill Receipt</CardDescription>
@@ -161,50 +165,48 @@ export default function PublicBillPage() {
               
               <Separator />
 
+              {/* ✅ FIX: Correctly using 'utilityBill' variable which is properly typed */}
               {isUtility && (
                 <div className="space-y-4 page-break-avoid">
                   <h3 className="font-semibold text-center text-gray-800">Utility Breakdown</h3>
                   <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
                     <h4 className="font-medium text-gray-700">Electricity (Rate: Rs 19 / unit)</h4>
-                    <DetailRow label="Previous Reading" value={(bill as IUtilityBill).electricity.previousReading} />
-                    <DetailRow label="Current Reading" value={(bill as IUtilityBill).electricity.currentReading} />
-                    <DetailRow label="Units Consumed" value={(bill as IUtilityBill).electricity.unitsConsumed} />
-                    <DetailRow label="Electricity Total" value={`Rs ${(bill as IUtilityBill).electricity.amount.toLocaleString()}`} isBold={true} />
+                    <DetailRow label="Previous Reading" value={utilityBill.electricity.previousReading} />
+                    <DetailRow label="Current Reading" value={utilityBill.electricity.currentReading} />
+                    <DetailRow label="Units Consumed" value={utilityBill.electricity.unitsConsumed} />
+                    <DetailRow label="Electricity Total" value={`Rs ${utilityBill.electricity.amount.toLocaleString()}`} isBold={true} />
                   </div>
                   <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
                     <h4 className="font-medium text-gray-700">Water (Rate: Rs 0.30 / Litre)</h4>
-                    <DetailRow label="Previous Reading" value={(bill as IUtilityBill).water.previousReading} />
-                    <DetailRow label="Current Reading" value={(bill as IUtilityBill).water.currentReading} />
-                    <DetailRow label="Litres Consumed" value={(bill as IUtilityBill).water.unitsConsumed} />
-                    <DetailRow label="Water Total" value={`Rs ${(bill as IUtilityBill).water.amount.toLocaleString()}`} isBold={true} />
+                    <DetailRow label="Previous Reading" value={utilityBill.water.previousReading} />
+                    <DetailRow label="Current Reading" value={utilityBill.water.currentReading} />
+                    <DetailRow label="Litres Consumed" value={utilityBill.water.unitsConsumed} />
+                    <DetailRow label="Water Total" value={`Rs ${utilityBill.water.amount.toLocaleString()}`} isBold={true} />
                   </div>
                 </div>
               )}
-              
+
+              {/* Payment Summary */}
+              <div className="page-break-avoid">
+                <h3 className="font-semibold mb-2 text-center text-gray-800">Payment Summary</h3>
+                <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
+                  {isUtility ? (
+                    <>
+                      {/* ✅ FIX: Correctly accessing properties from 'utilityBill' */}
+                      <DetailRow label="Total Utility Charges" value={`Rs ${(utilityBill.electricity.amount + utilityBill.water.amount).toLocaleString()}`} />
+                      <DetailRow label="Service Charge" value={`Rs ${utilityBill.serviceCharge.toLocaleString()}`} />
+                      <DetailRow label="Security Charge" value={`Rs ${utilityBill.securityCharge.toLocaleString()}`} />
+                    </>
+                  ) : (
+                    /* ✅ FIX: Correctly accessing properties from 'rentBill' */
+                    <DetailRow label="Rent Amount" value={`Rs ${rentBill.amount.toLocaleString()}`} />
+                  )}
+                </div>
+              </div>
             </CardContent>
 
-            {/* ✅ "BEST OF BEST" FOOTER with Animated Status */}
+            {/* Footer */}
             <CardFooter className="bg-muted/50 p-6 rounded-b-2xl flex flex-col gap-4 print-footer">
-              <AnimatePresence mode="wait">
-                {isUtility ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="w-full"
-                  >
-                    <DetailRow label="Utility Charges" value={`Rs ${((bill as IUtilityBill).electricity.amount + (bill as IUtilityBill).water.amount).toLocaleString()}`} />
-                    <DetailRow label="Service Charge" value={`Rs ${(bill as IUtilityBill).serviceCharge.toLocaleString()}`} />
-                    <DetailRow label="Security Charge" value={`Rs ${(bill as IUtilityBill).securityCharge.toLocaleString()}`} />
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="w-full"
-                  >
-                    <DetailRow label="Rent Amount" value={`Rs ${(bill as IRentBill).amount.toLocaleString()}`} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              
               <div className="w-full">
                 <DetailRow 
                   label="Bill Total" 
@@ -213,37 +215,37 @@ export default function PublicBillPage() {
                 />
               </div>
               
-              {/* ✅ "Next Level" Total Outstanding / Paid Status Section */}
+              {/* Paid / Outstanding Status */}
               <AnimatePresence mode="wait">
-                {bill.status !== 'PAID' ? (
-                  <motion.div 
-                    key="unpaid"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-4 rounded-lg bg-red-100/50 border border-red-200 text-center w-full mt-4"
-                  >
-                    <p className="font-semibold text-red-800">Total Outstanding Balance (All Bills)</p>
-                    <p className="text-xl font-bold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
-                  </motion.div>
-                ) : (
+                {bill.status === 'PAID' ? (
                   <motion.div 
                     key="paid"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="p-4 rounded-lg bg-green-100/50 border border-green-200 text-center w-full mt-4 flex items-center justify-center gap-3"
+                    className="w-full p-4 rounded-xl bg-green-100/60 border border-green-200 text-green-800 flex items-center justify-center gap-3"
                   >
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+                    <CheckCircle className="h-6 w-6" />
                     <div className="text-left">
-                      <p className="font-semibold text-green-800">Paid in Full</p>
-                      {bill.paidOnBS && (
-                        <p className="text-xs text-green-700">Paid on: {bill.paidOnBS}</p>
-                      )}
+                        <p className="font-bold text-lg">Paid in Full</p>
+                        {bill.paidOnBS && <p className="text-xs opacity-80">Paid on: {bill.paidOnBS}</p>}
                     </div>
                   </motion.div>
+                ) : (
+                   bill.totalOutstandingDue > 0 && (
+                    <motion.div 
+                        key="unpaid"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-full p-4 rounded-xl bg-red-50 border border-red-100 text-center"
+                    >
+                      <p className="text-sm font-medium text-red-800 mb-1">Total Outstanding Balance (All Bills)</p>
+                      <p className="text-2xl font-extrabold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
+                    </motion.div>
+                  )
                 )}
               </AnimatePresence>
             </CardFooter>
