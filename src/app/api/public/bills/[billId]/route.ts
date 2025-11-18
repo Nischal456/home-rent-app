@@ -6,10 +6,9 @@ import User from '@/models/User';
 import Room from '@/models/Room';
 import { IRentBill, IUtilityBill } from '@/types';
 
-// ✅ FORCE DYNAMIC: Crucial for Vercel to not cache old data
+// Prevent Vercel from caching this route
 export const dynamic = 'force-dynamic';
-// ✅ EXTEND TIMEOUT: Give the database more time to connect on cold starts
-export const maxDuration = 60; 
+export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,
@@ -17,15 +16,21 @@ export async function GET(
 ) {
   const { billId } = params;
 
-  if (!billId) {
-    return NextResponse.json({ success: false, message: 'Bill ID is required.' }, { status: 400 });
+  console.log(`[API] Fetching bill: ${billId}`);
+
+  // 1. DEBUG: Check Environment Variable
+  if (!process.env.MONGODB_URI) {
+    console.error("[API] CRITICAL: MONGODB_URI is undefined.");
+    return NextResponse.json({ success: false, message: 'Configuration Error: Database connection string is missing.' }, { status: 500 });
   }
 
   try {
-    // 1. Establish Database Connection
+    // 2. Attempt Database Connection
+    console.log("[API] Connecting to database...");
     await dbConnect();
+    console.log("[API] Database connected.");
 
-    // 2. Search for the bill in both collections (Rent or Utility)
+    // 3. Query the Database
     let bill: any = await RentBill.findById(billId).populate('tenantId').populate('roomId').lean();
     let billType = 'Rent';
 
@@ -35,14 +40,15 @@ export async function GET(
     }
 
     if (!bill) {
+      console.log(`[API] Bill not found for ID: ${billId}`);
       return NextResponse.json({ success: false, message: 'Bill not found.' }, { status: 404 });
     }
 
-    // 3. "Next Level" Logic: Calculate Total Outstanding Balance
-    // We use try/catch here so if this calculation fails, it doesn't break the whole page
+    // 4. Calculate Outstanding Balance
+    const tenantId = bill.tenantId._id;
     let totalOutstandingDue = 0;
+
     try {
-        const tenantId = bill.tenantId._id;
         const [otherRentBills, otherUtilityBills] = await Promise.all([
             RentBill.find({ 
                 tenantId: tenantId, 
@@ -63,11 +69,10 @@ export async function GET(
             totalOutstandingDue += (billType === 'Rent' ? bill.amount : bill.totalAmount);
         }
     } catch (calcError) {
-        console.error("Error calculating outstanding balance:", calcError);
-        // Continue without crashing, just report 0 outstanding
+        console.error("[API] Warning: Failed to calculate outstanding balance", calcError);
+        // Non-fatal error, continue
     }
 
-    // 4. Return the data
     return NextResponse.json({
       success: true,
       data: { 
@@ -77,8 +82,15 @@ export async function GET(
       },
     });
 
-  } catch (error) {
-    console.error(`CRITICAL ERROR fetching public bill ${billId}:`, error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error. Please try refreshing.' }, { status: 500 });
+  } catch (error: any) {
+    // ✅ EXPOSE THE REAL ERROR
+    console.error(`[API] FATAL ERROR:`, error);
+    
+    // Return the specific error message to the frontend for debugging
+    return NextResponse.json({ 
+        success: false, 
+        message: `DB Error: ${error.message}`,
+        errorDetails: JSON.stringify(error)
+    }, { status: 500 });
   }
 }
