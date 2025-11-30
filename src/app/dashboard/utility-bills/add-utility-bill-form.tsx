@@ -60,7 +60,7 @@ export function AddUtilityBillForm({ onSuccess }: { onSuccess: () => void; }) {
       elecRate: 19,
       elecPrevReading: undefined,
       elecCurrReading: undefined,
-      waterRate: 0.40,
+      waterRate: 0.30,
       waterPrevReading: undefined,
       waterCurrReading: undefined,
       remarks: '', // ✅ ADDED: Default value for remarks
