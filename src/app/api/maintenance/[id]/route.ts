@@ -1,70 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import MaintenanceRequest from '@/models/MaintenanceRequest';
-import { createNotification } from '@/lib/createNotification';
 import jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
+import { pusherServer } from '@/lib/pusher';
+import { IUser } from '@/types'; // Import IUser for typing
 
-// Define the shape of the token payload
-interface TokenPayload {
-  id: string;
-  role: 'ADMIN' | 'TENANT';
-}
+interface TokenPayload { id: string; role: string; }
 
-// Define the valid statuses for a maintenance request
-const VALID_STATUSES: string[] = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
-
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { requestId: string } }
+) {
   await dbConnect();
   try {
-    // 1. Verify Admin Authentication
+    // 1. Verify Auth (Security or Admin)
     const token = request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized: No token provided' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     
-    if (!process.env.JWT_SECRET) {
-      console.error("FATAL ERROR: JWT_SECRET is not defined.");
-      return NextResponse.json({ success: false, message: 'Server configuration error.' }, { status: 500 });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    if (decoded.role !== 'ADMIN' && decoded.role !== 'SECURITY') {
+        return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
-    if (decoded.role !== 'ADMIN') {
-      return NextResponse.json({ success: false, message: 'Forbidden: Admin access required' }, { status: 403 });
+    // 2. Get New Status
+    const { status } = await request.json(); // Expects 'IN_PROGRESS' or 'COMPLETED'
+
+    // 3. Update the Request
+    const updateData: any = { status };
+    if (status === 'COMPLETED') {
+        updateData.completedAt = new Date();
     }
 
-    // 2. Get Request ID and New Status
-    const requestId = params.id;
-    const { status } = await request.json();
+    const maintenanceRequest = await MaintenanceRequest.findByIdAndUpdate(
+        params.requestId,
+        { $set: updateData },
+        { new: true }
+    ).populate('tenantId', 'fullName');
 
-    if (!status || !VALID_STATUSES.includes(status)) {
-      return NextResponse.json({ success: false, message: 'Invalid status provided.' }, { status: 400 });
+    if (!maintenanceRequest) {
+        return NextResponse.json({ success: false, message: 'Request not found' }, { status: 404 });
     }
 
-    // 3. Update the Maintenance Request in the Database
-    const updatedRequest = await MaintenanceRequest.findByIdAndUpdate(
-      requestId,
-      { status: status, ...(status === 'COMPLETED' && { completedAt: new Date() }) }, // Set completion date if status is 'COMPLETED'
-      { new: true }
-    );
+    // 4. Notify Admin (if Guard updated it)
+    if (decoded.role === 'SECURITY') {
+        // ✅ FIX: Cast tenantId to 'any' or 'IUser' to access fullName
+        // We use 'as any' here to safely bypass the TypeScript check since we know it's populated
+        const tenantName = (maintenanceRequest.tenantId as any)?.fullName || 'Unknown Tenant';
 
-    if (!updatedRequest) {
-      return NextResponse.json({ success: false, message: 'Maintenance request not found.' }, { status: 404 });
+        await pusherServer.trigger('admin-notifications', 'maintenance-update', {
+            message: `Maintenance for ${tenantName} marked as ${status}`,
+            requestId: maintenanceRequest._id
+        });
     }
 
-    // 4. Notify the Tenant about the Status Update
-    await createNotification(
-      updatedRequest.tenantId as Types.ObjectId,
-      'Maintenance Request Updated',
-      `Your request for "${updatedRequest.issue}" is now marked as ${status}.`,
-      '/dashboard' // Link the tenant to their dashboard
-    );
-
-    return NextResponse.json({ success: true, message: 'Status updated successfully.', data: updatedRequest });
+    return NextResponse.json({ success: true, message: 'Status updated', data: maintenanceRequest });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred';
-    console.error(`Error in PATCH /api/maintenance/${params.id}:`, errorMessage);
-    return NextResponse.json({ success: false, message: 'An error occurred while updating the request.' }, { status: 500 });
+    console.error("Error updating maintenance:", error);
+    return NextResponse.json({ success: false, message: 'Server Error' }, { status: 500 });
   }
+}
+
+// Delete API (Optional but good to have)
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: { requestId: string } }
+) {
+    await dbConnect();
+    try {
+        const token = request.cookies.get('token')?.value;
+        if (!token) return NextResponse.json({ success: false }, { status: 401 });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+        
+        if (decoded.role !== 'ADMIN') {
+             return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+        }
+
+        await MaintenanceRequest.findByIdAndDelete(params.requestId);
+        return NextResponse.json({ success: true, message: 'Request deleted' });
+    } catch (error) {
+        return NextResponse.json({ success: false, message: 'Server Error' }, { status: 500 });
+    }
 }
