@@ -1,7 +1,7 @@
 'use client';
 
 // --- Core React & Next.js Imports ---
-import React, { useEffect, useState, useCallback, forwardRef, ReactNode, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, forwardRef, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,7 +16,12 @@ import { Toaster, toast } from 'react-hot-toast';
 import { Separator } from '@/components/ui/separator';
 
 // --- Icons from lucide-react ---
-import { Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, CreditCard, PanelsTopLeft } from 'lucide-react';
+// ✅ ADDED: ShieldCheck, Droplets, Wallet for the new menu items
+import { 
+  Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, 
+  Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, CreditCard, PanelsTopLeft,
+  ShieldCheck, Droplets, Wallet 
+} from 'lucide-react';
 
 // --- Animation & Utilities ---
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
@@ -44,12 +49,12 @@ const NavLink = forwardRef<HTMLAnchorElement, { href: string; onClick?: () => vo
     <Link href={href} onClick={onClick} ref={ref} className="relative block">
       <div className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary",
-        isActive && "text-primary"
+        isActive && "text-primary bg-primary/5 font-medium"
       )}>
         {isActive && (
           <motion.div
             layoutId="active-nav-indicator"
-            className="absolute inset-0 rounded-lg bg-primary/10 shadow-inner shadow-primary/10"
+            className="absolute inset-0 rounded-lg bg-primary/10 border-l-4 border-primary"
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           />
         )}
@@ -65,6 +70,8 @@ NavLink.displayName = "NavLink";
 function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onLinkClick?: () => void; unreadPaymentsCount: number }) {
   const navItems = [
     { href: "/dashboard", icon: <PanelsTopLeft className="h-4 w-4" />, label: "Dashboard" },
+    
+    // --- ADMIN LINKS ---
     ...(user.role === 'ADMIN' ? [
       { href: "/dashboard/payments", icon: <Banknote className="h-4 w-4" />, label: "Payments", badge: unreadPaymentsCount },
       { href: "/dashboard/tenants", icon: <Users className="h-4 w-4" />, label: "Tenants" },
@@ -72,9 +79,21 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
       { href: "/dashboard/rent-bills", icon: <ReceiptText className="h-4 w-4" />, label: "Rent Bills" },
       { href: "/dashboard/utility-bills", icon: <ReceiptText className="h-4 w-4" />, label: "Utility Bills" },
       { href: "/dashboard/maintenance", icon: <Wrench className="h-4 w-4" />, label: "Maintenance" },
+      
+      // ✅ ADDED: New Security & Water Links
+      { href: "/dashboard/staff", icon: <ShieldCheck className="h-4 w-4" />, label: "Staff Management" },
+      { href: "/dashboard/water-tankers", icon: <Droplets className="h-4 w-4" />, label: "Water Logs" },
+      { href: "/dashboard/security-management", icon: <Wallet className="h-4 w-4" />, label: "Security Finance" },
     ] : []),
+
+    // --- TENANT LINKS ---
     ...(user.role === 'TENANT' ? [
       { href: "/dashboard/statement", icon: <FileClock className="h-4 w-4" />, label: "My Statement" },
+    ] : []),
+
+    // --- SECURITY GUARD LINKS (Optional, if they log into this dashboard too) ---
+    ...(user.role === 'SECURITY' ? [
+       { href: "/dashboard/security", icon: <ShieldCheck className="h-4 w-4" />, label: "Guard Portal" },
     ] : []),
   ];
   
@@ -90,7 +109,7 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
           <NavLink key={item.href} href={item.href} onClick={onLinkClick}>
             {item.icon}
             {item.label}
-            {item.badge && item.badge > 0 && <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground z-20">{item.badge}</Badge>}
+            {item.badge && item.badge > 0 && <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500 text-white z-20">{item.badge}</Badge>}
           </NavLink>
         ))}
         <Separator className="my-3" />
@@ -106,7 +125,7 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
 }
 
 
-// --- Sub-Component: Notification Dropdown with Grouping ---
+// --- Sub-Component: Notification Bell ---
 function NotificationBell({ notifications, onMarkAllRead }: { notifications: ClientNotification[]; onMarkAllRead: () => void; }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -192,8 +211,8 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-auto px-2 py-1 space-x-2 rounded-full">
-          <Avatar className="h-9 w-9">
+        <Button variant="ghost" className="relative h-auto px-2 py-1 space-x-2 rounded-full hover:bg-muted">
+          <Avatar className="h-9 w-9 border">
             <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName}/>
             <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
@@ -237,10 +256,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
 
-  // ✅ FIX: Restored the logic inside these functions.
   const fetchAdminData = useCallback(async () => {
     try {
-      const res = await fetch('/api/payments'); // Assuming this fetches pending payments
+      const res = await fetch('/api/payments'); 
       const data = await res.json();
       if (data.success) {
         setPendingPaymentsCount(data.data.length);
@@ -326,55 +344,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[260px_1fr] lg:grid-cols-[280px_1fr]">
       {/* --- Desktop Sidebar --- */}
-      <aside className="hidden border-r bg-muted/30 md:block">
-        <div className="flex h-full max-h-screen flex-col">
+      <aside className="hidden border-r bg-muted/30 md:block h-screen sticky top-0 overflow-y-auto">
+        <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <Image src="/logo.png" alt="Logo" width={32} height={32} />
-              <span className="text-xl">STG Tower</span>
+            <Link href="/dashboard" className="flex items-center gap-3 font-bold text-primary">
+              <div className="h-6 w-6 relative  overflow-hidden ">
+                 <Image src="/home.png" alt="Logo" fill className="object-cover" />
+              </div>
+              <span className="text-lg">STG Tower</span>
             </Link>
           </div>
-          <div className="flex-1 overflow-y-auto pt-4"><NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} /></div>
+          <div className="flex-1 overflow-y-auto py-4">
+             <NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} />
+          </div>
         </div>
       </aside>
 
-      {/* --- Main Content --- */}
-      <div className="flex flex-col">
+      {/* --- Main Content Area --- */}
+      <div className="flex flex-col min-h-screen">
         {/* --- Header --- */}
-        <header className="flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-lg lg:px-6 sticky top-0 z-30">
+        <header className="flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-6 sticky top-0 z-30">
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="shrink-0 md:hidden"><Menu className="h-5 w-5" /></Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0">
-                <SheetHeader className="p-4 border-b">
+            <SheetContent side="left" className="flex flex-col p-0 w-[280px]">
+                <SheetHeader className="p-4 border-b bg-muted/10">
                     <SheetTitle className="sr-only">Menu</SheetTitle>
                     <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
-                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold" onClick={() => setSheetOpen(false)}>
-                        <Image src="/logo.png" alt="Logo" width={32} height={32} />
+                    <Link href="/dashboard" className="flex items-center gap-3 font-bold text-primary" onClick={() => setSheetOpen(false)}>
+                        <div className="h-8 w-8 relative rounded-full overflow-hidden border">
+                           <Image src="/logo.png" alt="Logo" fill className="object-cover" />
+                        </div>
                         <span>STG Tower</span>
                     </Link>
                 </SheetHeader>
-                <div className="pt-4">
+                <div className="flex-1 overflow-y-auto py-4">
                   <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} unreadPaymentsCount={pendingPaymentsCount} />
                 </div>
             </SheetContent>
           </Sheet>
           
           <div className="w-full flex-1" />
-          <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
-          <UserNav user={user} onLogout={handleLogout} />
+          <div className="flex items-center gap-2">
+             <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
+             <UserNav user={user} onLogout={handleLogout} />
+          </div>
         </header>
 
         {/* --- Page Content --- */}
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
+        <main className="flex-1 p-4 lg:p-6 bg-muted/20 overflow-x-hidden">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={pathname}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full max-w-[1600px] mx-auto"
                 >
                     {children}
                 </motion.div>

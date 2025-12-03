@@ -5,8 +5,8 @@ export interface IUser {
   fullName: string;
   email: string;
   password?: string;
-  role: 'ADMIN' | 'TENANT';
-  status: 'ACTIVE' | 'INACTIVE'; // ✅ ADD THIS LINE
+  role: 'ADMIN' | 'TENANT' | 'SECURITY'; 
+  status: 'ACTIVE' | 'INACTIVE';
   phoneNumber?: string;
   roomId?: Types.ObjectId | IRoom;
   leaseStartDate?: Date;
@@ -90,4 +90,21 @@ export interface ISubmission {
   message: string;
   status: 'UNREAD' | 'READ';
   createdAt: Date;
+}
+export interface IWaterTanker {
+  _id: string;
+  entryDate: Date;
+  volumeLiters: number;
+  cost: number;
+  addedBy: string; // Guard's ID
+}
+
+export interface IStaffPayment {
+  _id: string;
+  staffId: string;
+  type: 'SALARY' | 'BONUS' | 'ADVANCE';
+  amount: number;
+  date: Date;
+  remarks?: string;
+  month?: string; // e.g., "Bhadra 2082" for Salary
 }

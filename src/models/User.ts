@@ -7,7 +7,7 @@ const UserSchema = new Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true, select: false },
-  role: { type: String, enum: ['ADMIN', 'TENANT'], default: 'TENANT' },
+  role: { type: String, enum: ['ADMIN', 'TENANT', 'SECURITY'], default: 'TENANT' },
   phoneNumber: String,
   roomId: { type: Schema.Types.ObjectId, ref: 'Room' },
   leaseStartDate: { type: Date },

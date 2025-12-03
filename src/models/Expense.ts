@@ -1,10 +1,11 @@
-import mongoose, { Schema, model, models, Document } from 'mongoose';
+import mongoose, { Schema, model, models } from 'mongoose';
 import { IExpense } from '@/types';
 
 const ExpenseSchema = new Schema<IExpense>({
   type: { type: String, enum: ['INCOME', 'EXPENSE'], required: true },
   category: { 
     type: String, 
+    // ✅ We keep your original strict ENUM
     enum: ['MAINTENANCE', 'SALARY', 'UTILITIES', 'RENT_INCOME', 'OTHER'], 
     required: true 
   },
