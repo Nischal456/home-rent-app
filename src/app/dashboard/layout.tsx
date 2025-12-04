@@ -17,10 +17,10 @@ import { Separator } from '@/components/ui/separator';
 
 // --- Icons from lucide-react ---
 // ✅ ADDED: ShieldCheck, Droplets, Wallet for the new menu items
-import { 
-  Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu, 
+import {
+  Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, CheckCheck, Building, Menu,
   Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, CreditCard, PanelsTopLeft,
-  ShieldCheck, Droplets, Wallet 
+  ShieldCheck, Droplets, Wallet
 } from 'lucide-react';
 
 // --- Animation & Utilities ---
@@ -70,7 +70,7 @@ NavLink.displayName = "NavLink";
 function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onLinkClick?: () => void; unreadPaymentsCount: number }) {
   const navItems = [
     { href: "/dashboard", icon: <PanelsTopLeft className="h-4 w-4" />, label: "Dashboard" },
-    
+
     // --- ADMIN LINKS ---
     ...(user.role === 'ADMIN' ? [
       { href: "/dashboard/payments", icon: <Banknote className="h-4 w-4" />, label: "Payments", badge: unreadPaymentsCount },
@@ -79,7 +79,7 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
       { href: "/dashboard/rent-bills", icon: <ReceiptText className="h-4 w-4" />, label: "Rent Bills" },
       { href: "/dashboard/utility-bills", icon: <ReceiptText className="h-4 w-4" />, label: "Utility Bills" },
       { href: "/dashboard/maintenance", icon: <Wrench className="h-4 w-4" />, label: "Maintenance" },
-      
+
       // ✅ ADDED: New Security & Water Links
       { href: "/dashboard/staff", icon: <ShieldCheck className="h-4 w-4" />, label: "Staff Management" },
       { href: "/dashboard/water-tankers", icon: <Droplets className="h-4 w-4" />, label: "Water Logs" },
@@ -93,13 +93,13 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
 
     // --- SECURITY GUARD LINKS (Optional, if they log into this dashboard too) ---
     ...(user.role === 'SECURITY' ? [
-       { href: "/dashboard/security", icon: <ShieldCheck className="h-4 w-4" />, label: "Guard Portal" },
+      { href: "/dashboard/security", icon: <ShieldCheck className="h-4 w-4" />, label: "Guard Portal" },
     ] : []),
   ];
-  
+
   const bottomNavItems = [
-      { href: "/dashboard/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
-      { href: "/dashboard/support", icon: <LifeBuoy className="h-4 w-4" />, label: "Support" },
+    { href: "/dashboard/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
+    { href: "/dashboard/support", icon: <LifeBuoy className="h-4 w-4" />, label: "Support" },
   ];
 
   return (
@@ -114,10 +114,10 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
         ))}
         <Separator className="my-3" />
         {bottomNavItems.map((item) => (
-           <NavLink key={item.href} href={item.href} onClick={onLinkClick}>
-               {item.icon}
-               {item.label}
-           </NavLink>
+          <NavLink key={item.href} href={item.href} onClick={onLinkClick}>
+            {item.icon}
+            {item.label}
+          </NavLink>
         ))}
       </nav>
     </LayoutGroup>
@@ -168,9 +168,9 @@ function NotificationBell({ notifications, onMarkAllRead }: { notifications: Cli
       <DropdownMenuContent align="end" className="w-96">
         <DropdownMenuLabel className="flex justify-between items-center px-3 py-2">
           <span className="font-bold text-base">Notifications</span>
-          {unreadCount > 0 && 
+          {unreadCount > 0 &&
             <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => onMarkAllRead()}>
-                Mark all as read
+              Mark all as read
             </Button>
           }
         </DropdownMenuLabel>
@@ -194,9 +194,9 @@ function NotificationBell({ notifications, onMarkAllRead }: { notifications: Cli
             ))
           ) : (
             <div className="text-center text-muted-foreground py-8 px-4">
-                <Sparkles className="mx-auto h-8 w-8 text-gray-400 mb-2"/>
-                <p className="font-medium">All caught up!</p>
-                <p className="text-sm">You have no new notifications.</p>
+              <Sparkles className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="font-medium">All caught up!</p>
+              <p className="text-sm">You have no new notifications.</p>
             </div>
           )}
         </div>
@@ -213,7 +213,7 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-auto px-2 py-1 space-x-2 rounded-full hover:bg-muted">
           <Avatar className="h-9 w-9 border">
-            <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName}/>
+            <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} />
             <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
           <div className="hidden lg:flex lg:flex-col lg:items-start">
@@ -225,13 +225,13 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="font-normal">
           <div className="flex items-center gap-3">
-             <Avatar className="h-10 w-10">
-                <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName}/>
-                <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} />
+              <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.fullName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+              <p className="text-sm font-medium leading-none">{user.fullName}</p>
+              <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
             </div>
           </div>
         </DropdownMenuLabel>
@@ -258,7 +258,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const fetchAdminData = useCallback(async () => {
     try {
-      const res = await fetch('/api/payments'); 
+      const res = await fetch('/api/payments');
       const data = await res.json();
       if (data.success) {
         setPendingPaymentsCount(data.data.length);
@@ -310,34 +310,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
     toast.success("Logged out successfully!");
   };
-  
+
   const handleMarkAllAsRead = async () => {
-      const unreadIds = notifications.filter(n => !n.isRead).map(n => n._id);
-      if (unreadIds.length === 0) return;
-      
-      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-      
-      try {
-          await fetch('/api/notifications', { 
-              method: 'PATCH', 
-              body: JSON.stringify({ ids: unreadIds }), 
-              headers: {'Content-Type': 'application/json'} 
-          });
-      } catch (error) {
-          console.error("Failed to mark notifications as read on server", error);
-          toast.error("Could not sync notifications with server.");
-      }
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n._id);
+    if (unreadIds.length === 0) return;
+
+    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        body: JSON.stringify({ ids: unreadIds }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error("Failed to mark notifications as read on server", error);
+      toast.error("Could not sync notifications with server.");
+    }
   };
-  
+
   if (isLoading || !user) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <div className="flex flex-col items-center gap-4">
-                <Image src="/logo.png" alt="Logo" width={64} height={64} className="h-auto object-contain animate-pulse" />
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground">Loading Your Dashboard...</p>
-            </div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Image src="/logo.png" alt="Logo" width={64} height={64} className="h-auto object-contain animate-pulse" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading Your Dashboard...</p>
         </div>
+      </div>
     );
   }
 
@@ -348,14 +348,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
             <Link href="/dashboard" className="flex items-center gap-3 font-bold text-primary">
-              <div className="h-6 w-6 relative  overflow-hidden ">
-                 <Image src="/home.png" alt="Logo" fill className="object-cover" />
+              <div className="h-6 w-6 relative transition-all duration-200 hover:scale-105">
+                <Image
+                  src="/home.png"
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                />
               </div>
+
               <span className="text-lg">STG Tower</span>
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto py-4">
-             <NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} />
+            <NavLinks user={user} unreadPaymentsCount={pendingPaymentsCount} />
           </div>
         </div>
       </aside>
@@ -369,43 +375,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button variant="outline" size="icon" className="shrink-0 md:hidden"><Menu className="h-5 w-5" /></Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0 w-[280px]">
-                <SheetHeader className="p-4 border-b bg-muted/10">
-                    <SheetTitle className="sr-only">Menu</SheetTitle>
-                    <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
-                    <Link href="/dashboard" className="flex items-center gap-3 font-bold text-primary" onClick={() => setSheetOpen(false)}>
-                        <div className="h-8 w-8 relative rounded-full overflow-hidden border">
-                           <Image src="/logo.png" alt="Logo" fill className="object-cover" />
-                        </div>
-                        <span>STG Tower</span>
-                    </Link>
-                </SheetHeader>
-                <div className="flex-1 overflow-y-auto py-4">
-                  <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} unreadPaymentsCount={pendingPaymentsCount} />
-                </div>
+              <SheetHeader className="p-4 border-b bg-muted/10">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
+                <Link href="/dashboard" className="flex items-center gap-3 font-bold text-primary" onClick={() => setSheetOpen(false)}>
+                  <div className="h-8 w-8 relative active:scale-95 transition-all duration-200">
+                    <Image
+                      src="/home.png"
+                      alt="Logo"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+
+                  <span>STG Tower</span>
+                </Link>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto py-4">
+                <NavLinks user={user} onLinkClick={() => setSheetOpen(false)} unreadPaymentsCount={pendingPaymentsCount} />
+              </div>
             </SheetContent>
           </Sheet>
-          
+
           <div className="w-full flex-1" />
           <div className="flex items-center gap-2">
-             <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
-             <UserNav user={user} onLogout={handleLogout} />
+            <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
+            <UserNav user={user} onLogout={handleLogout} />
           </div>
         </header>
 
         {/* --- Page Content --- */}
         <main className="flex-1 p-4 lg:p-6 bg-muted/20 overflow-x-hidden">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={pathname}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-full max-w-[1600px] mx-auto"
-                >
-                    {children}
-                </motion.div>
-            </AnimatePresence>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-[1600px] mx-auto"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
         <Toaster position="bottom-right" />
       </div>

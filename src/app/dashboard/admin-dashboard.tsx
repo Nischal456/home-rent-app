@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { 
     DollarSign, Users, FileText, Banknote, LayoutDashboard, 
     AlertCircle, Wrench, Receipt, ArrowRight, 
-    Scale, TrendingUp, TrendingDown, Inbox
+    Scale, TrendingUp, TrendingDown, Inbox, IndianRupee
 } from "lucide-react";
 
 // --- Types ---
@@ -189,7 +189,7 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Rent Due" value={summaryData?.totalRentDue ?? 0} Icon={DollarSign} />
+        <StatCard title="Total Rent Due" value={summaryData?.totalRentDue ?? 0} Icon={IndianRupee} />
         <StatCard title="Active Tenants" value={summaryData?.activeTenants ?? 0} Icon={Users} isCurrency={false} />
         <StatCard title="Unpaid Utility Bills" value={summaryData?.unpaidUtilityBills ?? 0} Icon={FileText} isCurrency={false} />
         <StatCard title="Last Payment Received" value={summaryData?.lastPayment?.amount ?? 0} Icon={Banknote} description={`On ${new Date(summaryData?.lastPayment?.date ?? '').toLocaleDateString()}`} />
