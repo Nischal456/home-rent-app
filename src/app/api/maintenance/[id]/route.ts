@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import MaintenanceRequest from '@/models/MaintenanceRequest';
+import User from '@/models/User'; // ✅ Import to ensure schema is registered
 import jwt from 'jsonwebtoken';
 import { pusherServer } from '@/lib/pusher';
-import { IUser } from '@/types'; // Import IUser for typing
 
 interface TokenPayload { id: string; role: string; }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { requestId: string } }
+  { params }: { params: { id: string } } // ✅ FIX: Changed requestId to id to match folder [id]
 ) {
   await dbConnect();
+  
+  // Ensure User model is registered
+  const _u = User;
+
   try {
     // 1. Verify Auth (Security or Admin)
     const token = request.cookies.get('token')?.value;
@@ -22,17 +26,25 @@ export async function PATCH(
         return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    // 2. Get New Status
-    const { status } = await request.json(); // Expects 'IN_PROGRESS' or 'COMPLETED'
+    // 2. Get Data
+    const body = await request.json();
+    const { status, priority } = body;
 
-    // 3. Update the Request
-    const updateData: any = { status };
-    if (status === 'COMPLETED') {
-        updateData.completedAt = new Date();
+    const updateData: any = {};
+    if (status) {
+        updateData.status = status;
+        if (status === 'COMPLETED') {
+            updateData.completedAt = new Date();
+        }
+    }
+    if (priority) {
+        updateData.priority = priority;
     }
 
+    // 3. Update the Request
+    // ✅ FIX: Using params.id
     const maintenanceRequest = await MaintenanceRequest.findByIdAndUpdate(
-        params.requestId,
+        params.id,
         { $set: updateData },
         { new: true }
     ).populate('tenantId', 'fullName');
@@ -42,9 +54,8 @@ export async function PATCH(
     }
 
     // 4. Notify Admin (if Guard updated it)
-    if (decoded.role === 'SECURITY') {
-        // ✅ FIX: Cast tenantId to 'any' or 'IUser' to access fullName
-        // We use 'as any' here to safely bypass the TypeScript check since we know it's populated
+    if (decoded.role === 'SECURITY' && status) {
+        // Safe check for tenant name
         const tenantName = (maintenanceRequest.tenantId as any)?.fullName || 'Unknown Tenant';
 
         await pusherServer.trigger('admin-notifications', 'maintenance-update', {
@@ -64,7 +75,7 @@ export async function PATCH(
 // Delete API (Optional but good to have)
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { requestId: string } }
+    { params }: { params: { id: string } } // ✅ FIX: Changed requestId to id
 ) {
     await dbConnect();
     try {
@@ -76,7 +87,13 @@ export async function DELETE(
              return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
         }
 
-        await MaintenanceRequest.findByIdAndDelete(params.requestId);
+        // ✅ FIX: Using params.id
+        const deleted = await MaintenanceRequest.findByIdAndDelete(params.id);
+        
+        if (!deleted) {
+             return NextResponse.json({ success: false, message: 'Request not found' }, { status: 404 });
+        }
+
         return NextResponse.json({ success: true, message: 'Request deleted' });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'Server Error' }, { status: 500 });
