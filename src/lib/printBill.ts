@@ -148,7 +148,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
             <p class="font-bold text-gray-500">Amount In words:</p>
             <p class="italic capitalize">${amountInWords}</p>
             <p class="font-bold mt-6 text-gray-500">Remarks:</p>
-            <p>${bill.remarks || 'The water rate has been adjusted from Rs 0.40 to Rs 0.30 per liter .'}</p>
+            <p>${bill.remarks || 'Please Pay the utility bill on time .'}</p>
           </div>
           <div>
             <table class="w-full text-right">
