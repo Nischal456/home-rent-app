@@ -218,7 +218,7 @@ export default function UtilityBillsPage() {
                 {renderContent()}
             </div>
             
-            <Button onClick={() => setAddDialogOpen(true)} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,20px))] right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center md:hidden">
+            <Button onClick={() => setAddDialogOpen(true)} className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom,40px))] right-6 h-16 w-16 rounded-full shadow-lg z-[60] flex items-center justify-center md:hidden">
                 <PlusCircle className="h-8 w-8" />
                 <span className="sr-only">Add Utility Bill</span>
             </Button>

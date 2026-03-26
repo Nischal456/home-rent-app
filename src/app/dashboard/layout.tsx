@@ -482,7 +482,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Toaster 
           position="top-center" 
           containerStyle={{
-            top: 'calc(env(safe-area-inset-top, 20px) + 16px)'
+            top: 'calc(env(safe-area-inset-top, 50px) + 32px)'
           }}
           toastOptions={{
              className: 'rounded-2xl font-bold shadow-xl border border-slate-100 z-[100]',
