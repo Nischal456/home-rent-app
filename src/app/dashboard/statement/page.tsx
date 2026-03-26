@@ -5,7 +5,8 @@ import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileClock, AlertTriangle, CheckCircle, Hourglass, ListX, X, Download,TrendingUp } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Loader2, FileClock, AlertTriangle, CheckCircle, Hourglass, ListX, Download, TrendingUp, Search, SlidersHorizontal,User ,CalendarDays} from 'lucide-react';
 import { IRentBill, IUtilityBill, IUser } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,17 +14,17 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from 'usehooks-ts';
 import Papa from 'papaparse';
 
-// --- NEW IMPORTS for the "Best of Best" Pop-up ---
+// --- Imports for the "Best of Best" Pop-up ---
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
-import { Receipt, Zap, Calendar, Hash, CircleUserRound, Banknote, Droplets, Wrench, Shield, FileText, Scale } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Receipt,Wallet, Zap, Calendar, Hash, CircleUserRound, Banknote, Droplets, Wrench, Shield, FileText, Scale, ZapIcon, Settings, Info, Building } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 
 type CombinedBill = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
 type Status = 'DUE' | 'PAID' | 'OVERDUE';
+type FilterType = 'All' | 'Rent' | 'Utility';
 
 // --- Reusable SWR fetcher function ---
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -31,23 +32,23 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 // --- Reusable Sub-Components ---
 const StatusBadge = ({ status }: { status: Status }) => {
     const statusConfig: Record<Status, { text: string; icon: ReactNode; className: string }> = {
-        PAID: { text: "Paid", icon: <CheckCircle className="h-3.5 w-3.5" />, className: "bg-green-100/80 text-green-900 border-green-300" },
-        DUE: { text: "Due", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-yellow-100/80 text-yellow-900 border-yellow-300" },
-        OVERDUE: { text: "Overdue", icon: <AlertTriangle className="h-3.5 w-3.5" />, className: "bg-red-100/80 text-red-900 border-red-300" },
+        PAID: { text: "Paid", icon: <CheckCircle className="h-3.5 w-3.5" />, className: "bg-emerald-100/80 text-emerald-700 border-emerald-200" },
+        DUE: { text: "Due", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-amber-100/80 text-amber-700 border-amber-200" },
+        OVERDUE: { text: "Overdue", icon: <AlertTriangle className="h-3.5 w-3.5" />, className: "bg-red-100/80 text-red-700 border-red-200 animate-pulse" },
     };
-    const config = statusConfig[status] || { text: status, icon: null, className: "bg-gray-100/80 text-gray-900" };
+    const config = statusConfig[status] || { text: status, icon: null, className: "bg-slate-100/80 text-slate-700" };
 
-    return <Badge variant="outline" className={cn("inline-flex items-center gap-1.5 font-semibold", config.className)}>{config.icon}<span>{config.text}</span></Badge>;
+    return <Badge variant="outline" className={cn("inline-flex items-center gap-1.5 font-bold tracking-wide rounded-full px-2.5 py-0.5 backdrop-blur-md shadow-sm", config.className)}>{config.icon}<span>{config.text}</span></Badge>;
 };
 
 const StatCard = ({ icon, title, value }: { icon: React.ReactNode, title: string, value: number }) => (
-    <Card className="bg-white/80 backdrop-blur-xl shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            {icon}
+    <Card className="bg-white/80 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 rounded-[2rem] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-white/50 border-b border-slate-100/50">
+            <CardTitle className="text-sm font-extrabold text-slate-500 uppercase tracking-wider">{title}</CardTitle>
+            <div className="p-2 bg-slate-50 rounded-xl">{icon}</div>
         </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">Rs {value.toLocaleString('en-IN')}</div>
+        <CardContent className="pt-6">
+            <div className="text-3xl font-black text-slate-900 tracking-tight">Rs {value.toLocaleString('en-IN')}</div>
         </CardContent>
     </Card>
 );
@@ -55,162 +56,205 @@ const StatCard = ({ icon, title, value }: { icon: React.ReactNode, title: string
 const BillCard = ({ bill, index, onClick }: { bill: CombinedBill, index: number, onClick: () => void }) => {
   const amount = bill.type === 'Rent' ? bill.amount : bill.totalAmount;
   const period = bill.type === 'Rent' ? bill.rentForPeriod : bill.billingMonthBS;
-  const Icon = bill.type === 'Rent' ? Receipt : Zap;
+  const isRent = bill.type === 'Rent';
+  const Icon = isRent ? Receipt : Zap;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
-      <Card className="bg-white/80 backdrop-blur-xl cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2"><Icon className="h-5 w-5" /> {bill.type} Bill</CardTitle>
-              <CardDescription>{period}</CardDescription>
-            </div>
-            <div className="text-lg font-bold text-primary font-mono">
-              Rs {amount.toLocaleString()}
-            </div>
+    <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}>
+      <div 
+        onClick={onClick}
+        className="group relative flex flex-col justify-between p-5 bg-white border border-slate-100 rounded-2xl cursor-pointer shadow-sm hover:shadow-[0_8px_20px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+      >
+        <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300", isRent ? "bg-gradient-to-r from-blue-50/50 to-transparent" : "bg-gradient-to-r from-orange-50/50 to-transparent")} />
+        
+        <div className="relative z-10 flex justify-between items-start mb-4">
+          <div className="flex items-center gap-3">
+             <div className={cn("p-2 rounded-xl shadow-inner group-hover:scale-110 transition-transform duration-300 text-white", isRent ? "bg-blue-500" : "bg-orange-500")}>
+                <Icon className="h-5 w-5" />
+             </div>
+             <div>
+               <h4 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                 {bill.type} Bill <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">{period}</span>
+               </h4>
+               <p className="text-xs font-bold text-slate-400 mt-0.5">Date: {bill.billDateBS || new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</p>
+             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Bill Date:</span>
-            <span className="font-medium">{bill.billDateBS || new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</span>
+        </div>
+        
+        <div className="relative z-10 flex items-center justify-between border-t border-slate-100 pt-3">
+          <StatusBadge status={bill.status} />
+          <div className="text-lg font-black text-slate-900">
+            Rs {amount.toLocaleString('en-IN')}
           </div>
-           <div className="flex justify-between">
-            <span className="text-muted-foreground">Paid On:</span>
-            <span className="font-medium">{bill.paidOnBS || '---'}</span>
-          </div>
-          <div className="flex justify-between items-center pt-2 border-t">
-            <span className="text-muted-foreground">Status:</span>
-            <StatusBadge status={bill.status} />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 };
 
-// --- "BEST OF BEST" RESPONSIVE BILL DETAILS POP-UP ---
-
-// ✅ DEFINITIVE FIX 1: A new robust DetailRow component that handles overflow
-const DetailRow = ({ icon, label, value, isTotal = false }: { icon: React.ReactNode, label: string, value: React.ReactNode, isTotal?: boolean }) => (
-    <div className={cn(
-        "grid grid-cols-2 items-start py-3 border-b border-border/50",
-        isTotal && "border-t-2 border-b-0 pt-4 mt-2"
-    )}>
-      <div className="flex items-center gap-3 text-sm text-muted-foreground truncate">
-        {icon}
-        <span className={cn("truncate", isTotal && "text-lg font-bold text-foreground")}>{label}</span>
-      </div>
-      <div className={cn(
-          "font-semibold text-sm text-foreground text-right break-words",
-          isTotal && "text-2xl font-extrabold text-primary"
-      )}>
-        {value}
-      </div>
-    </div>
-);
-
-// ✅ DEFINITIVE FIX 2: A dedicated, professional component for Rent Details
-const RentDetails = ({ bill }: { bill: IRentBill }) => (
-  <div className="space-y-2">
-    <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><Receipt size={14} /> RENT DETAILS</h4>
-    <div className="border-l-2 pl-4 space-y-1">
-      <DetailRow icon={<span className="w-4"/>} label="Rent for Period" value={bill.rentForPeriod} />
-      <DetailRow icon={<Banknote size={16} />} label="Amount" value={`Rs ${bill.amount.toLocaleString()}`} />
-    </div>
-  </div>
-);
-
-const UtilityDetails = ({ bill }: { bill: IUtilityBill }) => (
-  <div className="space-y-6">
-    <div>
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><Zap size={14} /> ELECTRICITY</h4>
-      <div className="border-l-2 pl-4 space-y-1">
-        <DetailRow icon={<span className="w-4"/>} label="Previous Reading" value={bill.electricity.previousReading} />
-        <DetailRow icon={<span className="w-4"/>} label="Current Reading" value={bill.electricity.currentReading} />
-        <DetailRow icon={<span className="w-4"/>} label="Units Consumed" value={bill.electricity.unitsConsumed} />
-        <DetailRow icon={<Banknote size={16} />} label="Amount" value={`Rs ${bill.electricity.amount.toLocaleString()}`} />
-      </div>
-    </div>
-    <div>
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><Droplets size={14} /> WATER</h4>
-      <div className="border-l-2 pl-4 space-y-1">
-        <DetailRow icon={<span className="w-4"/>} label="Previous Reading" value={bill.water.previousReading} />
-        <DetailRow icon={<span className="w-4"/>} label="Current Reading" value={bill.water.currentReading} />
-        <DetailRow icon={<span className="w-4"/>} label="Units Consumed" value={bill.water.unitsConsumed} />
-        <DetailRow icon={<Banknote size={16} />} label="Amount" value={`Rs ${bill.water.amount.toLocaleString()}`} />
-      </div>
-    </div>
-    <div>
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><Wrench size={14} /> OTHER CHARGES</h4>
-       <div className="border-l-2 pl-4 space-y-1">
-        <DetailRow icon={<span className="w-4"/>} label="Service Charge" value={`Rs ${bill.serviceCharge.toLocaleString()}`} />
-        <DetailRow icon={<Shield size={16} />} label="Security Charge" value={`Rs ${bill.securityCharge.toLocaleString()}`} />
-      </div>
-    </div>
-  </div>
-);
-
-const BillContent = ({ bill, user }: { bill: CombinedBill, user: IUser | null }) => {
+// --- "BEST OF BEST" RESPONSIVE BILL DETAILS CONTENT ---
+const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user: IUser | null, onClose: () => void }) => {
   const isUtility = bill.type === 'Utility';
   const totalAmount = isUtility ? (bill as IUtilityBill).totalAmount : (bill as IRentBill).amount;
+  const period = isUtility ? (bill as IUtilityBill).billingMonthBS : (bill as IRentBill).rentForPeriod;
 
   return (
-    <div className="p-4 sm:p-0">
-      <div className="grid gap-6">
-        <div className="grid gap-1 p-4 rounded-lg bg-muted/50">
-           <DetailRow icon={<CircleUserRound size={16} />} label="Tenant" value={user?.fullName ?? 'N/A'} />
-           <DetailRow icon={<Calendar size={16} />} label="Bill Date (BS)" value={new NepaliDate(bill.billDateAD).format('YYYY MMMM DD')} />
-           <DetailRow icon={<Hash size={16} />} label="Status" value={<StatusBadge status={bill.status} />} />
+    <div className="flex flex-col h-full w-full bg-[#f8fafc]">
+      {/* Header Area - Locked at Top */}
+      <div className="relative p-6 md:p-8 bg-white border-b border-slate-100 shrink-0">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-orange-400"></div>
+        <div className="flex flex-row items-center gap-4 text-left">
+          <div className={cn("shrink-0 p-4 rounded-2xl shadow-inner", !isUtility ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600")}>
+            {!isUtility ? <Wallet className="w-8 h-8" /> : <Zap className="w-8 h-8" />}
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">{bill.type} Bill</h2>
+            <p className="font-bold text-slate-400 mt-1">Details & Breakdown</p>
+          </div>
         </div>
-        
-        {isUtility ? (
-          <UtilityDetails bill={bill as IUtilityBill} />
-        ) : (
-          <RentDetails bill={bill as IRentBill} /> // ✅ Use the new rent component
-        )}
+      </div>
 
-        <div className="pt-2">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2"><FileText size={14} /> REMARKS</h4>
-            <div className="text-sm text-foreground bg-muted/50 p-3 rounded-md border italic break-words">
-                {bill.remarks && bill.remarks.trim() !== '' ? bill.remarks : 'No remarks provided for this bill.'}
-            </div>
-        </div>
+      {/* Scrollable Body - This handles the scroll bug */}
+      <div className="flex-1 overflow-y-auto styled-scrollbar p-6 md:p-8 space-y-6">
         
-        {/* ✅ DEFINITIVE FIX 3: Use the robust DetailRow for the Grand Total */}
-        <DetailRow
-            isTotal={true}
-            icon={<Scale size={16} />}
-            label="Grand Total"
-            value={`Rs ${totalAmount.toLocaleString()}`}
-        />
+        {/* Meta Grid */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-slate-400 mb-1">
+              <User className="w-4 h-4" />
+              <span className="text-xs font-extrabold uppercase tracking-wider">Tenant</span>
+            </div>
+            <span className="font-bold text-slate-800 line-clamp-1">{user?.fullName ?? 'N/A'}</span>
+          </div>
+
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-slate-400 mb-1">
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs font-extrabold uppercase tracking-wider">Period / Month</span>
+            </div>
+            <span className="font-bold text-[#0B2863] text-base leading-none">{period}</span>
+          </div>
+          
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-slate-400 mb-1">
+              <CalendarDays className="w-4 h-4" />
+              <span className="text-xs font-extrabold uppercase tracking-wider">Date (B.S)</span>
+            </div>
+            <span className="font-bold text-slate-800">{bill.billDateBS || new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</span>
+          </div>
+
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-start">
+             <div className="flex items-center gap-2 text-slate-400 mb-1">
+              <Info className="w-4 h-4" />
+              <span className="text-xs font-extrabold uppercase tracking-wider">Status</span>
+            </div>
+            <StatusBadge status={bill.status as Status} />
+          </div>
+        </div>
+
+        <Separator className="bg-slate-200/60" />
+
+        {/* Charges Area */}
+        <div>
+          <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+             <Wallet className="w-5 h-5 text-slate-400" /> Charges Summary
+          </h3>
+
+          {!isUtility ? (
+            <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-2xl flex items-center justify-between">
+               <div>
+                  <p className="text-xs font-extrabold text-blue-400 uppercase tracking-wider mb-1">Rent Period</p>
+                  <p className="font-bold text-slate-800 text-lg">{(bill as IRentBill).rentForPeriod}</p>
+               </div>
+               <div className="text-right">
+                  <p className="text-xs font-extrabold text-blue-400 uppercase tracking-wider mb-1">Amount</p>
+                  <p className="font-black text-[#0B2863] text-xl">Rs {(bill as IRentBill).amount.toLocaleString('en-IN')}</p>
+               </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+                {/* Electricity Card */}
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-50 text-yellow-600 rounded-xl"><Zap className="w-5 h-5" /></div>
+                        <h4 className="font-extrabold text-slate-800 text-base">Electricity</h4>
+                      </div>
+                      <span className="font-black text-slate-900 text-lg">Rs {(bill as IUtilityBill).electricity.amount.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-xl p-3 text-center">
+                       <div><p className="text-[10px] font-extrabold text-slate-400 uppercase">Prev</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).electricity.previousReading}</p></div>
+                       <div className="border-x border-slate-200"><p className="text-[10px] font-extrabold text-slate-400 uppercase">Curr</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).electricity.currentReading}</p></div>
+                       <div><p className="text-[10px] font-extrabold text-yellow-500 uppercase">Units</p><p className="font-black text-slate-900 mt-0.5">{(bill as IUtilityBill).electricity.unitsConsumed}</p></div>
+                    </div>
+                </div>
+
+                {/* Water Card */}
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Droplets className="w-5 h-5" /></div>
+                        <h4 className="font-extrabold text-slate-800 text-base">Water</h4>
+                      </div>
+                      <span className="font-black text-slate-900 text-lg">Rs {(bill as IUtilityBill).water.amount.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-xl p-3 text-center">
+                       <div><p className="text-[10px] font-extrabold text-slate-400 uppercase">Prev</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).water.previousReading}</p></div>
+                       <div className="border-x border-slate-200"><p className="text-[10px] font-extrabold text-slate-400 uppercase">Curr</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).water.currentReading}</p></div>
+                       <div><p className="text-[10px] font-extrabold text-blue-500 uppercase">Units</p><p className="font-black text-slate-900 mt-0.5">{(bill as IUtilityBill).water.unitsConsumed}</p></div>
+                    </div>
+                </div>
+
+                {/* Additional Charges */}
+                {((bill as IUtilityBill).serviceCharge > 0 || (bill as IUtilityBill).securityCharge > 0) && (
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-3">
+                     {(bill as IUtilityBill).serviceCharge > 0 && (
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2 text-slate-600 font-bold text-sm"><Settings className="w-4 h-4 text-slate-400" /> Service Charge</div><span className="font-extrabold text-slate-800">Rs {(bill as IUtilityBill).serviceCharge.toLocaleString('en-IN')}</span></div>
+                     )}
+                     {(bill as IUtilityBill).serviceCharge > 0 && (bill as IUtilityBill).securityCharge > 0 && <Separator className="bg-slate-100" />}
+                     {(bill as IUtilityBill).securityCharge > 0 && (
+                       <div className="flex justify-between items-center"><div className="flex items-center gap-2 text-slate-600 font-bold text-sm"><Shield className="w-4 h-4 text-slate-400" /> Security Charge</div><span className="font-extrabold text-slate-800">Rs {(bill as IUtilityBill).securityCharge.toLocaleString('en-IN')}</span></div>
+                     )}
+                  </div>
+                )}
+            </div>
+          )}
+
+          {/* Remarks Section */}
+          {bill.remarks && bill.remarks.trim() !== '' && (
+            <div className="mt-4 bg-orange-50/50 border border-orange-100 rounded-2xl p-4">
+              <h4 className="font-extrabold text-orange-800 text-sm mb-2 flex items-center gap-2"><Info className="w-4 h-4" /> Admin Remarks</h4>
+              <p className="text-sm font-medium text-orange-900/80 whitespace-pre-wrap leading-relaxed">{bill.remarks}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sticky Footer - Locked at Bottom */}
+      <div className="bg-white border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex items-center justify-between shrink-0">
+          <div className="flex flex-col">
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total Payable</span>
+            <span className="text-2xl sm:text-3xl font-black text-[#0B2863] tracking-tight">Rs {totalAmount.toLocaleString('en-IN')}</span>
+          </div>
+          <Button variant="outline" onClick={onClose} className="rounded-xl h-12 px-6 font-bold text-slate-600">Close</Button>
       </div>
     </div>
   );
 };
 
+// --- Dialog/Drawer Wrapper ---
 function StatementBillDetails({ bill, user, onClose }: { bill: CombinedBill | null, user: IUser | null, onClose: () => void }) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   if (!bill) return null;
-  
-  const isUtility = bill.type === 'Utility';
-  const title = `${bill.type} Bill Details`;
-  const description = `Bill for: ${isUtility ? (bill as IUtilityBill).billingMonthBS : (bill as IRentBill).rentForPeriod}`;
 
   if (isDesktop) {
     return (
-      <Dialog open={!!bill} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">{isUtility ? <Zap size={18} /> : <Receipt size={18} />} {title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <BillContent bill={bill} user={user} />
+      <Dialog open={!!bill} onOpenChange={(open) => !open && onClose()}>
+        {/* Enforce strict height and flex constraints on the Dialog Content */}
+        <DialogContent className="sm:max-w-md md:max-w-xl p-0 border-0 rounded-[2rem] shadow-2xl bg-transparent overflow-hidden flex flex-col max-h-[85vh]">
+          <PremiumBillContent bill={bill} user={user} onClose={onClose} />
         </DialogContent>
       </Dialog>
     );
@@ -218,17 +262,9 @@ function StatementBillDetails({ bill, user, onClose }: { bill: CombinedBill | nu
 
   return (
     <Drawer open={!!bill} onClose={onClose}>
-      <DrawerContent>
-        <DrawerHeader className="text-left">
-          <DrawerTitle className="flex items-center gap-2">{isUtility ? <Zap size={18} /> : <Receipt size={18} />} {title}</DrawerTitle>
-          <DrawerDescription>{description}</DrawerDescription>
-        </DrawerHeader>
-        <div className="px-4 overflow-y-auto max-h-[70vh]">
-          <BillContent bill={bill} user={user} />
-        </div>
-        <DrawerFooter className="pt-4">
-          <DrawerClose asChild><Button variant="outline">Close</Button></DrawerClose>
-        </DrawerFooter>
+      {/* Enforce strict height and flex constraints on the Drawer Content */}
+      <DrawerContent className="flex flex-col max-h-[85vh] h-[85vh] bg-transparent border-0 rounded-t-[2rem] overflow-hidden p-0">
+        <PremiumBillContent bill={bill} user={user} onClose={onClose} />
       </DrawerContent>
     </Drawer>
   );
@@ -247,17 +283,19 @@ const LoadingSkeleton = () => (
       <Skeleton className="h-10 w-full md:w-36" />
     </div>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
+        <Skeleton className="h-32 rounded-[2rem]" />
+        <Skeleton className="h-32 rounded-[2rem]" />
+        <Skeleton className="h-32 rounded-[2rem]" />
     </div>
-    <Skeleton className="h-64 w-full" />
+    <Skeleton className="h-64 w-full rounded-[2rem]" />
   </div>
 );
 
 // --- Main Statement Page Component ---
 export default function StatementPage() {
   const [selectedBill, setSelectedBill] = useState<CombinedBill | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<FilterType>('All');
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { data: userResponse, isLoading: isUserLoading } = useSWR('/api/auth/me', fetcher);
@@ -293,6 +331,20 @@ export default function StatementPage() {
     return { allBills: combined, totalDue: due, totalBilled: billed, totalPaid: paid };
   }, [rentResponse, utilityResponse]);
 
+  // --- Filtering Logic ---
+  const filteredBills = useMemo(() => {
+    return allBills.filter(bill => {
+      // Filter by Type
+      const matchesType = filterType === 'All' || bill.type === filterType;
+      
+      // Filter by Search Term (Month/Period)
+      const period = bill.type === 'Rent' ? (bill as IRentBill).rentForPeriod : (bill as IUtilityBill).billingMonthBS;
+      const matchesSearch = period.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesType && matchesSearch;
+    });
+  }, [allBills, filterType, searchTerm]);
+
   const handleDownloadCSV = () => {
     const csvData = allBills.map(bill => {
         const isUtility = bill.type === 'Utility';
@@ -314,98 +366,147 @@ export default function StatementPage() {
   };
 
   if (isLoading) {
-    return <div className="p-4 md:p-8"><LoadingSkeleton /></div>;
+    return <div className="p-4 md:p-8 max-w-[1600px] mx-auto"><LoadingSkeleton /></div>;
   }
 
   return (
     <>
       <StatementBillDetails bill={selectedBill} user={user} onClose={() => setSelectedBill(null)} />
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 p-4 md:p-8 max-w-[1600px] mx-auto w-full relative z-10">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm">
           <div className="flex items-center gap-4">
-            <FileClock className="h-8 w-8 text-primary" />
+            <div className="p-3 bg-blue-50 rounded-2xl"><FileClock className="h-8 w-8 text-[#0B2863]" /></div>
             <div>
-              <h1 className="text-3xl font-bold">My Statement</h1>
-              <p className="text-muted-foreground">A complete history of all your bills.</p>
+              <p className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-1">Financial History</p>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-[#0B2863] tracking-tight">My Statement</h1>
             </div>
           </div>
-          <Button onClick={handleDownloadCSV} variant="outline" className="w-full md:w-auto">
-            <Download className="mr-2 h-4 w-4" /> Download CSV
+          <Button onClick={handleDownloadCSV} className="w-full md:w-auto rounded-xl h-12 bg-white text-slate-800 hover:bg-slate-50 border border-slate-200 shadow-sm hover:shadow-md font-bold transition-all">
+            <Download className="mr-2 h-4 w-4 text-blue-500" /> Export CSV
           </Button>
         </div>
 
+        {/* Mobile Total Due Summary */}
         {isMobile && (
-          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-primary-foreground shadow-lg">
-            <CardContent className="p-4">
-              <p className="text-sm">Total Outstanding Due</p>
-              <p className="text-2xl font-bold">Rs {totalDue.toLocaleString()}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 p-6 rounded-[2rem] text-white shadow-lg shadow-red-500/20">
+             <p className="text-sm font-bold opacity-90 uppercase tracking-widest mb-1">Outstanding Due</p>
+             <p className="text-4xl font-black tracking-tight drop-shadow-sm">Rs {totalDue.toLocaleString()}</p>
+          </div>
         )}
         
+        {/* Desktop Stat Cards */}
         {!isMobile && (
-             <motion.div 
-               initial={{ opacity: 0, y: 20 }} 
-               animate={{ opacity: 1, y: 0 }} 
-               transition={{ delay: 0.1 }}
-               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-             >
-                <StatCard icon={<Scale className="text-red-500"/>} title="Total Due" value={totalDue} />
-                <StatCard icon={<TrendingUp className="text-green-500"/>} title="Total Paid" value={totalPaid} />
-                <StatCard icon={<Banknote className="text-blue-500"/>} title="Total Billed" value={totalBilled} />
+             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <StatCard icon={<Scale className="h-5 w-5 text-red-500"/>} title="Total Due" value={totalDue} />
+                <StatCard icon={<TrendingUp className="h-5 w-5 text-green-500"/>} title="Total Paid" value={totalPaid} />
+                <StatCard icon={<Banknote className="h-5 w-5 text-blue-500"/>} title="Total Billed" value={totalBilled} />
             </motion.div>
         )}
 
-        <Card className="hidden md:block">
+        {/* --- NEW: Premium Filter & Search Bar --- */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/60 backdrop-blur-xl p-3 rounded-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+           {/* Search Input */}
+           <div className="relative w-full flex-1">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+             <Input
+               placeholder="Search by month (e.g., Baisakh)..."
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="pl-10 h-12 bg-white border-slate-100 hover:border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl w-full font-medium shadow-sm transition-all"
+             />
+           </div>
+           
+           {/* Segmented Toggles */}
+           <div className="flex items-center p-1 bg-slate-100/80 rounded-xl w-full sm:w-auto shrink-0 border border-slate-200/50">
+             {(['All', 'Rent', 'Utility'] as FilterType[]).map(type => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={cn(
+                    "flex-1 sm:flex-none px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300", 
+                    filterType === type 
+                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/50" 
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 border border-transparent"
+                  )}
+                >
+                  {type}
+                </button>
+             ))}
+           </div>
+        </div>
+
+        {/* Desktop Table */}
+        <Card className="hidden md:block border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/70 backdrop-blur-xl rounded-[2rem] overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Bill Date (B.S.)</TableHead>
-                    <TableHead>Period / Month</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Paid On (B.S.)</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="border-slate-100 hover:bg-transparent">
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4 pl-6">Type</TableHead>
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4">Bill Date (B.S.)</TableHead>
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4">Period / Month</TableHead>
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4">Status</TableHead>
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4">Paid On</TableHead>
+                    <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-xs py-4 text-right pr-6">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allBills.length > 0 ? (
-                    allBills.map(bill => (
-                        <TableRow key={bill._id.toString()} onClick={() => setSelectedBill(bill)} className="cursor-pointer hover:bg-muted/50">
-                          <TableCell><Badge variant="secondary" className="font-semibold">{bill.type}</Badge></TableCell>
-                          <TableCell>{bill.billDateBS || new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</TableCell>
-                          <TableCell>{bill.type === 'Rent' ? (bill as IRentBill).rentForPeriod : (bill as IUtilityBill).billingMonthBS}</TableCell>
-                          <TableCell><StatusBadge status={bill.status} /></TableCell>
-                          <TableCell>{bill.paidOnBS || '---'}</TableCell>
-                          <TableCell className="text-right font-medium font-mono">Rs {bill.type === 'Rent' ? (bill as IRentBill).amount.toLocaleString() : (bill as IUtilityBill).totalAmount.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))
-                  ) : (
-                    <TableRow><TableCell colSpan={6} className="h-48 text-center"><div className="flex flex-col items-center justify-center gap-2 text-muted-foreground"><ListX className="h-10 w-10" /><span className="font-semibold">No Bills Found</span><p>Your statement history will appear here.</p></div></TableCell></TableRow>
-                  )}
+                  <AnimatePresence mode="popLayout">
+                    {filteredBills.length > 0 ? (
+                      filteredBills.map(bill => {
+                        const period = bill.type === 'Rent' ? (bill as IRentBill).rentForPeriod : (bill as IUtilityBill).billingMonthBS;
+                        return (
+                          <motion.tr 
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            key={bill._id.toString()} 
+                            onClick={() => setSelectedBill(bill)} 
+                            className="cursor-pointer border-slate-100 hover:bg-slate-50/80 transition-colors group"
+                          >
+                            <TableCell className="pl-6 py-4">
+                              <div className="flex items-center gap-2 font-bold text-slate-700 group-hover:text-[#0B2863]">
+                                {bill.type === 'Rent' ? <Wallet className="h-4 w-4 text-blue-500" /> : <Zap className="h-4 w-4 text-orange-500" />} {bill.type}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4 font-medium text-slate-600">{bill.billDateBS || new NepaliDate(bill.billDateAD).format('YYYY-MM-DD')}</TableCell>
+                            <TableCell className="py-4 font-extrabold text-slate-800">{period}</TableCell>
+                            <TableCell className="py-4"><StatusBadge status={bill.status} /></TableCell>
+                            <TableCell className="py-4 font-medium text-slate-500">{bill.paidOnBS || '---'}</TableCell>
+                            <TableCell className="py-4 text-right font-black text-slate-900 text-base pr-6">
+                              Rs {bill.type === 'Rent' ? (bill as IRentBill).amount.toLocaleString('en-IN') : (bill as IUtilityBill).totalAmount.toLocaleString('en-IN')}
+                            </TableCell>
+                          </motion.tr>
+                        );
+                      })
+                    ) : (
+                      <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center gap-3 text-slate-400"><Search className="h-12 w-12 opacity-50" /><span className="font-bold text-lg text-slate-500">No matching bills found</span><p className="text-sm">Try adjusting your filters or search term.</p></div></TableCell></TableRow>
+                    )}
+                  </AnimatePresence>
                 </TableBody>
               </Table>
             </div>
           </CardContent>
         </Card>
 
+        {/* Mobile Cards */}
         <div className="md:hidden space-y-4">
-          {allBills.length > 0 ? (
-            <AnimatePresence>
-              {allBills.map((bill, index) => (
+          <AnimatePresence mode="popLayout">
+            {filteredBills.length > 0 ? (
+              filteredBills.map((bill, index) => (
                 <BillCard key={bill._id.toString()} bill={bill} index={index} onClick={() => setSelectedBill(bill)} />
-              ))}
-            </AnimatePresence>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground h-48">
-                <ListX className="h-10 w-10" />
-                <span className="font-semibold">No Bills Found</span>
-                <p>Your statement history will appear here.</p>
-            </div>
-          )}
+              ))
+            ) : (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center gap-3 text-slate-400 h-64 bg-white/50 rounded-[2rem] border border-dashed border-slate-200">
+                  <Search className="h-10 w-10 opacity-50" />
+                  <span className="font-bold text-base text-slate-500">No results found</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </>

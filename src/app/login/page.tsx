@@ -3,20 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, Loader2, AlertCircle, Mail, KeyRound } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import { LogIn, Loader2, AlertCircle, Mail, KeyRound, Eye, EyeOff, ShieldCheck, Calendar } from 'lucide-react';
+import { Toaster, toast } from 'sonner'; // Ultra-premium toast system
 import NepaliDate from 'nepali-date-converter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
-import { cn } from '@/lib/utils'; // Make sure this import exists
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [focused, setFocused] = useState<null | 'email' | 'password'>(null);
@@ -36,122 +37,238 @@ export default function LoginPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Login failed.');
       
-      toast.success('Login Successful! Redirecting...');
+      // Premium Sonner Toast
+      toast.success('Login Successful', {
+        description: 'Loading to your dashboard...',
+        icon: '🔐',
+        duration: 2500,
+      });
+      
       setTimeout(() => { router.push('/dashboard'); router.refresh(); }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unknown error occurred.";
       setError(msg);
-      toast.error(msg);
+      toast.error('Login Failed', {
+        description: msg,
+        duration: 4000,
+      });
       setIsLoading(false);
     }
   };
 
   const iconVariants = {
-    focused: { scale: 1.1, color: '#4f46e5' }, // indigo-600
-    unfocused: { scale: 1, color: '#94a3b8' }, // slate-400
+    focused: { scale: 1.1, color: '#0B2863' }, // Premium Navy Blue
+    unfocused: { scale: 1, color: '#94a3b8' }, // Slate 400
   };
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster 
+        position="top-center" 
+        richColors 
+        theme="light"
+        toastOptions={{
+          style: { borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 40px -5px rgb(0 0 0 / 0.1)' }
+        }}
+      />
       
-      {/* --- "Next Level" Animated Background --- */}
-      <div className="flex items-center justify-center min-h-screen w-full bg-white p-4 relative overflow-hidden">
+      {/* --- Premium Animated Background --- */}
+      <div className="flex items-center justify-center min-h-screen w-full bg-[#f8fafc] p-4 sm:p-8 relative overflow-hidden">
         
         {/* Animated Mesh Gradient */}
-        <div className="absolute inset-0 z-0 opacity-50">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full filter blur-3xl animate-blob"></div>
-          <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-purple-200 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-200 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 z-0 opacity-[0.4]">
+          <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-300 rounded-full filter blur-[120px] animate-blob mix-blend-multiply"></div>
+          <div className="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-emerald-200 rounded-full filter blur-[120px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
+          <div className="absolute bottom-[-20%] left-[20%] w-[60vw] h-[60vw] bg-indigo-200 rounded-full filter blur-[120px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
         </div>
         
-        {/* Floating Squares (More subtle) */}
-        <ul className="absolute top-0 left-0 w-full h-full z-0 circles-light">
+        {/* Floating Background Particles */}
+        <ul className="absolute top-0 left-0 w-full h-full z-0 circles-light pointer-events-none">
             {Array.from({ length: 10 }).map((_, i) => <li key={i}></li>)}
         </ul>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 120, damping: 20, duration: 0.8, delay: 0.2 }}
-          className="z-10 w-full max-w-4xl"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 100, damping: 20, duration: 0.8 }}
+          className="z-10 w-full max-w-5xl"
         >
-          {/* --- Professional Glassmorphism Card --- */}
-          <Card className="w-full mx-auto shadow-2xl bg-white/60 backdrop-blur-2xl border border-white/30 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+          {/* --- Bank-Level Glassmorphism Card --- */}
+          <Card className="w-full mx-auto shadow-[0_20px_70px_-10px_rgba(11,40,99,0.15)] bg-white/80 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] grid grid-cols-1 md:grid-cols-2 overflow-hidden">
             
             {/* Left Panel - Branding (Desktop) */}
-            <div className="hidden md:flex relative flex-col justify-between p-10 text-white overflow-hidden">
-                {/* ✅ IMAGE FIX: Added `fill`, `sizes`, and `alt` for Next.js 13+ */}
+            <div className="hidden md:flex relative flex-col justify-between p-12 text-white overflow-hidden">
                 <Image 
                   src="/building.jpg" 
                   alt="STG Tower" 
                   fill 
                   style={{objectFit: 'cover'}}
-                  className="z-0"
+                  className="z-0 scale-105"
                   priority 
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-gray-900/30 to-gray-900/60 z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B2863] via-[#0B2863]/60 to-transparent z-10"></div>
+                
+                {/* Top Logo */}
                 <div className="relative z-20">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex items-center gap-3">
-                        <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-full" />
-                        <span className="text-xl font-bold">STG Tower</span>
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="flex items-center gap-3">
+                        <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-lg">
+                           {/* Explicit width/height avoids 'sizes' warning */}
+                           <Image src="/home.png" alt="Logo" width={36} height={36} className="object-contain drop-shadow-md" />
+                        </div>
+                        <span className="text-2xl font-black tracking-tight drop-shadow-md">STG TOWER</span>
                     </motion.div>
                 </div>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }} className="relative z-20">
-                    <h2 className="text-3xl font-bold tracking-tight">Your Portal to Modern Living.</h2>
-                    <p className="mt-2 text-gray-200/90">Manage your bills, request maintenance, and stay connected—all in one place.</p>
+
+                {/* Bottom Copy */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="relative z-20 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold uppercase tracking-widest shadow-sm">
+                       <ShieldCheck className="w-4 h-4 text-emerald-400" /> Secure Portal
+                    </div>
+                    <h2 className="text-4xl font-black tracking-tight leading-tight drop-shadow-lg">
+                      Your Living<br/>  Your Comfort.
+                    </h2>
+                    <p className="text-blue-50/90 font-medium leading-relaxed max-w-sm drop-shadow-md">
+Manage your bills, request maintenance, and stay connected—all in one place.
+                    </p>
                 </motion.div>
             </div>
             
             {/* Right Panel - Login Form */}
-            <div className="p-8">
-              <CardHeader className="text-center p-0 mb-8">
+            <div className="p-8 sm:p-12 flex flex-col justify-center bg-white/50 relative">
+              <CardHeader className="text-center p-0 mb-8 space-y-2">
                 {/* Logo for Mobile */}
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex justify-center items-center gap-3 mb-4 md:hidden">
-                    <Image src="/logo.png" alt="Logo" width={80} height={80} className="full" />
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="flex justify-center items-center mb-6 md:hidden">
+                    <div className="p-4 bg-white rounded-3xl shadow-xl border border-slate-100">
+                       {/* Explicit width/height avoids 'sizes' warning */}
+                       <Image src="/home.png" alt="Logo" width={56} height={56} className="object-contain" priority />
+                    </div>
                 </motion.div>
                 
-                <CardTitle className="text-3xl font-bold tracking-tight text-slate-900">Sign In</CardTitle>
-                <CardDescription className="text-slate-500 pt-1">{todayBS}</CardDescription>
+                <CardTitle className="text-3xl sm:text-4xl font-black tracking-tight text-[#0B2863]">Welcome Back</CardTitle>
+                <CardDescription className="text-slate-500 font-semibold flex items-center justify-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  {todayBS}
+                </CardDescription>
               </CardHeader>
+
               <CardContent className="p-0">
                 <form onSubmit={handleLogin} className="space-y-5">
-                  <div className="relative">
-                    <motion.div variants={iconVariants} animate={focused === 'email' ? 'focused' : 'unfocused'} className="absolute left-3 top-1/2 -translate-y-1/2"><Mail className="h-5 w-5" /></motion.div>
-                    <Input id="email" type="email" placeholder="name@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} className="pl-10 h-12 bg-slate-100 border-slate-200 focus:bg-white focus-visible:ring-indigo-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative">
-                       <motion.div variants={iconVariants} animate={focused === 'password' ? 'focused' : 'unfocused'} className="absolute left-3 top-1/2 -translate-y-1/2"><KeyRound className="h-5 w-5" /></motion.div>
-                      <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setFocused('password')} onBlur={() => setFocused(null)} className="pl-10 h-12 bg-slate-100 border-slate-200 focus:bg-white focus-visible:ring-indigo-500" />
+                  
+                  {/* Email Field with AutoFill */}
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
+                    <div className="relative group">
+                      <motion.div variants={iconVariants} animate={focused === 'email' ? 'focused' : 'unfocused'} className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                        <Mail className="h-5 w-5 transition-colors" />
+                      </motion.div>
+                      <Input 
+                        id="email" 
+                        name="email"
+                        type="email" 
+                        autoComplete="email"
+                        placeholder="name@stgtower.com" 
+                        required 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        onFocus={() => setFocused('email')} 
+                        onBlur={() => setFocused(null)} 
+                        className={cn(
+                          "pl-12 h-14 bg-white/80 border-slate-200 text-base font-medium rounded-2xl shadow-sm transition-all duration-300",
+                          "focus:bg-white focus:ring-2 focus:ring-[#0B2863]/20 focus:border-[#0B2863]",
+                          "hover:border-slate-300"
+                        )}
+                      />
                     </div>
-                    <div className="text-right">
-                        <Link href="/forgot-password" className="text-sm text-indigo-600 hover:underline hover:text-indigo-700 font-medium">Forgot Password?</Link>
+                  </div>
+
+                  {/* Password Field with AutoFill */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between ml-1">
+                      <label htmlFor="password" className="text-sm font-bold text-slate-700">Password</label>
+                      <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-[#0B2863] font-bold transition-colors" tabIndex={-1}>
+                        Forgot Password?
+                      </Link>
+                    </div>
+                    <div className="relative group">
+                      <motion.div variants={iconVariants} animate={focused === 'password' ? 'focused' : 'unfocused'} className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                        <KeyRound className="h-5 w-5 transition-colors" />
+                      </motion.div>
+                      <Input 
+                        id="password" 
+                        name="password"
+                        type={showPassword ? "text" : "password"} 
+                        autoComplete="current-password"
+                        placeholder="••••••••" 
+                        required 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        onFocus={() => setFocused('password')} 
+                        onBlur={() => setFocused(null)} 
+                        className={cn(
+                          "pl-12 pr-12 h-14 bg-white/80 border-slate-200 text-base font-medium rounded-2xl shadow-sm transition-all duration-300",
+                          "focus:bg-white focus:ring-2 focus:ring-[#0B2863]/20 focus:border-[#0B2863]",
+                          "hover:border-slate-300 tracking-wider placeholder:tracking-normal"
+                        )}
+                      />
+                      {/* Premium Show/Hide Password Toggle */}
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0B2863] transition-colors focus:outline-none z-10 p-2 rounded-xl hover:bg-slate-100"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
                     </div>
                   </div>
+
+                  {/* Error State */}
                   <AnimatePresence>
                     {error && (
-                      <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} className="flex items-center text-sm font-medium text-red-600">
-                        <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                        <span>{error}</span>
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10, height: 0 }} 
+                        animate={{ opacity: 1, y: 0, height: 'auto' }} 
+                        exit={{ opacity: 0, y: -10, height: 0 }} 
+                        className="overflow-hidden"
+                      >
+                        <div className="flex items-center gap-3 p-3 mt-1 rounded-xl bg-red-50 border border-red-100 text-sm font-bold text-red-600">
+                          <AlertCircle className="w-5 h-5 shrink-0" />
+                          <span className="leading-tight">{error}</span>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <div>
-                    <Button type="submit" className="w-full font-semibold text-base py-6 bg-indigo-600 text-white transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-indigo-200 active:scale-[0.98]" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <LogIn className="w-5 h-5 mr-2" />}
-                      {isLoading ? 'Verifying...' : 'Secure Login'}
+
+                  {/* Submit Button */}
+                  <div className="pt-4 pb-2">
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading}
+                      className={cn(
+                        "w-full h-14 rounded-2xl font-bold text-lg text-white transition-all duration-300 transform-gpu",
+                        "bg-[#0B2863] hover:bg-blue-800",
+                        "hover:shadow-[0_10px_40px_-10px_rgba(11,40,99,0.5)] hover:-translate-y-0.5",
+                        "active:scale-[0.98] active:translate-y-0 active:shadow-none"
+                      )}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                      ) : (
+                        <LogIn className="w-5 h-5 mr-2" />
+                      )}
+                      {isLoading ? 'Authenticating...' : 'Secure Login'}
                     </Button>
                   </div>
                 </form>
+                
               </CardContent>
             </div>
           </Card>
         </motion.div>
       </div>
 
-      {/* --- This is the CSS for the light animated background --- */}
+      {/* --- Smooth Animated Background CSS --- */}
       <style jsx global>{`
         .circles-light {
           position: absolute;
@@ -161,6 +278,7 @@ export default function LoginPage() {
           height: 100%;
           overflow: hidden;
           z-index: 5;
+          pointer-events: none;
         }
         .circles-light li {
           position: absolute;
@@ -168,7 +286,7 @@ export default function LoginPage() {
           list-style: none;
           width: 20px;
           height: 20px;
-          background: rgba(199, 210, 254, 0.4); /* indigo-200/40 */
+          background: rgba(11, 40, 99, 0.03);
           animation: animate-light 25s linear infinite;
           bottom: -150px;
         }

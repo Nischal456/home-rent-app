@@ -2,7 +2,7 @@
   "name": "STG Tower Management",
   "short_name": "STG Tower",
   "description": "Next-level, ultra-smooth property and rental management system.",
-  "start_url": "/",
+  "start_url": "/login",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#f8fafc",
