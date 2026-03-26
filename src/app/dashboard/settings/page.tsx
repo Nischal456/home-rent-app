@@ -98,6 +98,7 @@ export default function SettingsPage() {
         position="top-center" 
         richColors 
         theme="light"
+        style={{ marginTop: 'env(safe-area-inset-top, 20px)' }}
         toastOptions={{
           style: { borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 40px -5px rgb(0 0 0 / 0.1)' }
         }}

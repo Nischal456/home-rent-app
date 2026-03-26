@@ -152,14 +152,14 @@ function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUs
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-[84px] bg-white/95 backdrop-blur-2xl border-t border-slate-100/80 z-40 pb-safe flex items-center justify-around px-1 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(84px+env(safe-area-inset-bottom,20px))] bg-white/95 backdrop-blur-2xl border-t border-slate-100/80 z-40 pb-[env(safe-area-inset-bottom,20px)] flex items-center justify-around px-1 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
       <LayoutGroup id="mobile-nav">
         {mobileItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center w-full h-full space-y-1 transform-gpu active:scale-95 transition-transform">
-              <div className="relative z-10 p-1.5">
+              <div className="relative z-10 p-1.5 hover:bg-slate-50 rounded-full">
                 <Icon className={cn("h-6 w-6 transition-all duration-300", isActive ? "text-[#0B2863] scale-110" : "text-slate-400")} />
                 {item.badge && item.badge > 0 && (
                   <Badge className="absolute -top-1 -right-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] text-white border-2 border-white">{item.badge}</Badge>
@@ -419,7 +419,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex flex-col h-[100dvh] relative overflow-hidden">
         
         {/* --- Premium Header --- */}
-        <header className="flex h-16 md:h-20 items-center justify-between gap-4 bg-white/80 px-4 md:px-8 backdrop-blur-xl z-30 sticky top-0 border-b border-slate-100/50">
+        <header className="flex h-[calc(4rem+env(safe-area-inset-top))] md:h-[calc(5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between gap-4 bg-white/80 px-4 md:px-8 backdrop-blur-xl z-30 sticky top-0 border-b border-slate-100/50">
           
           {/* Mobile Logo View (Replaces Hamburger) */}
           <div className="flex md:hidden items-center gap-3">
@@ -481,6 +481,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* --- Toaster Configuration --- */}
         <Toaster 
           position="top-center" 
+          containerStyle={{
+            top: 'calc(env(safe-area-inset-top, 20px) + 16px)'
+          }}
           toastOptions={{
              className: 'rounded-2xl font-bold shadow-xl border border-slate-100 z-[100]',
              style: { background: '#fff', color: '#0f172a' }

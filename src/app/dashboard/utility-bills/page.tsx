@@ -218,12 +218,10 @@ export default function UtilityBillsPage() {
                 {renderContent()}
             </div>
             
-            {isMobile && (
-                <Button onClick={() => setAddDialogOpen(true)} className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center md:hidden">
-                    <PlusCircle className="h-8 w-8" />
-                    <span className="sr-only">Add Utility Bill</span>
-                </Button>
-            )}
+            <Button onClick={() => setAddDialogOpen(true)} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,20px))] right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center md:hidden">
+                <PlusCircle className="h-8 w-8" />
+                <span className="sr-only">Add Utility Bill</span>
+            </Button>
             
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogContent className="sm:max-w-md">

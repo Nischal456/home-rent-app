@@ -201,11 +201,9 @@ export default function FinancialsPage() {
                 </AlertDialogContent>
             </AlertDialog>
             
-            {isMobile && (
-                <Button onClick={() => openForm()} className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center">
-                    <PlusCircle className="h-8 w-8" />
-                </Button>
-            )}
+            <Button onClick={() => openForm()} className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,20px))] right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center md:hidden">
+                <PlusCircle className="h-8 w-8" />
+            </Button>
             
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}

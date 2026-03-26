@@ -263,15 +263,13 @@ export default function RentBillsPage() {
       </div>
 
       {/* Floating Action Button (Mobile) */}
-      {isMobile && (
-          <Button 
-            onClick={() => setAddDialogOpen(true)} 
-            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl z-50 flex items-center justify-center bg-primary hover:bg-primary/90 transition-transform active:scale-95"
-          >
-            <PlusCircle className="h-6 w-6" />
-            <span className="sr-only">Add Rent Bill</span>
-          </Button>
-      )}
+      <Button 
+        onClick={() => setAddDialogOpen(true)} 
+        className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,20px))] right-6 h-14 w-14 rounded-full shadow-xl z-50 flex md:hidden items-center justify-center bg-primary hover:bg-primary/90 transition-transform active:scale-95"
+      >
+        <PlusCircle className="h-6 w-6" />
+        <span className="sr-only">Add Rent Bill</span>
+      </Button>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogContent className="sm:max-w-[450px]">

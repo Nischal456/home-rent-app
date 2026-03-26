@@ -40,7 +40,13 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        containerStyle={{
+          top: 'calc(env(safe-area-inset-top, 20px) + 16px)'
+        }}
+      />
       <div className="flex items-center justify-center min-h-screen w-full bg-gray-50 p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
