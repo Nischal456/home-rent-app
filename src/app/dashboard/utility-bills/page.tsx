@@ -81,7 +81,17 @@ export default function UtilityBillsPage() {
         // This URL points to a public page you will create to display a single bill.
         // For example: app/bill/[billId]/page.tsx
         const billUrl = `${window.location.origin}/bill/${bill._id}`;
-        const shareText = `Utility bill for ${tenant.fullName} for the period of ${bill.billingMonthBS}.`;
+        const billStatus = bill.status;
+        const remarksData = bill.remarks || '';
+        const eRate = bill.electricity?.ratePerUnit || bill.electricity?.rate || 19;
+        const wRate = bill.water?.ratePerUnit || bill.water?.rate || 0.30;
+        
+        const shareText = `Utility Bill for ${tenant?.fullName || 'Tenant'} (${bill.billingMonthBS}). ` +
+            `Total: Rs ${bill.totalAmount.toLocaleString('en-IN')}. ` +
+            `Status: ${billStatus}.\n` +
+            `Rates: Elec Rs ${eRate}/unit, Water Rs ${wRate}/Litre.\n` +
+            (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) + 
+            `View Full Details Here:`;
 
         if (navigator.share) {
             try {

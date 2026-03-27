@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    const { tenantId, roomId, billingMonthBS, electricity, water, serviceCharge, securityCharge, totalAmount } = body;
+    const { tenantId, roomId, billingMonthBS, electricity, water, serviceCharge, securityCharge, totalAmount, remarks } = body;
 
     if (!tenantId || !roomId || !billingMonthBS || totalAmount === undefined || totalAmount === null) {
       return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       securityCharge,
       totalAmount,
       status: 'DUE',
+      remarks,
     });
 
     await newBill.save();

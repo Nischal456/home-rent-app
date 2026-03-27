@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import '@/models/Room'; // Import for side-effects
 import { createNotification } from '@/lib/createNotification'; // ✅ FIX: Import notification helper
 import { Types } from 'mongoose'; // ✅ FIX: Import mongoose Types
+import { pusherServer } from '@/lib/pusher';
 
 interface TokenPayload {
   id: string;
@@ -94,6 +95,21 @@ export async function POST(request: NextRequest) {
             )
         );
         await Promise.all(notificationPromises);
+    }
+
+    // ✅ Also notify the Security Guard
+    const guard = await User.findOne({ role: 'SECURITY' });
+    if (guard) {
+        await createNotification(
+            guard._id as Types.ObjectId,
+            'New Maintenance Request',
+            `${user.fullName} submitted a request: "${issue}"`,
+            '/dashboard/security'
+        );
+        
+        await pusherServer.trigger('security-channel', 'new-maintenance', {
+            message: `${user.fullName} reported an issue: "${issue}"`
+        });
     }
 
     return NextResponse.json({ success: true, message: 'Maintenance request submitted successfully.', data: newRequest }, { status: 201 });

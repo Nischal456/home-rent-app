@@ -13,11 +13,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'react-hot-toast';
 
 // ✅ "BEST OF BEST" ICONS
 import { 
     AlertCircle, Printer, Zap, Droplets, Banknote, Calendar, Home, User, Scale, 
-    Shield, Wrench, FileText, CheckCircle 
+    Shield, Wrench, FileText, CheckCircle, Share2
 } from 'lucide-react';
 
 type BillData = (IRentBill | IUtilityBill) & { 
@@ -93,6 +94,58 @@ export default function PublicBillPage() {
     }
   }, [loading, bill, searchParams]);
 
+  const handleShare = async () => {
+    if (!bill) return;
+    const billUrl = window.location.href; 
+    const isUtility = bill.type === 'Utility';
+    
+    // Explicit typing 
+    const utilityBill = bill as unknown as IUtilityBill;
+    const rentBill = bill as unknown as IRentBill;
+    
+    const tenantName = bill.tenantId?.fullName || 'Tenant';
+    const total = isUtility ? utilityBill.totalAmount : rentBill.amount;
+    const period = isUtility ? utilityBill.billingMonthBS : rentBill.rentForPeriod;
+
+    let ratesStr = '';
+    if (isUtility) {
+      const eRate = utilityBill.electricity?.ratePerUnit || utilityBill.electricity?.rate || 19;
+      const wRate = utilityBill.water?.ratePerUnit || utilityBill.water?.rate || 0.30;
+      ratesStr = `Rates: Elec Rs ${eRate}/unit, Water Rs ${wRate}/Litre.\n`;
+    }
+
+    const remarksData = bill.remarks?.trim() || '';
+
+    const shareText = `${bill.type} Bill for ${tenantName} (${period}). ` +
+      `Total: Rs ${total.toLocaleString('en-IN')}. ` +
+      `Status: ${bill.status}.\n` +
+      ratesStr +
+      (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) + 
+      `View Full Details Here:`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `STG Tower ${bill.type} Bill`,
+          text: shareText,
+          url: billUrl,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error("Share failed:", err);
+          toast.error("Could not open native share.");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(billUrl);
+        toast.success('Bill link copied to clipboard!');
+      } catch (err) {
+        toast.error('Could not copy link.');
+      }
+    }
+  };
+
   if (loading) {
     return <BillSkeleton />;
   }
@@ -165,19 +218,18 @@ export default function PublicBillPage() {
               
               <Separator />
 
-              {/* ✅ FIX: Correctly using 'utilityBill' variable which is properly typed */}
               {isUtility && (
                 <div className="space-y-4 page-break-avoid">
                   <h3 className="font-semibold text-center text-gray-800">Utility Breakdown</h3>
                   <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
-                    <h4 className="font-medium text-gray-700">Electricity (Rate: Rs 19 / unit)</h4>
+                    <h4 className="font-medium text-gray-700">Electricity (Rate: Rs {utilityBill.electricity.ratePerUnit || utilityBill.electricity.rate || 19} / unit)</h4>
                     <DetailRow label="Previous Reading" value={utilityBill.electricity.previousReading} />
                     <DetailRow label="Current Reading" value={utilityBill.electricity.currentReading} />
                     <DetailRow label="Units Consumed" value={utilityBill.electricity.unitsConsumed} />
                     <DetailRow label="Electricity Total" value={`Rs ${utilityBill.electricity.amount.toLocaleString()}`} isBold={true} />
                   </div>
                   <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
-                    <h4 className="font-medium text-gray-700">Water (Rate: Rs 0.30 / Litre)</h4>
+                    <h4 className="font-medium text-gray-700">Water (Rate: Rs {utilityBill.water.ratePerUnit || utilityBill.water.rate || 0.3} / Litre)</h4>
                     <DetailRow label="Previous Reading" value={utilityBill.water.previousReading} />
                     <DetailRow label="Current Reading" value={utilityBill.water.currentReading} />
                     <DetailRow label="Litres Consumed" value={utilityBill.water.unitsConsumed} />
@@ -203,10 +255,19 @@ export default function PublicBillPage() {
                   )}
                 </div>
               </div>
+              {/* Extras & Remarks */}
+              {bill.remarks?.trim() && (
+                <div className="page-break-avoid w-full">
+                  <h3 className="flex items-center justify-center gap-2 font-semibold mb-2 text-center text-gray-800"><FileText className="w-4 h-4 text-gray-500" /> Remarks</h3>
+                  <div className="p-4 rounded-xl bg-yellow-50/60 border border-yellow-200 text-sm text-yellow-800 italic text-center leading-relaxed">
+                    "{bill.remarks.trim()}"
+                  </div>
+                </div>
+              )}
             </CardContent>
 
             {/* Footer */}
-            <CardFooter className="bg-muted/50 p-6 rounded-b-2xl flex flex-col gap-4 print-footer">
+            <CardFooter className="bg-muted/50 p-6 rounded-b-2xl flex flex-col gap-5 print-footer">
               <div className="w-full">
                 <DetailRow 
                   label="Bill Total" 
@@ -215,43 +276,71 @@ export default function PublicBillPage() {
                 />
               </div>
               
-              {/* Paid / Outstanding Status */}
-              <AnimatePresence mode="wait">
-                {bill.status === 'PAID' ? (
-                  <motion.div 
-                    key="paid"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-full p-4 rounded-xl bg-green-100/60 border border-green-200 text-green-800 flex items-center justify-center gap-3"
-                  >
-                    <CheckCircle className="h-6 w-6" />
-                    <div className="text-left">
-                        <p className="font-bold text-lg">Paid in Full</p>
-                        {bill.paidOnBS && <p className="text-xs opacity-80">Paid on: {bill.paidOnBS}</p>}
-                    </div>
-                  </motion.div>
-                ) : (
-                   bill.totalOutstandingDue > 0 && (
-                    <motion.div 
-                        key="unpaid"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="w-full p-4 rounded-xl bg-red-50 border border-red-100 text-center"
-                    >
-                      <p className="text-sm font-medium text-red-800 mb-1">Total Outstanding Balance (All Bills)</p>
-                      <p className="text-2xl font-extrabold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
-                    </motion.div>
-                  )
-                )}
-              </AnimatePresence>
+              <div className="w-full space-y-3">
+                  <AnimatePresence mode="wait">
+                    {/* Status of THIS specific bill */}
+                    {bill.status === 'PAID' ? (
+                      <motion.div 
+                        key="paid"
+                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                        className="w-full p-4 rounded-xl bg-green-100/60 border border-green-200 text-green-800 flex items-center justify-center gap-3"
+                      >
+                        <CheckCircle className="h-6 w-6" />
+                        <div className="text-left">
+                            <p className="font-bold text-lg">This Bill is Paid</p>
+                            {bill.paidOnBS && <p className="text-xs opacity-80 font-medium">Clearance Date: {bill.paidOnBS}</p>}
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div 
+                        key="due"
+                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                        className="w-full p-4 rounded-xl bg-orange-50 border border-orange-200 text-center"
+                      >
+                        <p className="text-sm font-bold text-orange-800 mb-1 tracking-wider uppercase">This Bill Status</p>
+                        <p className="text-xl font-black text-orange-600">DUE</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Comprehensive Outstanding Balance Summary for entire Tenant Account */}
+                  <AnimatePresence mode="wait">
+                    {bill.totalOutstandingDue > 0 ? (
+                      <motion.div 
+                          key="outstanding"
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                          className="w-full p-4 mt-2 rounded-xl bg-red-50 border-2 border-red-200 text-center shadow-sm"
+                      >
+                        <p className="text-xs font-bold text-red-800/80 mb-1 uppercase tracking-widest">Total Outstanding Balance</p>
+                        <p className="text-sm font-medium text-red-800/80 mb-2">(Including all pending rent & utility bills)</p>
+                        <p className="text-3xl font-extrabold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
+                      </motion.div>
+                    ) : (
+                      <motion.div 
+                          key="cleared"
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                          className="w-full p-4 mt-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center flex flex-col items-center justify-center gap-1 shadow-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                           <Shield className="h-5 w-5" />
+                           <p className="font-extrabold text-lg">All Cleared!</p>
+                        </div>
+                        <p className="text-sm font-medium opacity-80">You have no pending outstanding balances.</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+              </div>
             </CardFooter>
           </Card>
-           <div className="text-center my-4 print-hidden">
-            <Button onClick={() => window.print()} className="shadow-lg"><Printer className="mr-2 h-4 w-4"/> Print Bill</Button>
+          
+          <div className="text-center mt-10 mb-12 print-hidden">
+            <Button 
+                onClick={handleShare} 
+                className="shadow-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-full px-10 py-7 text-lg font-bold transition-all hover:-translate-y-1 hover:shadow-indigo-500/50 active:scale-95 flex items-center justify-center mx-auto"
+            >
+                <Share2 className="mr-3 h-6 w-6" /> Share This Bill
+            </Button>
+            <p className="mt-4 text-xs tracking-wide text-gray-500 font-semibold uppercase">Quick share via WhatsApp or Messenger</p>
           </div>
         </motion.div>
       </div>

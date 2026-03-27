@@ -131,72 +131,67 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
   );
 }
 
-// --- Sub-Component: Native Mobile Bottom Navbar ---
-function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUser; unreadPaymentsCount: number; onMenuClick: () => void }) {
+// --- Sub-Component: Premium Floating Mobile Bottom Dock ---
+function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUser; unreadPaymentsCount: number; onMenuClick: () => void; }) {
   const pathname = usePathname();
 
-  // Dynamically build bottom nav based on role for a native app feel
-  const mobileItems: MobileNavItemType[] = [
-    { href: "/dashboard", icon: Home, label: "Home" },
-    ...(user.role === 'ADMIN' ? [
-      { href: "/dashboard/tenants", icon: Users, label: "Tenants" },
-      { href: "/dashboard/rent-bills", icon: ReceiptText, label: "Rent" },
-      { href: "/dashboard/utility-bills", icon: Zap, label: "Utility" },
-    ] : []),
-    ...(user.role === 'TENANT' ? [
-      { href: "/dashboard/statement", icon: FileClock, label: "Statement" },
-    ] : []),
-    ...(user.role === 'SECURITY' ? [
-      { href: "/dashboard/security", icon: ShieldCheck, label: "Portal" },
-    ] : []),
-  ];
+  let mobileItems: any[] = [];
+  if (user.role === 'ADMIN') {
+      mobileItems = [
+          { href: "/dashboard", icon: Home, label: "Home" },
+          { href: "/dashboard/tenants", icon: Users, label: "Tenants" },
+          { href: "/dashboard/rent-bills", icon: ReceiptText, label: "Rent" },
+          { href: "/dashboard/utility-bills", icon: Zap, label: "Utility" },
+          { href: "/dashboard/security-management", icon: Wallet, label: "Finance" },
+          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu", badgeDot: unreadPaymentsCount > 0 }
+      ];
+  } else if (user.role === 'TENANT') {
+      mobileItems = [
+          { href: "/dashboard", icon: Home, label: "Home" },
+          { href: "/dashboard/statement", icon: FileClock, label: "Bills" },
+          { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
+          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+      ];
+  } else if (user.role === 'SECURITY') {
+      mobileItems = [
+          { href: "/dashboard", icon: Home, label: "Home" },
+          { href: "/dashboard/security", icon: ShieldCheck, label: "Portal" },
+          { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
+          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+      ];
+  }
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(84px+env(safe-area-inset-bottom,20px))] bg-white/95 backdrop-blur-2xl border-t border-slate-100/80 z-40 pb-[env(safe-area-inset-bottom,20px)] flex items-center justify-around px-1 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+    <div className="md:hidden fixed bottom-6 left-3 right-3 bg-white/95 backdrop-blur-2xl rounded-[2.5rem] z-50 flex items-center justify-around px-2 py-2.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.05)] border border-white/60">
       <LayoutGroup id="mobile-nav">
-        {mobileItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center w-full h-full space-y-1 transform-gpu active:scale-95 transition-transform">
-              <div className="relative z-10 p-1.5 hover:bg-slate-50 rounded-full">
-                <Icon className={cn("h-6 w-6 transition-all duration-300", isActive ? "text-[#0B2863] scale-110" : "text-slate-400")} />
-                {item.badge && item.badge > 0 && (
-                  <Badge className="absolute -top-1 -right-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] text-white border-2 border-white">{item.badge}</Badge>
-                )}
-              </div>
-              <span className={cn("text-[10px] font-bold z-10 transition-colors duration-300", isActive ? "text-[#0B2863]" : "text-slate-400")}>{item.label}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="mobile-active-indicator"
-                  className="absolute top-2 bottom-4 w-14 bg-blue-50/80 rounded-2xl -z-0 border border-blue-100/50"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </Link>
-          );
+        {mobileItems.map((item, idx) => {
+            if (item.isAction) {
+                return (
+                    <button key={item.label} onClick={item.action} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
+                        <item.icon className="w-[22px] h-[22px] text-slate-400 mb-1 group-hover:text-[#0B2863] transition-colors" strokeWidth={2.5} />
+                        {item.label && <span className="text-[10px] font-bold text-slate-400 group-hover:text-[#0B2863] transition-colors tracking-tight">{item.label}</span>}
+                        {item.badgeDot && <span className="absolute top-1 right-2 lg:right-4 inline-flex rounded-full h-2.5 w-2.5 bg-[#ef4444] border-2 border-white shadow-sm"></span>}
+                    </button>
+                );
+            }
+
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+                <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
+                    {isActive && <motion.div layoutId="dock-active" className="absolute inset-0 bg-slate-100/80 rounded-3xl -z-10" transition={{ type: 'spring', stiffness: 500, damping: 30 }} />}
+                    <Icon className={cn("w-[22px] h-[22px] mb-1 transition-colors", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")} strokeWidth={isActive ? 3 : 2.5} />
+                    {item.label && <span className={cn("text-[10px] font-bold transition-colors tracking-tight", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")}>{item.label}</span>}
+                </Link>
+            );
         })}
-        {/* The Menu Button triggers the Sheet */}
-        <button onClick={onMenuClick} className="relative flex flex-col items-center justify-center w-full h-full space-y-1 transform-gpu active:scale-95 transition-transform">
-          <div className="relative z-10 p-1.5">
-            <Grid2X2 className="h-6 w-6 text-slate-400" />
-            {/* Show a dot if payments are unread and it's not in the bottom bar */}
-            {user.role === 'ADMIN' && unreadPaymentsCount > 0 && (
-                 <span className="absolute top-1 right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 border border-white"></span>
-                 </span>
-            )}
-          </div>
-          <span className="text-[10px] font-bold z-10 text-slate-400">More</span>
-        </button>
       </LayoutGroup>
     </div>
   );
 }
 
 // --- Sub-Component: Notification Bell ---
-function NotificationBell({ notifications, onMarkAllRead }: { notifications: ClientNotification[]; onMarkAllRead: () => void; }) {
+function NotificationBell({ notifications, onMarkAllRead, customTrigger }: { notifications: ClientNotification[]; onMarkAllRead: () => void; customTrigger?: React.ReactNode }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const getNotificationIcon = (type: ClientNotification['type']) => {
@@ -223,17 +218,19 @@ function NotificationBell({ notifications, onMarkAllRead }: { notifications: Cli
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10 relative rounded-full hover:bg-slate-100 transition-colors">
-          <Bell className="h-5 w-5 text-slate-600" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
-            </span>
-          )}
-        </Button>
+        {customTrigger ? customTrigger : (
+          <Button variant="ghost" size="icon" className="h-10 w-10 relative rounded-full hover:bg-slate-100 transition-colors outline-none focus:outline-none focus:ring-0">
+            <Bell className="h-5 w-5 text-slate-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+              </span>
+            )}
+          </Button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[85vw] md:w-96 rounded-3xl p-2 shadow-xl border-slate-100 z-50 mr-4 md:mr-0">
+      <DropdownMenuContent align="end" sideOffset={12} className="w-[90vw] md:w-96 rounded-[2rem] p-2 shadow-2xl border-slate-100/50 z-50 overflow-hidden transform-gpu bg-white/95 backdrop-blur-3xl mr-2 md:mr-6">
         <DropdownMenuLabel className="flex justify-between items-center px-4 py-3">
           <span className="font-extrabold text-lg text-slate-900">Notifications</span>
           {unreadCount > 0 &&
@@ -431,8 +428,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="hidden md:block flex-1" />
 
-          {/* Right side actions */}
-          <div className="flex items-center gap-2 md:gap-4 bg-white/50 md:px-2 py-1.5 rounded-full border border-transparent md:border-slate-100 md:shadow-sm">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 bg-white/60 md:px-2 py-1 sm:py-1.5 rounded-full border border-slate-100/50 shadow-sm md:shadow-sm transform-gpu -mr-2 sm:mr-0 backdrop-blur-md">
             <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
             <div className="hidden md:block w-[1px] h-6 bg-slate-200 mx-1"></div>
             <UserNav user={user} onLogout={handleLogout} />
@@ -456,8 +452,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </AnimatePresence>
         </main>
         
-        {/* --- Native App Style Mobile Bottom Nav --- */}
-        <MobileBottomNav user={user} unreadPaymentsCount={pendingPaymentsCount} onMenuClick={() => setSheetOpen(true)} />
+        {/* --- Native App Style Floating Pill Dock --- */}
+        <MobileBottomNav 
+           user={user} 
+           unreadPaymentsCount={pendingPaymentsCount} 
+           onMenuClick={() => setSheetOpen(true)} 
+        />
 
         {/* --- Sheet Triggered by Bottom Nav "More" Button --- */}
         <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>

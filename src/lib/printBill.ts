@@ -25,6 +25,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
   const amountInWords = numberToWords(totalAmount);
   
   const billTitle = isRentBill ? "RENTAL" : "UTILITY";
+  const billingPeriod = isRentBill ? bill.rentForPeriod : (bill as IUtilityBill).billingMonthBS;
 
   // ✅ Generate the unique, shareable URL for the bill
   const billUrl = `${window.location.origin}/bill/${bill._id}`;
@@ -52,7 +53,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
             <h3 class="text-lg font-semibold text-gray-700 mb-2 border-b pb-1">Utility Meter Readings</h3>
             <div class="grid grid-cols-2 gap-x-8 gap-y-4">
                 <div>
-                    <h4 class="font-bold text-md text-gray-800">Electricity (@ Rs ${ELECTRICITY_RATE_PER_UNIT}/unit)</h4>
+                    <h4 class="font-bold text-md text-gray-800">Electricity (@ Rs ${utilityBill.electricity.ratePerUnit || utilityBill.electricity.rate || ELECTRICITY_RATE_PER_UNIT}/unit)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.electricity.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.electricity.currentReading}</p></div>
@@ -61,7 +62,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
                     </div>
                 </div>
                 <div>
-                    <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${WATER_RATE_PER_UNIT}/Litre)</h4>
+                    <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${utilityBill.water.ratePerUnit || utilityBill.water.rate || WATER_RATE_PER_UNIT}/Litre)</h4>
                     <div class="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg mt-1 space-y-1">
                         <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.water.previousReading}</p></div>
                         <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.water.currentReading}</p></div>
@@ -72,6 +73,14 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
             </div>
         </section>
     `;
+  }
+  
+  let ratesInfoStr = '';
+  if (!isRentBill) {
+      const utilityBill = bill as IUtilityBill;
+      const eRate = utilityBill.electricity.ratePerUnit || utilityBill.electricity.rate || ELECTRICITY_RATE_PER_UNIT;
+      const wRate = utilityBill.water.ratePerUnit || utilityBill.water.rate || WATER_RATE_PER_UNIT;
+      ratesInfoStr = `Elec Rate: Rs ${eRate}/unit, Water Rate: Rs ${wRate}/Litre.\\n`;
   }
 
   const billContent = `
@@ -122,7 +131,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
         <section class="mt-4 text-right">
             <table class="w-1/2 ml-auto">
               <tr><td class="font-bold pr-4 text-gray-500">Date (B.S.) :</td><td>${billDateBS}</td></tr>
-              <tr><td class="font-bold pr-4 text-gray-500">Date (A.D.) :</td><td>${billDateADFormatted}</td></tr>
+              <tr><td class="font-bold pr-4 text-gray-500">Billing Month :</td><td class="font-bold text-gray-800">${billingPeriod}</td></tr>
               <tr><td class="font-bold pr-4 text-gray-500">Status :</td><td class="font-bold ${bill.status === 'PAID' ? 'text-green-600' : 'text-red-600'}">${bill.status}</td></tr>
             </table>
         </section>
@@ -173,9 +182,18 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
 
       <script>
         const shareBtn = document.getElementById('share-btn');
+        const billStatus = '${bill.status}';
+        const remarksData = \`${(bill.remarks || '').replace(/`/g, '\\`')}\`;
+        const generatedShareText = '${billType} for ${tenant?.fullName || 'Tenant'} (${billingPeriod}). ' +
+                                   'Total: Rs ${totalAmount.toLocaleString('en-IN')}. ' +
+                                   'Status: ' + billStatus + '.\\n' +
+                                   '${ratesInfoStr}' +
+                                   (remarksData ? 'Remarks: ' + remarksData + '\\n\\n' : '\\n') + 
+                                   'View Full Details Here:';
+
         const shareData = {
           title: '${billType}',
-          text: 'Here is the bill for ${tenant?.fullName || 'your account'}.',
+          text: generatedShareText,
           url: '${billUrl}'
         };
 

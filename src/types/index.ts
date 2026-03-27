@@ -43,8 +43,8 @@ export interface IUtilityBill {
     billingMonthBS: string;
     billDateBS: string;
     billDateAD: Date;
-    electricity: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate: number; };
-    water: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate: number; };
+    electricity: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
+    water: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
     serviceCharge: number;
     securityCharge: number;
     totalAmount: number;
