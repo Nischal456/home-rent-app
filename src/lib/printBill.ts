@@ -22,7 +22,9 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
   const billDateADFormatted = `${billDateAD.getFullYear()}/${String(billDateAD.getMonth() + 1).padStart(2, '0')}/${String(billDateAD.getDate()).padStart(2, '0')}`;
   
   const totalAmount = isRentBill ? bill.amount : bill.totalAmount;
-  const amountInWords = numberToWords(totalAmount);
+  const paidAmount = bill.paidAmount || 0;
+  const remainingAmount = bill.remainingAmount ?? (totalAmount - paidAmount);
+  const amountInWords = numberToWords(remainingAmount > 0 ? remainingAmount : totalAmount);
   
   const billTitle = isRentBill ? "RENTAL" : "UTILITY";
   const billingPeriod = isRentBill ? bill.rentForPeriod : (bill as IUtilityBill).billingMonthBS;
@@ -161,8 +163,9 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
           </div>
           <div>
             <table class="w-full text-right">
-              <tr><td class="pr-4">Sub - Total</td><td>Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
-              <tr class="font-bold border-t-2 border-b-2 border-black my-2 py-2 text-lg"><td class="pr-4">Balance Due</td><td>Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
+              <tr><td class="pr-4 pb-1">Sub - Total</td><td class="pb-1">Rs ${totalAmount.toLocaleString('en-IN')}/-</td></tr>
+              ${paidAmount > 0 ? `<tr><td class="pr-4 pb-1">Paid Amount</td><td class="text-green-600 pb-1">Rs ${paidAmount.toLocaleString('en-IN')}/-</td></tr>` : ''}
+              <tr class="font-bold border-t-2 border-b-2 border-black my-2 py-2 text-lg"><td class="pr-4">Balance Due</td><td class="text-red-600">Rs ${remainingAmount.toLocaleString('en-IN')}/-</td></tr>
             </table>
           </div>
         </section>
@@ -186,6 +189,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
         const remarksData = \`${(bill.remarks || '').replace(/`/g, '\\`')}\`;
         const generatedShareText = '${billType} for ${tenant?.fullName || 'Tenant'} (${billingPeriod}). ' +
                                    'Total: Rs ${totalAmount.toLocaleString('en-IN')}. ' +
+                                   'Remaining: Rs ${remainingAmount.toLocaleString('en-IN')}. ' +
                                    'Status: ' + billStatus + '.\\n' +
                                    '${ratesInfoStr}' +
                                    (remarksData ? 'Remarks: ' + remarksData + '\\n\\n' : '\\n') + 

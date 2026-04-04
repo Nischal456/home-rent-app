@@ -12,10 +12,10 @@ export type UtilityBillData = IUtilityBill & {
   roomId: IRoom; // Room is a direct property of the bill
 };
 
-const getStatusBadge = (status: 'DUE' | 'PAID') => {
-    return status === 'PAID' 
-        ? <Badge className="bg-green-500 text-white hover:bg-green-600">PAID</Badge> 
-        : <Badge variant="secondary">DUE</Badge>;
+const getStatusBadge = (status: string) => {
+    if (status === 'PAID') return <Badge className="bg-green-500 text-white hover:bg-green-600">PAID</Badge>;
+    if (status === 'PARTIALLY_PAID') return <Badge variant="outline" className="border-primary text-primary">PARTIAL</Badge>;
+    return <Badge variant="secondary">DUE</Badge>;
 };
 
 // ✅ UPDATED: Added onShare function parameter
@@ -49,11 +49,35 @@ export const getUtilityBillColumns = (
     },
     { 
         accessorKey: 'totalAmount', 
-        header: () => <div className="text-right">Total Amount</div>,
+        header: () => <div className="text-right">Total</div>,
         cell: ({ row }) => {
             const amount = parseFloat(row.getValue('totalAmount'));
             const formatted = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'NPR' }).format(amount);
             return <div className="text-right font-medium">{formatted}</div>;
+        }
+    },
+    {
+        id: 'paid',
+        header: () => <div className="text-right">Paid</div>,
+        cell: ({ row }) => {
+            const bill = row.original;
+            const paid = bill.paidAmount || 0;
+            if (paid > 0 || bill.status === 'PARTIALLY_PAID') {
+                return <div className="text-right font-mono text-green-600 text-sm">Rs {paid.toLocaleString('en-IN')}</div>;
+            }
+            return <div className="text-right text-muted-foreground">-</div>;
+        }
+    },
+    {
+        id: 'remaining',
+        header: () => <div className="text-right">Rem</div>,
+        cell: ({ row }) => {
+            const bill = row.original;
+            const remaining = bill.remainingAmount ?? (bill.totalAmount || 0);
+            if (bill.status === 'PARTIALLY_PAID') {
+                return <div className="text-right font-mono text-red-500 font-bold text-sm">Rs {remaining.toLocaleString('en-IN')}</div>;
+            }
+            return <div className="text-right text-muted-foreground">-</div>;
         }
     },
     { 

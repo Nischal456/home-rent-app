@@ -274,6 +274,17 @@ export default function PublicBillPage() {
                   value={`Rs ${billAmount.toLocaleString()}`} 
                   isTotal={true} 
                 />
+                {(parseFloat(bill.paidAmount as any) > 0 || bill.status === 'PARTIALLY_PAID') && (
+                    <DetailRow 
+                      label="Paid Amount" 
+                      value={<span className="text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span>} 
+                      isBold={true} 
+                    />
+                )}
+                <div className="flex justify-between items-center py-2.5">
+                    <p className="text-base font-bold text-gray-800 uppercase tracking-wider">Remaining Due</p>
+                    <p className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? billAmount).toLocaleString()}</p>
+                </div>
               </div>
               
               <div className="w-full space-y-3">
@@ -287,9 +298,18 @@ export default function PublicBillPage() {
                       >
                         <CheckCircle className="h-6 w-6" />
                         <div className="text-left">
-                            <p className="font-bold text-lg">This Bill is Paid</p>
+                            <p className="font-bold text-lg">Fully Paid</p>
                             {bill.paidOnBS && <p className="text-xs opacity-80 font-medium">Clearance Date: {bill.paidOnBS}</p>}
                         </div>
+                      </motion.div>
+                    ) : bill.status === 'PARTIALLY_PAID' ? (
+                      <motion.div 
+                        key="partial"
+                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                        className="w-full p-4 rounded-xl bg-blue-50 border border-blue-200 text-center"
+                      >
+                        <p className="text-sm font-bold text-blue-800 mb-1 tracking-wider uppercase">This Bill Status</p>
+                        <p className="text-xl font-black text-blue-600">PARTIALLY PAID</p>
                       </motion.div>
                     ) : (
                       <motion.div 

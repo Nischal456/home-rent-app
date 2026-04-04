@@ -33,7 +33,7 @@ const BillDetailsDialog = lazy(() => import('./bill-details-dialog').then(module
 
 // --- Type Definitions ---
 type CombinedBill = (IRentBill | IUtilityBill) & { type: 'Rent' | 'Utility' };
-type Status = 'DUE' | 'PAID' | 'OVERDUE' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+type Status = 'DUE' | 'PAID' | 'PARTIALLY_PAID' | 'OVERDUE' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 
 // --- Reusable Sub-Components ---
 
@@ -47,6 +47,7 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 const StatusBadge = ({ status }: { status: Status }) => {
   const statusConfig = {
     PAID: { text: "Paid", icon: <CheckCircle className="h-3.5 w-3.5" />, className: "bg-emerald-100/80 text-emerald-700 border-emerald-200" },
+    PARTIALLY_PAID: { text: "Partially Paid", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-blue-100/80 text-blue-700 border-blue-200" },
     COMPLETED: { text: "Completed", icon: <CheckCircle className="h-3.5 w-3.5" />, className: "bg-emerald-100/80 text-emerald-700 border-emerald-200" },
     DUE: { text: "Due", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-amber-100/80 text-amber-700 border-amber-200" },
     PENDING: { text: "Pending", icon: <Hourglass className="h-3.5 w-3.5 animate-spin-slow" />, className: "bg-blue-100/80 text-blue-700 border-blue-200" },
@@ -110,9 +111,9 @@ export function TenantDashboard() {
 
   // --- Memoized Calculations ---
   const { rentBillsDue, utilityBillsDue, totalDue, allBills, activeMaintenanceCount, roomInfo } = useMemo(() => {
-    const rentBillsDue = rentBills.filter(b => b.status === 'DUE' || b.status === 'OVERDUE');
-    const utilityBillsDue = utilityBills.filter(b => b.status === 'DUE' || b.status === 'OVERDUE');
-    const totalDue = rentBillsDue.reduce((acc, bill) => acc + bill.amount, 0) + utilityBillsDue.reduce((acc, bill) => acc + bill.totalAmount, 0);
+    const rentBillsDue = rentBills.filter(b => b.status === 'DUE' || b.status === 'OVERDUE' || b.status === 'PARTIALLY_PAID');
+    const utilityBillsDue = utilityBills.filter(b => b.status === 'DUE' || b.status === 'OVERDUE' || b.status === 'PARTIALLY_PAID');
+    const totalDue = rentBillsDue.reduce((acc, bill) => acc + (bill.remainingAmount ?? bill.amount), 0) + utilityBillsDue.reduce((acc, bill) => acc + (bill.remainingAmount ?? bill.totalAmount), 0);
     const allBills = [...rentBills, ...utilityBills].sort((a, b) => new Date(b.billDateAD).getTime() - new Date(a.billDateAD).getTime());
     const activeMaintenanceCount = maintenanceRequests.filter(req => req.status === 'PENDING' || req.status === 'IN_PROGRESS').length;
     const roomInfo = user?.roomId as IRoom | undefined;
@@ -200,7 +201,7 @@ export function TenantDashboard() {
       </div>
 
       <motion.div 
-        className="space-y-8 p-4 md:p-8 max-w-[1600px] mx-auto w-full relative z-10" 
+        className="space-y-8 p-4 md:p-8 max-w-[1600px] mx-auto w-full relative z-10 pb-32" 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1, transition: { staggerChildren: 0.1 } }}
       >

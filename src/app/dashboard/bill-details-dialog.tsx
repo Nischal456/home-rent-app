@@ -4,7 +4,7 @@
 import React from 'react';
 
 // --- UI Components from shadcn/ui ---
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,21 @@ import { Badge } from '@/components/ui/badge';
 // --- Icons from lucide-react ---
 import { 
   Printer, Receipt, Zap, Droplets, User, Building, CalendarDays, 
-  CheckCircle, Hourglass, AlertTriangle, Shield, Settings, Info 
+  CheckCircle, Hourglass, AlertTriangle, Shield, Settings, Info,
+  Share2
 } from 'lucide-react';
 
 // --- Utilities & Types ---
 import { IRentBill, IUtilityBill, IUser, IRoom } from '@/types';
 import { printBill } from '@/lib/printBill';
 import { cn } from '@/lib/utils';
+import { toast } from 'react-hot-toast';
+import NepaliDate from 'nepali-date-converter';
+
+const formatNepaliDate = (date: Date | string | undefined): string => {
+    if (!date) return 'N/A';
+    return new NepaliDate(new Date(date)).format('YYYY MMMM DD');
+};
 
 // --- Type Definitions ---
 type CombinedBill = (IRentBill | IUtilityBill) & { type: 'Rent' | 'Utility' };
@@ -71,29 +79,25 @@ export function BillDetailsDialog({ isOpen, onClose, bill, user }: BillDetailsDi
   const roomNumber = room ? room.roomNumber : 'N/A';
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md md:max-w-xl p-0 border-0 rounded-[2rem] shadow-2xl bg-[#f8fafc] overflow-hidden flex flex-col max-h-[90dvh]">
+    <Drawer open={isOpen} onOpenChange={onClose}>
+      <DrawerContent className="p-0 outline-none pb-safe">
         
-        {/* --- Header Section --- */}
-        <div className="relative p-6 md:p-8 bg-white border-b border-slate-100">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-orange-400"></div>
-          <DialogHeader className="flex flex-row items-center gap-4 space-y-0 text-left">
-            <div className={cn("shrink-0 p-4 rounded-2xl shadow-inner", isRentBill ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600")}>
-              {isRentBill ? <Receipt className="w-8 h-8" /> : <Zap className="w-8 h-8" />}
-            </div>
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
-                {bill.type} Bill
-              </DialogTitle>
-              <DialogDescription className="font-bold text-slate-400 mt-1">
-                Detailed breakdown & charges
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-        </div>
+        <div className="w-full sm:max-w-md md:max-w-xl mx-auto p-5 overflow-y-auto max-h-[85vh]">
+          {/* --- Header Section --- */}
+          <DrawerHeader className="mb-4 px-0 pb-0">
+            <DrawerTitle className="flex flex-col sm:flex-row items-center justify-center gap-3 text-2xl font-black text-slate-900 tracking-tight text-center">
+              <div className={cn("shrink-0 p-3 rounded-2xl shadow-inner", isRentBill ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600")}>
+                {isRentBill ? <Receipt className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
+              </div>
+              {bill.type} Bill
+            </DrawerTitle>
+            <DrawerDescription className="text-center mt-1 text-base font-bold text-slate-400">
+              Detailed breakdown & charges
+            </DrawerDescription>
+          </DrawerHeader>
 
-        {/* --- Scrollable Body Content --- */}
-        <div className="flex-1 overflow-y-auto styled-scrollbar p-6 md:p-8 space-y-6">
+          {/* --- Scrollable Body Content --- */}
+          <div className="space-y-6 mt-4 px-1">
           
           {/* Top Meta Info Cards */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -242,28 +246,81 @@ export function BillDetailsDialog({ isOpen, onClose, bill, user }: BillDetailsDi
               </div>
             )}
           </div>
+            {/* Remaining Amount & Payment Tracker Additions */}
+            {parseFloat(bill.paidAmount as any) > 0 && (
+                <div className="bg-slate-50 p-4 rounded-2xl mt-4 border border-slate-200 shadow-sm">
+                    <div className="flex justify-between text-sm mb-2">
+                        <span className="font-bold text-slate-600">Paid</span>
+                        <span className="font-black text-green-600 text-lg">Rs {(bill.paidAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden mb-3">
+                        <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(((bill.paidAmount || 0) / totalAmount) * 100, 100)}%` }}></div>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="font-bold text-slate-600">Remaining</span>
+                        <span className="font-black text-red-500 text-lg uppercase">Rs {(bill.remainingAmount ?? totalAmount).toLocaleString()}</span>
+                    </div>
+                    
+                    {bill.paymentHistory && bill.paymentHistory.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-slate-200 border-dashed">
+                            <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Payment Tracker</h5>
+                            <div className="space-y-2">
+                                {bill.paymentHistory.map((pmt: any, idx: number) => (
+                                    <div key={idx} className="flex flex-row justify-between items-start text-xs bg-white p-2.5 rounded-xl border border-slate-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <div className="font-extrabold text-slate-800">{formatNepaliDate(pmt.date)}</div>
+                                            {pmt.remarks && <div className="text-[10px] text-slate-500 italic mt-0.5 truncate">{pmt.remarks}</div>}
+                                        </div>
+                                        <div className="font-black text-emerald-600 shrink-0">Rs {pmt.amount.toLocaleString()}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+            
+          </div>
         </div>
 
         {/* --- Fixed Sticky Footer --- */}
-        <div className="bg-white border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex flex-col sm:flex-row gap-4 items-center justify-between mt-auto shrink-0">
-            <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
-              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total Payable</span>
-              <span className="text-3xl font-black text-[#0B2863] tracking-tight">
-                Rs {totalAmount.toLocaleString('en-IN')}
-              </span>
+        <DrawerFooter className="px-5 pt-2 pb-6 border-t border-slate-100 bg-white items-center gap-4">
+            <div className="flex flex-row items-center justify-between w-full h-full max-w-sm mx-auto">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Total Payable</span>
+                <span className="text-xl sm:text-2xl font-black text-[#0B2863] tracking-tight">
+                  Rs {(bill.remainingAmount ?? totalAmount).toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                     const url = `${window.location.origin}/bill/${bill._id}`;
+                     const text = `Hello! Here is your ${bill.type} Bill for ${bill.type === 'Rent' ? (bill as any).rentForPeriod : (bill as any).billingMonthBS}.\nTotal Amount: Rs ${totalAmount.toLocaleString()}\nRemaining Due: Rs ${(bill.remainingAmount ?? totalAmount).toLocaleString()}`;
+                     if (navigator.share) {
+                        navigator.share({ title: `${bill.type} Bill`, text: text, url: url }).catch(console.error);
+                     } else {
+                        navigator.clipboard.writeText(`${text}\n${url}`);
+                        toast.success('Link copied to clipboard!', { icon: '🔗' });
+                     }
+                  }}
+                  className="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 rounded-xl shadow-sm font-bold h-12 px-4 shrink-0 transition-all active:scale-95"
+                >
+                    <Share2 className="h-5 w-5" />
+                </Button>
+                <Button 
+                  onClick={() => printBill(bill)}
+                  className="bg-[#0B2863] hover:bg-blue-800 text-white rounded-xl shadow-lg shadow-blue-900/20 font-bold h-12 px-5 sm:px-6 transform-gpu active:scale-95 transition-all duration-200 flex items-center gap-2"
+                >
+                    <Printer className="h-4 w-4" />
+                    <span className="hidden sm:block">Print Invoice</span>
+                    <span className="sm:hidden">Print</span>
+                </Button>
+              </div>
             </div>
-            
-            <Button 
-               size="lg"
-               onClick={() => printBill(bill)}
-               className="w-full sm:w-auto bg-[#0B2863] hover:bg-blue-800 text-white rounded-xl shadow-lg shadow-blue-900/20 font-bold h-14 px-8 transform-gpu active:scale-95 transition-all duration-200 flex items-center gap-3"
-            >
-                <Printer className="h-5 w-5" />
-                <span className="tracking-wide">Print Invoice</span>
-            </Button>
-        </div>
+        </DrawerFooter>
 
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }

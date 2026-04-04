@@ -10,10 +10,27 @@ const RentBillSchema = new Schema({
   billDateAD: { type: Date, required: true },
   rentForPeriod: { type: String, required: true },
   amount: { type: Number, required: true },
-  status: { type: String, enum: ['DUE', 'PAID', 'OVERDUE'], default: 'DUE' },
+  paidAmount: { type: Number, default: 0 },
+  remainingAmount: { type: Number },
+  paymentHistory: [
+    {
+      amount: { type: Number, required: true },
+      date: { type: Date, default: Date.now },
+      remarks: String
+    }
+  ],
+  status: { type: String, enum: ['DUE', 'PARTIALLY_PAID', 'PAID', 'OVERDUE'], default: 'DUE' },
   paidOnBS: String,
   paymentMethod: String,
   remarks: String,
+});
+
+RentBillSchema.pre('save', function (next) {
+  if (this.amount != null) {
+    const currentPaid = this.paidAmount || 0;
+    this.remainingAmount = this.amount - currentPaid;
+  }
+  next();
 });
 
 const RentBill: Model<IRentBillDocument> = models.RentBill || model<IRentBillDocument>('RentBill', RentBillSchema);

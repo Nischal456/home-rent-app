@@ -10,20 +10,21 @@ import { Loader2, FileClock, AlertTriangle, CheckCircle, Hourglass, ListX, Downl
 import { IRentBill, IUtilityBill, IUser } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import { motion, AnimatePresence } from 'framer-motion';
+import Papa from 'papaparse';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from 'usehooks-ts';
-import Papa from 'papaparse';
 
 // --- Imports for the "Best of Best" Pop-up ---
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import { Receipt,Wallet, Zap, Calendar, Hash, CircleUserRound, Banknote, Droplets, Wrench, Shield, FileText, Scale, ZapIcon, Settings, Info, Building } from 'lucide-react';
+import { Receipt,Wallet, Zap, Calendar, Hash, CircleUserRound, Banknote, Droplets, Wrench, Shield, FileText, Scale, ZapIcon, Settings, Info, Building, Share2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 
 type CombinedBill = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
-type Status = 'DUE' | 'PAID' | 'OVERDUE';
+type Status = 'DUE' | 'PAID' | 'PARTIALLY_PAID' | 'OVERDUE';
 type FilterType = 'All' | 'Rent' | 'Utility';
 
 // --- Reusable SWR fetcher function ---
@@ -33,6 +34,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 const StatusBadge = ({ status }: { status: Status }) => {
     const statusConfig: Record<Status, { text: string; icon: ReactNode; className: string }> = {
         PAID: { text: "Paid", icon: <CheckCircle className="h-3.5 w-3.5" />, className: "bg-emerald-100/80 text-emerald-700 border-emerald-200" },
+        PARTIALLY_PAID: { text: "Partially Paid", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-blue-100/80 text-blue-700 border-blue-200" },
         DUE: { text: "Due", icon: <Hourglass className="h-3.5 w-3.5" />, className: "bg-amber-100/80 text-amber-700 border-amber-200" },
         OVERDUE: { text: "Overdue", icon: <AlertTriangle className="h-3.5 w-3.5" />, className: "bg-red-100/80 text-red-700 border-red-200 animate-pulse" },
     };
@@ -115,7 +117,7 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
       </div>
 
       {/* Scrollable Body - This handles the scroll bug */}
-      <div className="flex-1 overflow-y-auto styled-scrollbar p-6 md:p-8 space-y-6">
+      <div className="flex-1 overflow-y-auto styled-scrollbar p-6 md:p-8 space-y-6 pb-12">
         
         {/* Meta Grid */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -229,16 +231,69 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
               <p className="text-sm font-medium text-orange-900/80 whitespace-pre-wrap leading-relaxed">{bill.remarks}</p>
             </div>
           )}
+
+          {/* Remaining Amount & Payment Tracker Additions */}
+          {parseFloat(bill.paidAmount as any) > 0 && (
+              <div className="bg-slate-50 p-4 rounded-2xl mt-4 border border-slate-200 shadow-sm">
+                  <div className="flex justify-between text-sm mb-2">
+                      <span className="font-bold text-slate-600">Paid</span>
+                      <span className="font-black text-green-600 text-lg">Rs {(bill.paidAmount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden mb-3">
+                      <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(((bill.paidAmount || 0) / totalAmount) * 100, 100)}%` }}></div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                      <span className="font-bold text-slate-600">Remaining</span>
+                      <span className="font-black text-red-500 text-lg uppercase">Rs {(bill.remainingAmount ?? totalAmount).toLocaleString()}</span>
+                  </div>
+                  
+                  {bill.paymentHistory && bill.paymentHistory.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 border-dashed">
+                          <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Payment Tracker</h5>
+                          <div className="space-y-2">
+                              {bill.paymentHistory.map((pmt: any, idx: number) => (
+                                  <div key={idx} className="flex flex-row justify-between items-start text-xs bg-white p-2.5 rounded-xl border border-slate-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                                      <div className="flex-1 min-w-0 pr-2">
+                                          <div className="font-extrabold text-slate-800">{new NepaliDate(new Date(pmt.date)).format('YYYY MMMM DD')}</div>
+                                          {pmt.remarks && <div className="text-[10px] text-slate-500 italic mt-0.5 truncate">{pmt.remarks}</div>}
+                                      </div>
+                                      <div className="font-black text-emerald-600 shrink-0">Rs {pmt.amount.toLocaleString()}</div>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+              </div>
+          )}
         </div>
       </div>
 
       {/* Sticky Footer - Locked at Bottom */}
-      <div className="bg-white border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex items-center justify-between shrink-0">
+      <div className="bg-white border-t border-slate-100 p-5 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex items-center justify-between shrink-0 gap-4">
           <div className="flex flex-col">
-            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">Total Payable</span>
-            <span className="text-2xl sm:text-3xl font-black text-[#0B2863] tracking-tight">Rs {totalAmount.toLocaleString('en-IN')}</span>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Total Payable</span>
+            <span className="text-xl sm:text-2xl font-black text-[#0B2863] tracking-tight">Rs {(bill.remainingAmount ?? totalAmount).toLocaleString('en-IN')}</span>
           </div>
-          <Button variant="outline" onClick={onClose} className="rounded-xl h-12 px-6 font-bold text-slate-600">Close</Button>
+          <div className="flex gap-2">
+            <Button 
+                onClick={() => {
+                   const url = `${window.location.origin}/bill/${bill._id}`;
+                   const text = `Hello! Here is your ${bill.type} Bill for ${period}.\nTotal Amount: Rs ${totalAmount.toLocaleString()}\nRemaining Due: Rs ${(bill.remainingAmount ?? totalAmount).toLocaleString()}`;
+                   if (navigator.share) {
+                        navigator.share({ title: `${bill.type} Bill`, text: text, url: url }).catch(console.error);
+                   } else {
+                        navigator.clipboard.writeText(`${text}\n${url}`);
+                        toast.success('Link copied to clipboard!', { icon: '🔗' });
+                   }
+                }}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 rounded-xl shadow-sm font-bold h-12 px-4 shrink-0 transition-all active:scale-95"
+            >
+                <Share2 className="h-5 w-5" />
+            </Button>
+            <Button variant="outline" onClick={onClose} className="rounded-xl h-12 px-5 sm:px-6 font-bold text-slate-600 border-slate-200">
+                Close
+            </Button>
+          </div>
       </div>
     </div>
   );
@@ -246,24 +301,12 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
 
 // --- Dialog/Drawer Wrapper ---
 function StatementBillDetails({ bill, user, onClose }: { bill: CombinedBill | null, user: IUser | null, onClose: () => void }) {
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   if (!bill) return null;
 
-  if (isDesktop) {
-    return (
-      <Dialog open={!!bill} onOpenChange={(open) => !open && onClose()}>
-        {/* Enforce strict height and flex constraints on the Dialog Content */}
-        <DialogContent className="sm:max-w-md md:max-w-xl p-0 border-0 rounded-[2rem] shadow-2xl bg-transparent overflow-hidden flex flex-col max-h-[85vh]">
-          <PremiumBillContent bill={bill} user={user} onClose={onClose} />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Drawer open={!!bill} onClose={onClose}>
+    <Drawer open={!!bill} onOpenChange={(open) => !open && onClose()}>
       {/* Enforce strict height and flex constraints on the Drawer Content */}
-      <DrawerContent className="flex flex-col max-h-[85vh] h-[85vh] bg-transparent border-0 rounded-t-[2rem] overflow-hidden p-0">
+      <DrawerContent className="p-0 border-0 rounded-t-[2rem] shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.1)] bg-[#f8fafc] h-[85dvh] max-h-[85dvh] flex flex-col w-full mx-auto sm:max-w-xl outline-none overflow-hidden">
         <PremiumBillContent bill={bill} user={user} onClose={onClose} />
       </DrawerContent>
     </Drawer>
@@ -321,11 +364,8 @@ export default function StatementPage() {
     combined.forEach(bill => {
       const amount = bill.type === 'Rent' ? bill.amount : bill.totalAmount;
       billed += amount;
-      if (bill.status !== 'PAID') {
-        due += amount;
-      } else {
-        paid += amount;
-      }
+      due += bill.remainingAmount ?? (bill.status === 'PAID' ? 0 : amount);
+      paid += bill.paidAmount ?? (bill.status === 'PAID' ? amount : 0);
     });
     
     return { allBills: combined, totalDue: due, totalBilled: billed, totalPaid: paid };

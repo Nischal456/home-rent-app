@@ -13,9 +13,10 @@ export type RentBillData = IRentBill & {
   roomId: IRoom; // Room is a direct property of the bill
 };
 
-const getStatusBadge = (status: 'DUE' | 'PAID' | 'OVERDUE') => {
+const getStatusBadge = (status: string) => {
     switch (status) {
         case 'PAID': return <Badge className="bg-green-500 text-white hover:bg-green-600">PAID</Badge>;
+        case 'PARTIALLY_PAID': return <Badge variant="outline" className="border-primary text-primary">PARTIAL</Badge>;
         case 'OVERDUE': return <Badge variant="destructive">OVERDUE</Badge>;
         case 'DUE': default: return <Badge variant="secondary">DUE</Badge>;
     }
@@ -56,6 +57,30 @@ export const getRentBillColumns = (
             const amount = parseFloat(row.getValue('amount'));
             const formatted = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'NPR' }).format(amount);
             return <div className="text-right font-medium">{formatted}</div>;
+        }
+    },
+    {
+        id: 'paid',
+        header: () => <div className="text-right">Paid</div>,
+        cell: ({ row }) => {
+            const bill = row.original;
+            const paid = bill.paidAmount || 0;
+            if (paid > 0 || bill.status === 'PARTIALLY_PAID') {
+                return <div className="text-right font-mono text-green-600 text-sm">Rs {paid.toLocaleString('en-IN')}</div>;
+            }
+            return <div className="text-right text-muted-foreground">-</div>;
+        }
+    },
+    {
+        id: 'remaining',
+        header: () => <div className="text-right">Rem</div>,
+        cell: ({ row }) => {
+            const bill = row.original;
+            const remaining = bill.remainingAmount ?? (bill.amount || 0);
+            if (bill.status === 'PARTIALLY_PAID') {
+                return <div className="text-right font-mono text-red-500 font-bold text-sm">Rs {remaining.toLocaleString('en-IN')}</div>;
+            }
+            return <div className="text-right text-muted-foreground">-</div>;
         }
     },
     { 

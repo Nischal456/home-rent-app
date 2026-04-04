@@ -31,7 +31,10 @@ export interface IRentBill {
     billDateAD: Date;
     rentForPeriod: string;
     amount: number;
-    status: 'DUE' | 'PAID' | 'OVERDUE';
+    paidAmount?: number;
+    remainingAmount?: number;
+    paymentHistory?: { amount: number; date: Date; remarks?: string }[];
+    status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
     paidOnBS?: string;
     remarks?: string;
 }
@@ -48,7 +51,10 @@ export interface IUtilityBill {
     serviceCharge: number;
     securityCharge: number;
     totalAmount: number;
-    status: 'DUE' | 'PAID' | 'OVERDUE';
+    paidAmount?: number;
+    remainingAmount?: number;
+    paymentHistory?: { amount: number; date: Date; remarks?: string }[];
+    status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
     paidOnBS?: string;
     remarks?: string;
 }

@@ -26,9 +26,26 @@ const UtilityBillSchema = new Schema({
   serviceCharge: Number,
   securityCharge: Number,
   totalAmount: { type: Number, required: true },
-  status: { type: String, enum: ['DUE', 'PAID'], default: 'DUE' },
+  paidAmount: { type: Number, default: 0 },
+  remainingAmount: { type: Number },
+  paymentHistory: [
+    {
+      amount: { type: Number, required: true },
+      date: { type: Date, default: Date.now },
+      remarks: String
+    }
+  ],
+  status: { type: String, enum: ['DUE', 'PARTIALLY_PAID', 'PAID'], default: 'DUE' },
   paidOnBS: String,
   remarks: String,
+});
+
+UtilityBillSchema.pre('save', function (next) {
+  if (this.totalAmount != null) {
+    const currentPaid = this.paidAmount || 0;
+    this.remainingAmount = this.totalAmount - currentPaid;
+  }
+  next();
 });
 
 const UtilityBill: Model<IUtilityBillDocument> = models.UtilityBill || model<IUtilityBillDocument>('UtilityBill', UtilityBillSchema);

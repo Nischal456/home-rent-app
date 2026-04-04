@@ -221,7 +221,7 @@ export default function TenantsPage() {
                 ) : tenants.length === 0 ? (
                     <div className="text-center py-20 border-2 border-dashed rounded-lg"><Users className="mx-auto h-12 w-12 text-muted-foreground" /><h3 className="mt-4 text-lg font-semibold">No Tenants Found</h3><p className="mt-1 text-sm text-muted-foreground">Get started by adding your first tenant.</p><div className="mt-6"><Button onClick={() => setAddDialogOpen(true)}><UserPlus className="mr-2 h-4 w-4" /> Add First Tenant</Button></div></div>
                 ) : isMobile ? (
-                    <div className="space-y-4"><AnimatePresence>{filteredTenants.map(tenant => <TenantCard key={tenant._id.toString()} tenant={tenant} onAssignRoom={setAssignRoomTenant} onDelete={setDeleteTenant} />)}</AnimatePresence></div>
+                    <div className="space-y-4 pb-32"><AnimatePresence>{filteredTenants.map(tenant => <TenantCard key={tenant._id.toString()} tenant={tenant} onAssignRoom={setAssignRoomTenant} onDelete={setDeleteTenant} />)}</AnimatePresence></div>
                 ) : (
                     <DataTable 
                         columns={columns} 
