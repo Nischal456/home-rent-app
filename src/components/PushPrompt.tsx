@@ -1,0 +1,24 @@
+'use client';
+
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { BellRing } from "lucide-react";
+import { Button } from "./ui/button";
+
+export function PushPrompt() {
+    const { isSupported, isSubscribed, subscribeToPush } = usePushNotifications();
+
+    if (!isSupported || isSubscribed) {
+        return null;
+    }
+
+    return (
+        <Button 
+            onClick={subscribeToPush}
+            variant="outline" 
+            className="hidden md:flex bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border-emerald-200 rounded-full font-bold text-xs h-8 px-3 shadow-sm transform-gpu transition-all active:scale-95 animate-pulse"
+        >
+            <BellRing className="w-3 h-3 mr-1.5" />
+            Enable Push
+        </Button>
+    );
+}

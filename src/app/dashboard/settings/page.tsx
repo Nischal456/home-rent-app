@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster, toast } from 'sonner'; // Upgraded to premium Sonner toasts
-import { Loader2, User, KeyRound, AlertCircle, Eye, EyeOff, Settings, ShieldCheck, Mail, Phone } from 'lucide-react';
+import { Loader2, User, KeyRound, AlertCircle, Eye, EyeOff, Settings, ShieldCheck, Mail, Phone, Camera } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { IUser } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
 
@@ -64,6 +66,58 @@ export default function SettingsPage() {
     };
     fetchUser();
   }, []);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.src = event.target?.result as string;
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 300;
+        const MAX_HEIGHT = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+             ctx.drawImage(img, 0, 0, width, height);
+             const base64String = canvas.toDataURL("image/webp", 0.7);
+             
+             try {
+                 const res = await fetch('/api/users/profile-picture', {
+                     method: 'PATCH',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ profilePicture: base64String })
+                 });
+                 if (res.ok) {
+                     setUser(prev => prev ? { ...prev, profilePicture: base64String } : prev);
+                     toast.success("Profile picture updated!");
+                     // Reload to update layout headers
+                     setTimeout(() => window.location.reload(), 1500);
+                 } else {
+                     const errData = await res.json();
+                     toast.error(errData.message || "Upload failed");
+                 }
+             } catch(err) { toast.error("Failed to update"); }
+             finally { setIsUploading(false); }
+        }
+      };
+    };
+  };
 
   async function onSubmit(values: PasswordFormValues) {
     setIsSubmitting(true);
@@ -144,9 +198,16 @@ export default function SettingsPage() {
             <Card className="border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/70 backdrop-blur-xl rounded-[2.5rem] overflow-hidden relative group">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-[#0B2863]"></div>
               
-              <CardHeader className="pt-8 pb-4 px-6 md:px-10 flex flex-row items-start gap-5 space-y-0">
-                <div className="p-4 bg-blue-50 text-blue-600 rounded-[1.25rem] shadow-inner group-hover:scale-110 group-hover:bg-[#0B2863] group-hover:text-white transition-all duration-300">
-                  <User className="w-7 h-7" />
+              <CardHeader className="pt-8 pb-4 px-6 md:px-10 flex flex-row items-start gap-5 space-y-0 relative">
+                <div className="relative group/avatar cursor-pointer">
+                  <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleImageUpload} disabled={isUploading || isLoading} />
+                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg bg-blue-50">
+                     <AvatarImage src={user?.profilePicture || `https://api.dicebear.com/8.x/initials/svg?seed=${user?.fullName}`} className="object-cover" />
+                     <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-bold">{user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity z-10">
+                     {isUploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
+                  </div>
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-black text-slate-900 tracking-tight">

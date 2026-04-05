@@ -8,6 +8,7 @@ export interface INotification extends Document {
   message: string;
   isRead: boolean;
   link?: string;
+  type: 'GENERAL' | 'ALERT' | 'IMPORTANT' | 'PAYMENT' | 'MAINTENANCE';
   createdAt: Date;
 }
 
@@ -32,6 +33,11 @@ const NotificationSchema = new Schema<INotification>({
   },
   link: { 
     type: String 
+  },
+  type: {
+    type: String,
+    enum: ['GENERAL', 'ALERT', 'IMPORTANT', 'PAYMENT', 'MAINTENANCE'],
+    default: 'GENERAL'
   },
 
   // --- This is the key field for the 7-day logic ---

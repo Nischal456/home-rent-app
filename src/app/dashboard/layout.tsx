@@ -14,12 +14,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'react-hot-toast';
 import { Separator } from '@/components/ui/separator';
+import { PushPrompt } from '@/components/PushPrompt';
 
 // --- Icons from lucide-react ---
 import {
   Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, Building, Menu,
   Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, Newspaper,CreditCard, PanelsTopLeft,
-  ShieldCheck, Droplets, Wallet, Grid2X2, Zap
+  ShieldCheck, Droplets, Wallet, Grid2X2, Zap, AlertCircle, Briefcase
 } from 'lucide-react';
 
 // --- Animation & Utilities ---
@@ -93,6 +94,7 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
       { href: "/dashboard/staff", icon: <ShieldCheck className="h-5 w-5" />, label: "Staff Management" },
       { href: "/dashboard/water-tankers", icon: <Droplets className="h-5 w-5" />, label: "Water Logs" },
       { href: "/dashboard/security-management", icon: <Wallet className="h-5 w-5" />, label: "Security Finance" },
+      { href: "/dashboard/push-notifications", icon: <Bell className="h-5 w-5" />, label: "Push Notifications" },
     ] : []),
 
     ...(user.role === 'TENANT' ? [
@@ -101,6 +103,9 @@ function NavLinks({ user, onLinkClick, unreadPaymentsCount }: { user: IUser; onL
 
     ...(user.role === 'SECURITY' ? [
       { href: "/dashboard/security", icon: <ShieldCheck className="h-5 w-5" />, label: "Guard Portal" },
+    ] : []),
+    ...((user.role === 'ACCOUNTANT' || user.role === 'CLEANER') ? [
+      { href: "/dashboard/staff-portal", icon: <Briefcase className="h-5 w-5" />, label: "Staff Portal" },
     ] : []),
   ];
 
@@ -159,6 +164,13 @@ function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUs
           { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
           { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
       ];
+  } else if (user.role === 'ACCOUNTANT' || user.role === 'CLEANER') {
+      mobileItems = [
+          { href: "/dashboard", icon: Home, label: "Home" },
+          { href: "/dashboard/staff-portal", icon: Briefcase, label: "Portal" },
+          { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+      ];
   }
 
   return (
@@ -194,10 +206,14 @@ function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUs
 function NotificationBell({ notifications, onMarkAllRead, customTrigger }: { notifications: ClientNotification[]; onMarkAllRead: () => void; customTrigger?: React.ReactNode }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const getNotificationIcon = (type: ClientNotification['type']) => {
+  const getNotificationIcon = (type: ClientNotification['type'] | string) => {
     switch (type) {
-      case 'payment': return <div className="p-2 bg-green-50 rounded-xl text-green-600"><CreditCard className="h-4 w-4" /></div>;
-      case 'maintenance': return <div className="p-2 bg-orange-50 rounded-xl text-orange-600"><Wrench className="h-4 w-4" /></div>;
+      case 'payment':
+      case 'PAYMENT': return <div className="p-2 bg-green-50 rounded-xl text-green-600"><CreditCard className="h-4 w-4" /></div>;
+      case 'maintenance':
+      case 'MAINTENANCE': return <div className="p-2 bg-orange-50 rounded-xl text-orange-600"><Wrench className="h-4 w-4" /></div>;
+      case 'ALERT': return <div className="p-2 bg-red-50 rounded-xl text-red-600"><AlertCircle className="h-4 w-4" /></div>;
+      case 'IMPORTANT': return <div className="p-2 bg-amber-50 rounded-xl text-amber-600"><Sparkles className="h-4 w-4" /></div>;
       default: return <div className="p-2 bg-blue-50 rounded-xl text-blue-600"><Bell className="h-4 w-4" /></div>;
     }
   };
@@ -279,7 +295,7 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 px-2 space-x-3 rounded-full hover:bg-slate-100 transition-colors transform-gpu active:scale-95 group border border-transparent hover:border-slate-200">
           <Avatar className="h-8 w-8 border border-slate-200 shadow-sm">
-            <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} />
+            <AvatarImage src={user.profilePicture || `https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} className="object-cover" />
             <AvatarFallback className="bg-[#0B2863] text-white font-bold">{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
           <div className="hidden lg:flex lg:flex-col lg:items-start">
@@ -293,7 +309,7 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
         <DropdownMenuLabel className="font-normal p-3">
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12 border shadow-sm">
-              <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} />
+              <AvatarImage src={user.profilePicture || `https://api.dicebear.com/8.x/initials/svg?seed=${user.fullName}`} alt={user.fullName} className="object-cover" />
               <AvatarFallback className="bg-[#0B2863] text-white font-bold text-lg">{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
@@ -386,7 +402,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex items-center justify-center min-h-[100dvh] bg-[#f8fafc]">
         <div className="flex flex-col items-center gap-6">
           <div className="relative w-20 h-20 animate-pulse drop-shadow-lg">
-             <Image src="/home.png" alt="Logo" fill className="object-contain" priority />
+             <Image src="/home.png" alt="Logo" fill sizes="40px" className="object-contain" priority />
           </div>
           <Loader2 className="h-8 w-8 animate-spin text-[#0B2863]" />
         </div>
@@ -402,7 +418,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-20 items-center px-8 border-b border-slate-50">
           <Link href="/dashboard" className="flex items-center gap-4 group transform-gpu">
             <div className="h-8 w-8 relative transition-transform duration-300 group-hover:scale-110 drop-shadow-sm">
-              <Image src="/home.png" alt="Logo" fill className="object-contain" priority />
+              <Image src="/home.png" alt="Logo" fill sizes="48px" className="object-contain" priority />
             </div>
             <span className="text-xl font-extrabold text-[#0B2863] tracking-tight">STG TOWER</span>
           </Link>
@@ -421,7 +437,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Mobile Logo View (Replaces Hamburger) */}
           <div className="flex md:hidden items-center gap-3">
             <div className="h-8 w-8 relative">
-              <Image src="/home.png" alt="Logo" fill className="object-contain" priority />
+              <Image src="/home.png" alt="Logo" fill sizes="48px" className="object-contain" priority />
             </div>
             <span className="text-lg font-extrabold text-[#0B2863] tracking-tight">STG TOWER</span>
           </div>
@@ -429,6 +445,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="hidden md:block flex-1" />
 
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 bg-white/60 md:px-2 py-1 sm:py-1.5 rounded-full border border-slate-100/50 shadow-sm md:shadow-sm transform-gpu -mr-2 sm:mr-0 backdrop-blur-md">
+            <PushPrompt />
             <NotificationBell notifications={notifications} onMarkAllRead={handleMarkAllAsRead} />
             <div className="hidden md:block w-[1px] h-6 bg-slate-200 mx-1"></div>
             <UserNav user={user} onLogout={handleLogout} />
@@ -467,7 +484,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
               <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setSheetOpen(false)}>
                 <div className="h-8 w-8 relative">
-                  <Image src="/home.png" alt="Logo" fill className="object-contain" priority />
+                  <Image src="/home.png" alt="Logo" fill sizes="28px" className="object-contain" priority />
                 </div>
                 <span className="text-xl font-extrabold text-[#0B2863]">STG TOWER</span>
               </Link>

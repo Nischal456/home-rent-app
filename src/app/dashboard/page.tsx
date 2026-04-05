@@ -8,7 +8,8 @@ import { IUser } from '@/types';
 // --- Import the specific Dashboards ---
 import { AdminDashboard } from './admin-dashboard';
 import { TenantDashboard } from './tenant-dashboard';
-import SecurityDashboard from './security/page'; // Importing the Security Dashboard component
+import SecurityDashboard from './security/page'; 
+import StaffPortalDashboard from './staff-portal/page';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<IUser | null>(null);
@@ -59,6 +60,10 @@ export default function DashboardPage() {
   
   if (user.role === 'SECURITY') {
     return <SecurityDashboard />;
+  }
+
+  if (user.role === 'ACCOUNTANT' || user.role === 'CLEANER') {
+    return <StaffPortalDashboard />;
   }
 
   // Default to Tenant Dashboard for 'TENANT' role

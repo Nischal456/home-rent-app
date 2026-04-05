@@ -5,7 +5,7 @@ export interface IUser {
   fullName: string;
   email: string;
   password?: string;
-  role: 'ADMIN' | 'TENANT' | 'SECURITY'; 
+  role: 'ADMIN' | 'TENANT' | 'SECURITY' | 'ACCOUNTANT' | 'CLEANER'; 
   status: 'ACTIVE' | 'INACTIVE';
   phoneNumber?: string;
   roomId?: Types.ObjectId | IRoom;
@@ -13,6 +13,8 @@ export interface IUser {
   leaseEndDate?: Date;
   createdAt: Date;
   phone?: string;
+  profilePicture?: string;
+  pushSubscriptions?: any[];
 }
 
 export interface IRoom {
