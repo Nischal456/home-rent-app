@@ -15,12 +15,14 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         
         const options = {
-            body: data.message || "You have a new notification",
-            icon: '/home.png',
-            badge: '/home.png',
-            vibrate: [200, 100, 200, 100, 200, 100, 200],
+            body: data.message || "You have a new update in your STG Tower portal.",
+            icon: '/logo.png', // Use high-res logo for main notification icon
+            badge: '/logo.png',
+            image: data.type === 'IMPORTANT' ? '/building.jpg' : undefined, // Rich media for important alerts
+            vibrate: [300, 100, 400],
             data: {
-                url: data.link || '/dashboard'
+                url: data.link || '/dashboard',
+                timestamp: Date.now()
             },
             requireInteraction: true // Keep notification on screen until user interacts
         };

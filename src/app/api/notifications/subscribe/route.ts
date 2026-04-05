@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         const exists = user.pushSubscriptions.some((sub: any) => sub.endpoint === subscription.endpoint);
         if (!exists) {
             user.pushSubscriptions.push(subscription);
+            user.markModified('pushSubscriptions'); // CRITICAL FIX
             await user.save();
         }
 
