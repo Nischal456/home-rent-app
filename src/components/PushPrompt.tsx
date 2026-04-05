@@ -15,10 +15,10 @@ export function PushPrompt() {
         <Button 
             onClick={subscribeToPush}
             variant="outline" 
-            className="hidden md:flex bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border-emerald-200 rounded-full font-bold text-xs h-8 px-3 shadow-sm transform-gpu transition-all active:scale-95 animate-pulse"
+            className="flex bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border-emerald-200 rounded-full font-bold text-xs h-8 px-2 sm:px-3 shadow-sm transform-gpu transition-all active:scale-95 animate-pulse"
         >
-            <BellRing className="w-3 h-3 mr-1.5" />
-            Enable Push
+            <BellRing className="w-3.5 h-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Enable Push</span>
         </Button>
     );
 }
