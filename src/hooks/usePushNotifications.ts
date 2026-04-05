@@ -92,10 +92,35 @@ export function usePushNotifications() {
     }
   };
 
+  const unsubscribeFromPush = async () => {
+      try {
+          if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          
+          if (subscription) {
+              // 1. Remove from local browser
+              await subscription.unsubscribe();
+              
+              // 2. Remove from backend DB
+              await fetch('/api/notifications/unsubscribe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ endpoint: subscription.endpoint })
+              });
+              
+              setIsSubscribed(false);
+          }
+      } catch (err) {
+          console.error("Error unsubscribing from push:", err);
+      }
+  };
+
   return {
     isSupported,
     isSubscribed,
     permissionState,
-    subscribeToPush
+    subscribeToPush,
+    unsubscribeFromPush
   };
 }
