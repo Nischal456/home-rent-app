@@ -21,10 +21,12 @@ function urlBase64ToUint8Array(base64String: string) {
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
 
   useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
+    if ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
       setIsSupported(true);
+      setPermissionState(Notification.permission);
       // Register service worker immediately for intercepting events
       navigator.serviceWorker.register('/sw.js').then(reg => {
           reg.pushManager.getSubscription().then(sub => {
@@ -42,6 +44,8 @@ export function usePushNotifications() {
 
     try {
       const permission = await Notification.requestPermission();
+      setPermissionState(permission);
+      
       if (permission !== 'granted') {
           toast.info("Notification permission was denied.");
           return;
@@ -91,6 +95,7 @@ export function usePushNotifications() {
   return {
     isSupported,
     isSubscribed,
+    permissionState,
     subscribeToPush
   };
 }

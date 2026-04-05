@@ -5,9 +5,10 @@ import { BellRing } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function PushPrompt() {
-    const { isSupported, isSubscribed, subscribeToPush } = usePushNotifications();
+    const { isSupported, isSubscribed, permissionState, subscribeToPush } = usePushNotifications();
 
-    if (!isSupported || isSubscribed) {
+    // If granted, hide it completely. If denied or default, we show it so the user can interact.
+    if (!isSupported || isSubscribed || permissionState === 'granted') {
         return null;
     }
 
