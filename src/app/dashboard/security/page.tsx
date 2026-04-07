@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import NepaliDate from 'nepali-date-converter';
@@ -55,6 +55,7 @@ export default function SecurityDashboard() {
 
     // UI State
     const [isWaterDialogOpen, setIsWaterDialogOpen] = useState(false);
+    const [selectedFinance, setSelectedFinance] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [waterCost, setWaterCost] = useState('');
     const [waterVol, setWaterVol] = useState('');
@@ -459,20 +460,39 @@ export default function SecurityDashboard() {
                                 finances.map((record: any, idx: number) => {
                                     const isAdvance = record.type === 'ADVANCE';
                                     return (
-                                        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} key={record._id} className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn("p-3 rounded-xl shadow-inner shrink-0", isAdvance ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600')}>
-                                                    {isAdvance ? <TrendingDown className="w-5 h-5" strokeWidth={2.5} /> : <TrendingUp className="w-5 h-5" strokeWidth={2.5} />}
+                                        <React.Fragment key={record._id}>
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 15 }} 
+                                                animate={{ opacity: 1, y: 0 }} 
+                                                transition={{ delay: idx * 0.05 }} 
+                                                onClick={() => setSelectedFinance(record)}
+                                                className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:shadow-md hover:border-slate-300 transition-all active:scale-[0.98] transform-gpu"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn("p-3 rounded-xl shadow-inner shrink-0", isAdvance ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600')}>
+                                                        {isAdvance ? <TrendingDown className="w-5 h-5" strokeWidth={2.5} /> : <TrendingUp className="w-5 h-5" strokeWidth={2.5} />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-black text-slate-900 text-sm md:text-base tracking-tight">{record.type === 'SALARY' ? `Salary: ${record.month}` : record.type}</p>
+                                                        <p className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mt-0.5">{formatDateTime(record.date)}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-black text-slate-900 text-sm md:text-base tracking-tight">{record.type === 'SALARY' ? `Salary: ${record.month}` : record.type}</p>
-                                                    <p className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mt-0.5">{formatDateTime(record.date)}</p>
+                                                <span className={cn("font-black text-base md:text-lg", isAdvance ? 'text-orange-600' : 'text-emerald-600')}>
+                                                    {isAdvance ? '-' : '+'}Rs {record.amount.toLocaleString()}
+                                                </span>
+                                            </motion.div>
+                                            
+                                            {/* --- Premium Full-Width Dashed Cycle Separator --- */}
+                                            {record.type === 'SALARY' && (
+                                                <div className="col-span-1 sm:col-span-2 py-3 px-1 flex items-center gap-4 opacity-80">
+                                                    <div className="flex-1 h-px border-t-2 border-dashed border-slate-300"></div>
+                                                    <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase rounded-full bg-slate-100/50 px-3 py-1 text-center shadow-sm border border-slate-200">
+                                                        Start of New Billing Cycle
+                                                    </span>
+                                                    <div className="flex-1 h-px border-t-2 border-dashed border-slate-300"></div>
                                                 </div>
-                                            </div>
-                                            <span className={cn("font-black text-base md:text-lg", isAdvance ? 'text-orange-600' : 'text-emerald-600')}>
-                                                {isAdvance ? '-' : '+'}Rs {record.amount.toLocaleString()}
-                                            </span>
-                                        </motion.div>
+                                            )}
+                                        </React.Fragment>
                                     );
                                 })
                             )}
@@ -580,6 +600,62 @@ export default function SecurityDashboard() {
                             </Button>
                         </div>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* =========================================
+                PREMIUM FINANCE DETAILS MODAL
+            ============================================= */}
+            <Dialog open={!!selectedFinance} onOpenChange={() => setSelectedFinance(null)}>
+                <DialogContent className="w-[90vw] sm:max-w-sm rounded-[2rem] p-0 border-0 shadow-2xl bg-white overflow-hidden [&>button]:hidden">
+                     <DialogHeader className="sr-only"><DialogTitle>Finance Details</DialogTitle><DialogDescription>View transaction remarks and info</DialogDescription></DialogHeader>
+                     
+                     {selectedFinance && (() => {
+                         const isAdvance = selectedFinance.type === 'ADVANCE';
+                         return (
+                            <div className="flex flex-col">
+                                <div className="relative p-6 pt-8 bg-[#f8fafc] border-b border-slate-100 shrink-0 text-center">
+                                    <div className={cn("absolute top-0 left-0 w-full h-1.5", isAdvance ? "bg-orange-400" : "bg-emerald-500")}></div>
+                                    
+                                    <Badge variant="outline" className={cn("absolute top-4 right-4 font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-md", isAdvance ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-600 border-emerald-200")}>
+                                        {selectedFinance.type}
+                                    </Badge>
+
+                                    <div className="flex justify-center mb-4">
+                                        <div className={cn("p-4 rounded-full shadow-inner", isAdvance ? "bg-orange-50 text-orange-600" : "bg-emerald-50 text-emerald-600")}>
+                                            {isAdvance ? <TrendingDown className="w-8 h-8" /> : <TrendingUp className="w-8 h-8" />}
+                                        </div>
+                                    </div>
+                                    <h2 className="text-3xl font-black tracking-tight text-slate-900 drop-shadow-sm">Rs {selectedFinance.amount.toLocaleString()}</h2>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mt-2">{formatDateTime(selectedFinance.date)}</p>
+                                </div>
+
+                                <div className="p-6 space-y-5 bg-white">
+                                    {selectedFinance.month && (
+                                        <div>
+                                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Billing Month</p>
+                                            <div className="font-bold text-[#0B2863] bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-sm">
+                                                {selectedFinance.month}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <div>
+                                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><AlignLeft className="w-3.5 h-3.5" /> Notes / Remarks</p>
+                                        <div className="font-medium text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm leading-relaxed min-h-[80px]">
+                                            {selectedFinance.remarks || <span className="text-slate-400 italic font-normal">No additional notes provided for this transaction.</span>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 pt-0 mt-2 flex">
+                                    <Button onClick={() => setSelectedFinance(null)} className="flex-1 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold transition-all active:scale-95">
+                                        Close Details
+                                    </Button>
+                                </div>
+                            </div>
+                         );
+                     })()}
                 </DialogContent>
             </Dialog>
 

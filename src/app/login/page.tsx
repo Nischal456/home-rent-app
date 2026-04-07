@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, Loader2, AlertCircle, Mail, KeyRound, Eye, EyeOff, ShieldCheck, Calendar } from 'lucide-react';
+import { LogIn, Loader2, AlertCircle, Mail, KeyRound, Eye, EyeOff, ShieldCheck, Calendar, ChevronLeft } from 'lucide-react';
 import { Toaster, toast } from 'sonner'; // Ultra-premium toast system
 import NepaliDate from 'nepali-date-converter';
 import { Button } from '@/components/ui/button';
@@ -75,8 +75,26 @@ export default function LoginPage() {
       
       {/* --- Premium Animated Background --- */}
       <div className="flex items-center justify-center min-h-screen w-full bg-[#f8fafc] p-4 sm:p-8 relative overflow-hidden">
-        
-        {/* Animated Mesh Gradient */}
+      {/* --- Premium Floating Back Button --- */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 100 }}
+        className="absolute top-5 left-5 sm:top-8 sm:left-8 z-50"
+      >
+        <Link href="/">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1.5 sm:gap-2 bg-white/50 hover:bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_12px_40px_rgba(11,40,99,0.15)] rounded-[1.25rem] h-10 sm:h-12 px-3 sm:px-5 text-[#0B2863] font-black text-xs sm:text-sm transition-all duration-300 hover:-translate-y-1 active:scale-95 transform-gpu"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 -ml-1" strokeWidth={3} />
+            <span className="hidden sm:inline">Back to Website</span>
+            <span className="inline sm:hidden">Back</span>
+          </Button>
+        </Link>
+      </motion.div>
+
+      {/* Animated Mesh Gradient */}
         <div className="absolute inset-0 z-0 opacity-[0.4]">
           <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-300 rounded-full filter blur-[120px] animate-blob mix-blend-multiply"></div>
           <div className="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-emerald-200 rounded-full filter blur-[120px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
