@@ -2,6 +2,7 @@ import { NextResponse as RoomNextResponse, NextRequest } from 'next/server';
 import dbConnectRoom from '@/lib/dbConnect';
 import RoomModel from '@/models/Room';
 import '@/models/User'; // ✅ FIX: Import for side-effects to register schema
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   await dbConnectRoom();
