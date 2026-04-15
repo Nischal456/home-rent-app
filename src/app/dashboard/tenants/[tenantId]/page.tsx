@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -34,7 +33,6 @@ import { IRentBill, IUtilityBill, IUser, IRoom } from '@/types';
 
 type StatementEntry = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
 
-// ✅ Type definition for the object returned by useMemo
 interface MemoizedData {
   filteredStatement: StatementEntry[];
   uniqueYears: string[];
@@ -60,79 +58,94 @@ const formatNepaliDate = (date: Date | string | undefined): string => {
     return new NepaliDate(new Date(date)).format('YYYY MMMM DD');
 };
 
-const InfoItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value?: string | number | null }) => (
-    <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 text-muted-foreground mt-1">{icon}</div>
-        <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="font-semibold text-sm">{value || 'N/A'}</p>
+const InfoItem = ({ icon, label, value, colorClass }: { icon: React.ReactNode, label: string, value?: string | number | null, colorClass: string }) => (
+    <div className="flex flex-col bg-white/70 p-4 rounded-3xl border border-white/60 shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClass}`}>
+                {icon}
+            </div>
+            <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                <p className="font-bold text-slate-800 text-sm mt-0.5">{value || 'N/A'}</p>
+            </div>
         </div>
     </div>
 );
 
-const StatCard = ({ icon, title, value }: { icon: React.ReactNode, title: string, value: number }) => (
-    <Card className="hover:border-primary/50 transition-colors bg-background/50 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            {icon}
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">Rs {value.toLocaleString('en-IN')}</div>
-        </CardContent>
-    </Card>
+const StatCardApp = ({ title, value, Icon, delay, fromColor, badgeClass, iconColor }: { title: string; value: string | number; Icon: React.ElementType; delay: number; fromColor: string; badgeClass: string; iconColor: string; }) => (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay, ease: "easeOut" }}>
+        <Card className="relative overflow-hidden border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(11,40,99,0.08)] transition-all duration-500 rounded-[2.5rem] bg-white/70 backdrop-blur-xl group">
+            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${fromColor} to-transparent opacity-40 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700 pointer-events-none -z-10`}></div>
+            <CardContent className="p-6 flex flex-col h-full z-10">
+                <div className="flex justify-between items-start mb-4">
+                    <div className={`w-12 h-12 rounded-[1.5rem] flex items-center justify-center shadow-inner ${badgeClass} text-white`}>
+                        <Icon className="h-6 w-6" strokeWidth={2.5} />
+                    </div>
+                </div>
+                <div className="mt-auto">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{title}</p>
+                    <div className={`text-3xl font-black ${iconColor} tracking-tight`}>
+                        {value}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    </motion.div>
 );
 
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
-    <div className="flex justify-between items-center py-2.5 border-b border-border/50">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">{icon}<span>{label}</span></div>
-      <div className="font-semibold text-sm text-foreground text-right">{value}</div>
+    <div className="flex justify-between items-center py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 px-2 rounded-lg transition-colors">
+      <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">{icon}<span className="uppercase tracking-wider text-[11px] font-bold">{label}</span></div>
+      <div className="font-bold text-sm text-slate-800 text-right">{value}</div>
     </div>
 );
 
 const BillCard = ({ bill, onClick, onAction, onShare, onPrint }: { bill: StatementEntry; onClick: () => void; onAction: (action: 'pay' | 'delete', bill: StatementEntry) => void; onShare: (bill: StatementEntry) => void; onPrint: (bill: StatementEntry) => void; }) => {
     const isRent = bill.type === 'Rent';
     const amount = isRent ? bill.amount : bill.totalAmount;
-    const description = isRent ? `Rent for ${bill.rentForPeriod}` : `Utilities ${bill.billingMonthBS}`;
+    const description = isRent ? `Rent: ${bill.rentForPeriod}` : `Utility: ${bill.billingMonthBS}`;
     const Icon = isRent ? Receipt : Zap;
 
     return (
         <motion.div
-            layout initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
             onClick={onClick}
-            className="flex items-center space-x-3 p-4 rounded-xl border bg-card cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
+            className="flex items-center space-x-3 p-4 rounded-[2rem] border border-white/60 bg-white/70 backdrop-blur-xl cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_30px_rgba(11,40,99,0.06)] transition-all duration-300 relative overflow-hidden group"
         >
-            <div className={`p-2 rounded-full flex-shrink-0 ${bill.status === 'PAID' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                <Icon className="h-5 w-5" />
+            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${bill.status === 'PAID' ? 'from-green-100/50' : bill.status === 'PARTIALLY_PAID' ? 'from-blue-100/50' : 'from-red-100/50'} to-transparent opacity-60 rounded-full blur-xl pointer-events-none -z-10`}></div>
+            <div className={`p-3 rounded-[1.2rem] flex-shrink-0 shadow-inner ${bill.status === 'PAID' ? 'bg-green-50 text-green-600 border border-green-100' : bill.status === 'PARTIALLY_PAID' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                <Icon className="h-6 w-6" strokeWidth={2.5} />
             </div>
-            <div className="flex-1 min-w-0 pr-1 space-y-0.5 mt-0.5">
-                <p className="text-sm font-bold leading-snug line-clamp-2 break-normal">{description}</p>
-                <p className="text-xs font-medium text-muted-foreground">{formatNepaliDate(bill.billDateAD)}</p>
+            <div className="flex-1 min-w-0 pr-1 mt-0.5">
+                <p className="text-base font-black tracking-tight text-slate-800 leading-snug truncate">{description}</p>
+                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{formatNepaliDate(bill.billDateAD)}</p>
             </div>
             <div className="text-right flex flex-col items-end gap-1.5 flex-shrink-0 min-w-max ml-1.5 pt-0.5">
-                <p className="font-bold whitespace-nowrap text-primary">Rs {amount.toLocaleString()}</p>
+                <p className="font-black text-lg tracking-tight text-[#0B2863]">Rs {amount.toLocaleString()}</p>
                 
                 {parseFloat(bill.paidAmount as any) > 0 && bill.status !== 'PAID' && (
-                    <div className="flex flex-col items-end text-[10px] text-muted-foreground gap-0.5">
-                        <p>Paid: <span className="font-semibold text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span></p>
-                        <p>Rem: <span className="font-semibold text-red-500">Rs {(bill.remainingAmount ?? amount).toLocaleString()}</span></p>
+                    <div className="flex flex-col items-end text-[10px] text-slate-500 gap-0.5 font-bold tracking-widest uppercase">
+                        <p>Paid: <span className="text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span></p>
+                        <p>Rem: <span className="text-red-500">Rs {(bill.remainingAmount ?? amount).toLocaleString()}</span></p>
                     </div>
                 )}
                 
                 <div className="flex items-center justify-end gap-2 mt-1">
-                    <Badge variant={bill.status === 'PAID' ? 'default' : bill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={`text-[10px] h-5 px-1.5 ${bill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}`}>{bill.status}</Badge>
+                    <Badge variant={bill.status === 'PAID' ? 'default' : bill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={`text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 shadow-sm ${bill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}`}>{bill.status}</Badge>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-slate-200 rounded-full" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full transition-colors" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4 text-slate-500" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 text-left rounded-xl shadow-xl" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuLabel className="font-bold text-xs">Quick Actions</DropdownMenuLabel>
-                            <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); onPrint(bill); }}><Printer className="mr-2 h-4 w-4" /> Print Bill</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); onShare(bill); }}><Share2 className="mr-2 h-4 w-4" /> Share Link</DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-100 p-2" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Bill Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {bill.status !== 'PAID' && <DropdownMenuItem className="cursor-pointer font-medium text-green-600 focus:text-green-700" onClick={(e) => { e.stopPropagation(); onAction('pay', bill); }}><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Record Payment</DropdownMenuItem>}
-                            <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-700 focus:bg-red-50" onClick={(e) => { e.stopPropagation(); onAction('delete', bill); }}><Trash2 className="mr-2 h-4 w-4" /> Delete Bill</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer py-2.5 font-medium rounded-lg" onClick={(e) => { e.stopPropagation(); onPrint(bill); }}><Printer className="mr-2 h-4 w-4" /> Print Bill</DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer py-2.5 font-medium rounded-lg" onClick={(e) => { e.stopPropagation(); onShare(bill); }}><Share2 className="mr-2 h-4 w-4" /> Share Link</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {bill.status !== 'PAID' && <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-green-700 focus:bg-green-50 focus:text-green-800 rounded-lg" onClick={(e) => { e.stopPropagation(); onAction('pay', bill); }}><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Record Payment</DropdownMenuItem>}
+                            <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg" onClick={(e) => { e.stopPropagation(); onAction('delete', bill); }}><Trash2 className="mr-2 h-4 w-4" /> Erase Document</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -181,8 +194,8 @@ export default function TenantDetailPage() {
         ratesStr = `Rates: Elec Rs ${eRate}/unit, Water Rs ${wRate}/Litre.\n`;
     }
     
-    const shareText = `${desc}. ` +
-        `Total: Rs ${amount.toLocaleString('en-IN')}. ` +
+    const shareText = `${desc}. \n` +
+        `Total: Rs ${amount.toLocaleString('en-IN')}. \n` +
         `Status: ${billStatus}.\n` +
         ratesStr +
         (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) + 
@@ -203,7 +216,6 @@ export default function TenantDetailPage() {
   };
 
   const handlePrint = (bill: StatementEntry) => {
-    // Inject the unpopulated tenant/room details for the print template
     const billToPrint = { ...bill, tenantId: tenant, roomId: tenant?.roomId };
     printBill(billToPrint as any);
   };
@@ -224,11 +236,11 @@ export default function TenantDetailPage() {
         });
 
         toast.promise(promise, {
-            loading: `Deleting bill...`,
+            loading: `Erasing Document...`,
             success: () => {
-                mutate(); // Refresh the tenant data SWR cache
+                mutate();
                 setSelectedBill(null);
-                return `Bill deleted successfully!`;
+                return `Document Erased.`;
             },
             error: (err) => err.message,
         });
@@ -238,7 +250,7 @@ export default function TenantDetailPage() {
   
   const handlePaymentSuccess = () => {
       setConfirmation(null);
-      setSelectedBill(null); // Close the sheet to avoid stale state, or fetch individual bill again
+      setSelectedBill(null); 
       mutate();
   };
   
@@ -249,12 +261,24 @@ export default function TenantDetailPage() {
     const filtered = sortedBills.filter(bill => selectedYear === 'all' || new NepaliDate(new Date(bill.billDateAD)).getYear().toString() === selectedYear);
     const summary = filtered.reduce((acc, bill) => {
         const totalAmount = bill.type === 'Rent' ? bill.amount : bill.totalAmount;
-        const paidAmount = bill.paidAmount || 0;
-        const remainingAmount = bill.remainingAmount ?? (totalAmount - paidAmount);
+        
+        let actualPaidAmount = 0;
+        let actualRemainingAmount = totalAmount;
+
+        if (bill.status === 'PAID') {
+            actualPaidAmount = totalAmount;
+            actualRemainingAmount = 0;
+        } else if (bill.status === 'PARTIALLY_PAID') {
+            actualPaidAmount = bill.paidAmount || 0;
+            actualRemainingAmount = bill.remainingAmount ?? (totalAmount - actualPaidAmount);
+        } else {
+            actualPaidAmount = bill.paidAmount || 0;
+            actualRemainingAmount = totalAmount - actualPaidAmount;
+        }
         
         acc.totalBilled += totalAmount;
-        acc.totalPaid += paidAmount;
-        acc.totalDue += remainingAmount;
+        acc.totalPaid += actualPaidAmount;
+        acc.totalDue += actualRemainingAmount;
         return acc;
     }, { totalBilled: 0, totalPaid: 0, totalDue: 0 });
     return { filteredStatement: filtered, uniqueYears, financialSummary: summary };
@@ -283,93 +307,104 @@ export default function TenantDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8 space-y-6">
-        <div className="flex items-center gap-4"><Skeleton className="h-12 w-12 rounded-full" /><div className="space-y-2"><Skeleton className="h-7 w-48" /><Skeleton className="h-5 w-64" /></div></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div>
-        <Skeleton className="h-96" />
+      <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 space-y-6">
+        <div className="flex items-center gap-4"><Skeleton className="h-16 w-16 rounded-full" /><div className="space-y-2"><Skeleton className="h-8 w-48" /><Skeleton className="h-5 w-64" /></div></div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4"><Skeleton className="h-32 rounded-[2rem]" /><Skeleton className="h-32 rounded-[2rem]" /><Skeleton className="h-32 rounded-[2rem]" /><Skeleton className="h-32 rounded-[2rem]" /></div>
+        <Skeleton className="h-96 rounded-[2.5rem]" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8">
-        <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Data</AlertTitle>
-            <AlertDescription>Could not fetch tenant details. Please check your connection and try again.</AlertDescription>
+      <div className="min-h-screen bg-[#F8FAFC] p-8">
+        <Alert variant="destructive" className="bg-red-50 border-red-200">
+            <AlertCircle className="h-5 w-5" />
+            <AlertTitle className="text-xl font-black">Link Failed</AlertTitle>
+            <AlertDescription className="font-medium mt-2">Could not retrieve secure tenant database node. Verify network connection.</AlertDescription>
         </Alert>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 relative overflow-hidden selection:bg-[#0B2863]/20">
+      {/* Ambient Background Shimmers */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-100/50 blur-[100px] pointer-events-none z-0"></div>
+      <div className="absolute top-[40%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-emerald-50/50 blur-[120px] pointer-events-none z-0"></div>
+
       <Drawer open={!!selectedBill} onOpenChange={(isOpen) => !isOpen && setSelectedBill(null)}>
-        <DrawerContent className="p-0 outline-none pb-safe">
+        <DrawerContent className="p-0 outline-none pb-safe rounded-t-[2.5rem] bg-white/95 backdrop-blur-xl border-t border-white/50">
           {selectedBill && (
-             <div className="w-full sm:max-w-md mx-auto p-5 overflow-y-auto max-h-[85vh]">
-                <DrawerHeader className="mb-4 px-0 pb-0">
-                    <DrawerTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
-                        {selectedBill.type === 'Utility' ? <Zap className="text-primary" /> : <Receipt className="text-primary" />} {selectedBill.type} Bill
+             <div className="w-full sm:max-w-md mx-auto p-6 overflow-y-auto max-h-[85vh]">
+                <DrawerHeader className="mb-6 px-0 pb-0 text-center">
+                    <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center mx-auto mb-4 shadow-inner ${selectedBill.type === 'Utility' ? 'bg-orange-50 text-orange-500' : 'bg-blue-50 text-blue-500'}`}>
+                        {selectedBill.type === 'Utility' ? <Zap className="h-8 w-8" /> : <Receipt className="h-8 w-8" />}
+                    </div>
+                    <DrawerTitle className="text-3xl font-black tracking-tight text-slate-800">
+                        {selectedBill.type} Bill
                     </DrawerTitle>
-                    <DrawerDescription className="text-center mt-1 text-base">Bill for: {selectedBill.type === 'Rent' ? selectedBill.rentForPeriod : selectedBill.billingMonthBS}</DrawerDescription>
+                    <DrawerDescription className="mt-2 text-sm font-bold uppercase tracking-widest text-slate-400">
+                        For: {selectedBill.type === 'Rent' ? selectedBill.rentForPeriod : selectedBill.billingMonthBS}
+                    </DrawerDescription>
                 </DrawerHeader>
                 
                 {/* --- Content Area --- */}
-                <div className="space-y-2 mt-4 px-1">
-                    <DetailRow icon={<CircleUserRound size={16} />} label="Tenant" value={tenant?.fullName ?? 'N/A'} />
-                    <DetailRow icon={<Calendar size={16} />} label="Bill Date" value={formatNepaliDate(selectedBill.billDateAD)} />
-                    <DetailRow icon={<Hash size={16} />} label="Status" value={<Badge variant={selectedBill.status === 'PAID' ? 'default' : selectedBill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={selectedBill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}>{selectedBill.status}</Badge>} />
+                <div className="space-y-1 mt-6 px-1">
+                    <DetailRow icon={<CircleUserRound size={16} className="text-slate-400" />} label="Tenant" value={tenant?.fullName ?? 'N/A'} />
+                    <DetailRow icon={<Calendar size={16} className="text-slate-400" />} label="Bill Date" value={formatNepaliDate(selectedBill.billDateAD)} />
+                    <DetailRow icon={<Hash size={16} className="text-slate-400" />} label="Status" value={<Badge className={`uppercase font-bold tracking-widest px-2 py-0.5 shadow-sm ${selectedBill.status === 'PAID' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : selectedBill.status === 'PARTIALLY_PAID' ? 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-none' : 'bg-rose-100 hover:bg-rose-200 text-rose-800'}`}>{selectedBill.status}</Badge>} />
                     
                     {selectedBill.type === 'Utility' && (
-                        <>
-                            <h4 className="font-semibold pt-4 text-primary text-sm uppercase tracking-wider">Utility Breakdown</h4>
-                            <DetailRow icon={<Zap size={16} />} label="Elec. Units" value={selectedBill.electricity.unitsConsumed} />
-                            <DetailRow icon={<Banknote size={16} />} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
-                            <DetailRow icon={<Droplets size={16} />} label="Water Units" value={selectedBill.water.unitsConsumed} />
-                            <DetailRow icon={<Banknote size={16} />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
-                            <h4 className="font-semibold pt-4 text-secondary text-sm uppercase tracking-wider">Other Charges</h4>
-                            <DetailRow icon={<Wrench size={16} />} label="Service Charge" value={`Rs ${selectedBill.serviceCharge.toLocaleString()}`} />
-                            <DetailRow icon={<Shield size={16} />} label="Security Charge" value={`Rs ${selectedBill.securityCharge.toLocaleString()}`} />
-                        </>
+                        <div className="bg-slate-50/50 p-4 rounded-3xl mt-4 border border-slate-100">
+                            <h4 className="font-bold text-slate-500 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2"><Zap size={12}/> Utility Breakdown</h4>
+                            <DetailRow icon={<Zap size={14} className="text-orange-400" />} label="Elec. Units" value={selectedBill.electricity.unitsConsumed} />
+                            <DetailRow icon={<Banknote size={14} className="text-emerald-500"/>} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
+                            <DetailRow icon={<Droplets size={14} className="text-blue-400" />} label="Water Units" value={selectedBill.water.unitsConsumed} />
+                            <DetailRow icon={<Banknote size={14} className="text-emerald-500" />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
+                            <h4 className="font-bold text-slate-500 text-[10px] uppercase tracking-widest mt-4 mb-2 flex items-center gap-2"><Wrench size={12}/> Sur-Charges</h4>
+                            <DetailRow icon={<Wrench size={14} className="text-slate-400"/>} label="Service Charge" value={`Rs ${selectedBill.serviceCharge.toLocaleString()}`} />
+                            <DetailRow icon={<Shield size={14} className="text-slate-400" />} label="Security Charge" value={`Rs ${selectedBill.securityCharge.toLocaleString()}`} />
+                        </div>
                     )}
                     
-                    <div className="pt-5">
-                        <h4 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2"><FileText size={14} /> Remarks</h4>
-                        <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-dashed italic">{selectedBill.remarks || 'No remarks provided.'}</div>
-                    </div>
+                    {selectedBill.remarks && (
+                        <div className="pt-6">
+                            <h4 className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3"><FileText size={14} /> Official Remarks</h4>
+                            <div className="text-sm font-medium text-slate-700 bg-yellow-50 overflow-hidden p-4 rounded-2xl border border-yellow-100 shadow-inner italic">"{selectedBill.remarks}"</div>
+                        </div>
+                    )}
                     
-                    <div className="flex justify-between items-center pt-5 mt-5 border-t-2 border-primary/20">
-                        <div className="font-bold text-sm text-muted-foreground uppercase tracking-wider">Total Amount</div>
-                        <div className="font-extrabold text-2xl text-primary">Rs {(selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount).toLocaleString()}</div>
+                    <div className="flex justify-between items-center pt-6 mt-6 border-t-2 border-dashed border-slate-200">
+                        <div className="font-bold text-[11px] text-slate-500 uppercase tracking-widest">Total Amount</div>
+                        <div className="font-black text-3xl tracking-tight text-[#0B2863]">Rs {(selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount).toLocaleString()}</div>
                     </div>
                     
                     {(parseFloat(selectedBill.paidAmount as any) > 0) && (
-                        <div className="bg-muted/50 p-4 rounded-xl mt-4 border">
-                            <div className="flex justify-between text-sm mb-2">
-                                <span className="font-medium">Paid</span>
-                                <span className="font-bold text-green-600 text-lg">Rs {(selectedBill.paidAmount || 0).toLocaleString()}</span>
+                        <div className="bg-slate-100 p-5 rounded-3xl mt-6 border border-slate-200 shadow-inner">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="font-bold text-[10px] uppercase tracking-widest text-slate-500">Capital Cleared</span>
+                                <span className="font-black text-emerald-600 text-xl">Rs {(selectedBill.paidAmount || 0).toLocaleString()}</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
-                                <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min(((selectedBill.paidAmount || 0) / (selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount)) * 100, 100)}%` }}></div>
+                            <div className="w-full bg-slate-300 rounded-full h-3 overflow-hidden mb-4 shadow-inner">
+                                <div className="bg-emerald-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min(((selectedBill.paidAmount || 0) / (selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount)) * 100, 100)}%` }}></div>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="font-medium text-muted-foreground">Remaining</span>
-                                <span className="font-bold text-red-500 text-lg uppercase">Rs {(selectedBill.remainingAmount ?? (selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount)).toLocaleString()}</span>
+                            <div className="flex justify-between items-center bg-red-50 p-3 rounded-2xl border border-red-100">
+                                <span className="font-bold text-[10px] uppercase tracking-widest text-red-800">Remaining</span>
+                                <span className="font-black text-rose-600 text-2xl tracking-tight">Rs {(selectedBill.remainingAmount ?? (selectedBill.type === 'Rent' ? selectedBill.amount : selectedBill.totalAmount)).toLocaleString()}</span>
                             </div>
                             
                             {selectedBill.paymentHistory && selectedBill.paymentHistory.length > 0 && (
-                                <div className="mt-4 pt-4 border-t border-dashed">
-                                    <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payment Tracker</h5>
-                                    <div className="space-y-2">
+                                <div className="mt-5 pt-5 border-t border-slate-200 border-dashed">
+                                    <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2"><CheckCircle2 size={12}/> Installment Log</h5>
+                                    <div className="space-y-3">
                                         {selectedBill.paymentHistory.map((pmt: any, idx: number) => (
-                                            <div key={idx} className="flex flex-row justify-between items-start text-xs bg-white/60 p-2.5 rounded-lg border shadow-sm">
+                                            <div key={idx} className="flex flex-row justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
                                                 <div className="flex-1 min-w-0 pr-2">
-                                                    <div className="font-semibold text-gray-800">{formatNepaliDate(pmt.date)}</div>
-                                                    {pmt.remarks && <div className="text-[10px] text-muted-foreground italic mt-0.5 truncate">{pmt.remarks}</div>}
+                                                    <div className="font-bold text-xs uppercase tracking-widest text-slate-700">{formatNepaliDate(pmt.date)}</div>
+                                                    {pmt.remarks && <div className="text-[10px] font-medium text-slate-400 italic mt-0.5 truncate">{pmt.remarks}</div>}
                                                 </div>
-                                                <div className="font-bold text-green-600 shrink-0">Rs {pmt.amount.toLocaleString()}</div>
+                                                <div className="font-black text-emerald-600 shrink-0 tracking-tight text-lg">Rs {pmt.amount.toLocaleString()}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -379,21 +414,21 @@ export default function TenantDetailPage() {
                     )}
                 </div>
                 
-                <DrawerFooter className="px-0 pt-6">
+                <DrawerFooter className="px-0 pt-8 pb-4">
                     <div className="grid grid-cols-2 gap-3 w-full">
-                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => handlePrint(selectedBill)}>
-                            <Printer className="w-4 h-4" /> Print
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-bold h-14 rounded-2xl shadow-sm hover:bg-slate-50 border-slate-200 text-slate-700" onClick={() => handlePrint(selectedBill)}>
+                            <Printer className="w-5 h-5" /> Print
                         </Button>
-                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => handleShare(selectedBill)}>
-                            <Share2 className="w-4 h-4" /> Share
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-bold h-14 rounded-2xl shadow-sm hover:bg-slate-50 border-slate-200 text-slate-700" onClick={() => handleShare(selectedBill)}>
+                            <Share2 className="w-5 h-5 opacity-80" /> Share
                         </Button>
                         {selectedBill.status !== 'PAID' && (
-                            <Button className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm" onClick={() => setConfirmation({ action: 'pay', bill: selectedBill })}>
-                                <CheckCircle2 className="w-4 h-4" /> Pay
+                            <Button className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 rounded-2xl shadow-md active:scale-95 transition-transform" onClick={() => setConfirmation({ action: 'pay', bill: selectedBill })}>
+                                <CheckCircle2 className="w-5 h-5 opacity-90" /> Submit Pay
                             </Button>
                         )}
-                        <Button variant="destructive" className={`w-full flex items-center justify-center gap-2 font-bold shadow-sm ${selectedBill.status === 'PAID' ? "col-span-2" : ""}`} onClick={() => setConfirmation({ action: 'delete', bill: selectedBill })}>
-                            <Trash2 className="w-4 h-4" /> Delete
+                        <Button variant="destructive" className={`w-full flex items-center justify-center gap-2 font-bold h-14 rounded-2xl shadow-md active:scale-95 transition-transform ${selectedBill.status === 'PAID' ? "col-span-2" : ""}`} onClick={() => setConfirmation({ action: 'delete', bill: selectedBill })}>
+                            <Trash2 className="w-5 h-5 opacity-90" /> Erase
                         </Button>
                     </div>
                 </DrawerFooter>
@@ -402,50 +437,82 @@ export default function TenantDetailPage() {
         </DrawerContent>
       </Drawer>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="p-4 md:p-8 space-y-8">
-        <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" className="h-10 w-10 flex-shrink-0 rounded-full" onClick={() => router.back()}><ArrowLeft className="h-5 w-5" /></Button>
-                <Avatar className="h-12 w-12 border-2 border-primary"><AvatarFallback className="text-lg bg-muted">{tenant?.fullName?.split(' ').map(n=>n[0]).join('') || 'T'}</AvatarFallback></Avatar>
-                <div><h1 className="text-2xl md:text-3xl font-bold leading-tight">{tenant?.fullName}</h1><p className="text-muted-foreground text-sm">Tenant Profile & Statement</p></div>
-            </div>
-        </div>
+      {/* --- Page Body --- */}
+      <div className="container mx-auto p-4 md:p-8 space-y-10 relative z-10 pt-8 md:pt-10">
         
-        <Card> 
-          <CardHeader><CardTitle>Personal & Lease Information</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <InfoItem icon={<Building/>} label="Room" value={roomInfo?.roomNumber} />
-            <InfoItem icon={<Receipt/>} label="Monthly Rent" value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}`: 'N/A'} />
-            <InfoItem icon={<Phone/>} label="Phone" value={tenant?.phoneNumber} />
-            <InfoItem icon={<Calendar/>} label="Lease Ends" value={formatNepaliDate(tenant?.leaseEndDate)} />
-          </CardContent>
-        </Card>
-        
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard icon={<Scale className="text-red-500"/>} title="Total Due" value={financialSummary.totalDue} />
-                <StatCard icon={<TrendingUp className="text-green-500"/>} title="Total Paid" value={financialSummary.totalPaid} />
-                <StatCard icon={<Banknote className="text-blue-500"/>} title="Total Billed" value={financialSummary.totalBilled} />
+        {/* Header Ribbon */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="flex items-start md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-5 w-full md:w-auto">
+                <Button variant="outline" size="icon" className="h-12 w-12 flex-shrink-0 rounded-full bg-white shadow-sm hover:shadow-md transition-all active:scale-90 border-slate-200 text-slate-500" onClick={() => router.back()}>
+                    <ArrowLeft className="h-6 w-6" />
+                </Button>
+                <div className="flex items-center gap-5">
+                    <Avatar className="h-16 w-16 border-4 border-white shadow-lg bg-slate-100 flex-shrink-0 hidden md:flex">
+                        <AvatarFallback className="text-2xl font-black text-[#0B2863] bg-gradient-to-br from-blue-50 to-indigo-100">
+                            {tenant?.fullName?.split(' ').map(n=>n[0]).join('') || 'T'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="mt-1 md:mt-0">
+                        <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-800 leading-tight">{tenant?.fullName}</h1>
+                        <p className="text-[11px] md:text-xs font-bold text-slate-400 tracking-widest uppercase mt-1">Tenant Profile & Financial Statement</p>
+                    </div>
+                </div>
             </div>
         </motion.div>
+        
+        {/* Key Info Tiles */}
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                <InfoItem icon={<Building className="text-blue-500 h-5 w-5"/>} label="Unit" value={roomInfo?.roomNumber} colorClass="bg-blue-50" />
+                <InfoItem icon={<Receipt className="text-indigo-500 h-5 w-5"/>} label="Rent" value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}`: 'N/A'} colorClass="bg-indigo-50" />
+                <InfoItem icon={<Phone className="text-emerald-500 h-5 w-5"/>} label="Mobile" value={tenant?.phoneNumber} colorClass="bg-emerald-50" />
+                <InfoItem icon={<Calendar className="text-orange-500 h-5 w-5"/>} label="Lease End" value={formatNepaliDate(tenant?.leaseEndDate)} colorClass="bg-orange-50" />
+            </div>
+        </motion.div>
+        
+        {/* Giant Stat Counters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <StatCardApp 
+                title="Total Deficit" value={`Rs ${financialSummary.totalDue.toLocaleString()}`} Icon={Scale} delay={0.2}
+                fromColor="from-red-400" badgeClass="bg-rose-500 shadow-[0_5px_15px_rgba(244,63,94,0.3)]" iconColor="text-rose-600"
+            />
+            <StatCardApp 
+                title="Capital Cleared" value={`Rs ${financialSummary.totalPaid.toLocaleString()}`} Icon={TrendingUp} delay={0.3}
+                fromColor="from-emerald-400" badgeClass="bg-emerald-500 shadow-[0_5px_15px_rgba(16,185,129,0.3)]" iconColor="text-emerald-600"
+            />
+            <StatCardApp 
+                title="Cumulative Billed" value={`Rs ${financialSummary.totalBilled.toLocaleString()}`} Icon={Banknote} delay={0.4}
+                fromColor="from-blue-400" badgeClass="bg-blue-500 shadow-[0_5px_15px_rgba(59,130,246,0.3)]" iconColor="text-[#0B2863]"
+            />
+        </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div><CardTitle>Bill Statement</CardTitle><CardDescription>A history of all bills for the selected period.</CardDescription></div>
-                        <div className="flex items-center gap-2 self-start sm:self-center">
+        {/* Ledger */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card className="border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] rounded-[2.5rem] bg-white/70 backdrop-blur-xl overflow-hidden">
+                <CardHeader className="p-6 md:p-8 border-b border-white/50 bg-white/40">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <CardTitle className="text-2xl font-black text-slate-800 tracking-tight">Financial Ledger</CardTitle>
+                            <CardDescription className="text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">Complete historic statement index</CardDescription>
+                        </div>
+                        <div className="flex w-full md:w-auto items-center gap-3 self-start md:self-center">
                             <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                                <SelectContent>{uniqueYears.map((y: string) => <SelectItem key={y} value={y}>{y === 'all' ? 'All Years' : `${y} B.S.`}</SelectItem>)}</SelectContent>
+                                <SelectTrigger className="w-full md:w-[160px] h-12 bg-white rounded-xl shadow-sm border-transparent font-bold text-slate-600 focus:ring-blue-100">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl shadow-xl border-slate-100 font-medium pb-1">
+                                    {uniqueYears.map((y: string) => <SelectItem key={y} value={y} className="py-2.5">{y === 'all' ? 'All Fiscal Years' : `${y} B.S.`}</SelectItem>)}
+                                </SelectContent>
                             </Select>
-                            <Button onClick={handleDownloadCSV} variant="outline" size="icon" disabled={filteredStatement.length === 0}><Download className="h-4 w-4" /></Button>
+                            <Button onClick={handleDownloadCSV} variant="outline" size="icon" disabled={filteredStatement.length === 0} className="h-12 w-12 rounded-xl bg-white border-transparent shadow-sm hover:bg-slate-50 flex-shrink-0 text-slate-500 hover:text-slate-800">
+                                <Download className="h-5 w-5" />
+                            </Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     {isMobile ? (
-                        <div className="space-y-3 pb-32">
+                        <div className="p-4 space-y-4">
                             <AnimatePresence>
                                 {filteredStatement.length > 0 ? filteredStatement.map((bill: StatementEntry) => (
                                     <BillCard 
@@ -456,48 +523,60 @@ export default function TenantDetailPage() {
                                       onShare={handleShare}
                                       onPrint={handlePrint}
                                     />
-                                )) : <p className="text-center text-muted-foreground py-8">No bills found for this period.</p>}
+                                )) : <div className="text-center py-12"><FileText className="h-10 w-10 text-slate-300 mx-auto mb-3"/><p className="text-sm font-bold uppercase tracking-widest text-slate-400">No documents drafted.</p></div>}
                             </AnimatePresence>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto p-4 py-2">
                             <Table>
-                                <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Bill Date (BS)</TableHead><TableHead className="min-w-[120px]">Details</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Paid</TableHead><TableHead className="text-right">Remaining</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+                                <TableHeader>
+                                    <TableRow className="border-b border-slate-200 hover:bg-transparent">
+                                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-400">Class</TableHead>
+                                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-400">Drafted On</TableHead>
+                                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-400 min-w-[120px]">Memo</TableHead>
+                                        <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-400">Status</TableHead>
+                                        <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest text-slate-400">Valuation</TableHead>
+                                        <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest text-slate-400">Cleared</TableHead>
+                                        <TableHead className="text-right font-bold text-[10px] uppercase tracking-widest text-slate-400">Deficit</TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
                                 <TableBody>
                                     {filteredStatement.length > 0 ? filteredStatement.map((bill: StatementEntry) => {
                                         const amount = bill.type === 'Rent' ? bill.amount : bill.totalAmount;
                                         const paid = bill.paidAmount || 0;
                                         const remaining = bill.remainingAmount ?? amount;
                                         return (
-                                        <TableRow key={bill._id.toString()} onClick={() => setSelectedBill(bill)} className="cursor-pointer hover:bg-muted/50">
-                                            <TableCell><Badge variant={bill.type === 'Rent' ? 'secondary' : 'outline'}>{bill.type}</Badge></TableCell>
-                                            <TableCell className="font-medium whitespace-nowrap">{formatNepaliDate(bill.billDateAD)}</TableCell>
-                                            <TableCell className="text-xs text-muted-foreground">{bill.type === 'Rent' ? bill.rentForPeriod : `${bill.electricity.unitsConsumed} Units`}</TableCell>
-                                            <TableCell><Badge variant={bill.status === 'PAID' ? 'default' : bill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={bill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}>{bill.status}</Badge></TableCell>
-                                            <TableCell className="text-right font-mono font-semibold">Rs {amount.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right font-mono text-green-600 text-sm">{bill.status === 'PARTIALLY_PAID' || paid > 0 ? `Rs ${paid.toLocaleString()}` : '-'}</TableCell>
-                                            <TableCell className="text-right font-mono text-red-500 font-bold text-sm">{bill.status === 'PARTIALLY_PAID' ? `Rs ${remaining.toLocaleString()}` : '-'}</TableCell>
+                                        <TableRow key={bill._id.toString()} onClick={() => setSelectedBill(bill)} className="cursor-pointer hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                                            <TableCell><Badge variant="outline" className={`border-none shadow-sm uppercase tracking-widest text-[10px] px-2 py-0.5 ${bill.type === 'Rent' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>{bill.type}</Badge></TableCell>
+                                            <TableCell className="font-black text-xs text-slate-700 whitespace-nowrap">{formatNepaliDate(bill.billDateAD)}</TableCell>
+                                            <TableCell className="text-xs font-bold text-slate-500">{bill.type === 'Rent' ? bill.rentForPeriod : `${bill.electricity.unitsConsumed} Units`}</TableCell>
+                                            <TableCell><Badge className={`uppercase tracking-widest text-[10px] px-2 py-0.5 shadow-sm font-bold ${bill.status === 'PAID' ? 'bg-emerald-100 text-emerald-800 border-none' : bill.status === 'PARTIALLY_PAID' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-none' : 'bg-rose-100 text-rose-800 border-none'}`}>{bill.status}</Badge></TableCell>
+                                            <TableCell className="text-right font-black text-[#0B2863]">Rs {amount.toLocaleString()}</TableCell>
+                                            <TableCell className="text-right font-bold text-emerald-600 text-xs">{bill.status === 'PARTIALLY_PAID' || paid > 0 ? `Rs ${paid.toLocaleString()}` : '-'}</TableCell>
+                                            <TableCell className="text-right font-black text-rose-600 text-[13px]">{bill.status === 'PARTIALLY_PAID' || remaining > 0 ? `Rs ${remaining.toLocaleString()}` : '-'}</TableCell>
                                             <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 p-0 hover:bg-slate-200 rounded-full" onClick={(e) => e.stopPropagation()}>
-                                                        <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                                                        <MoreHorizontal className="h-4 w-4 text-slate-400" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 text-left rounded-xl shadow-xl" onClick={(e) => e.stopPropagation()}>
-                                                    <DropdownMenuLabel className="font-bold text-xs">Quick Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handlePrint(bill); }}><Printer className="mr-2 h-4 w-4" /> Print Bill</DropdownMenuItem>
-                                                    <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleShare(bill); }}><Share2 className="mr-2 h-4 w-4" /> Share Link</DropdownMenuItem>
+                                                <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-slate-100 p-2" onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Bill Actions</DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
-                                                    {bill.status !== 'PAID' && <DropdownMenuItem className="cursor-pointer font-medium text-green-600 focus:text-green-700" onClick={(e) => { e.stopPropagation(); setConfirmation({ action: 'pay', bill }); }}><CheckCircle2 className="mr-2 h-4 w-4 text-green-600" /> Record Payment</DropdownMenuItem>}
-                                                    <DropdownMenuItem className="cursor-pointer font-medium text-red-600 focus:text-red-700 focus:bg-red-50" onClick={(e) => { e.stopPropagation(); setConfirmation({ action: 'delete', bill }); }}><Trash2 className="mr-2 h-4 w-4" /> Delete Bill</DropdownMenuItem>
+                                                    <DropdownMenuItem className="cursor-pointer py-2.5 font-medium rounded-lg" onClick={(e) => { e.stopPropagation(); handlePrint(bill); }}><Printer className="mr-2 h-4 w-4" /> Print Document</DropdownMenuItem>
+                                                    <DropdownMenuItem className="cursor-pointer py-2.5 font-medium rounded-lg" onClick={(e) => { e.stopPropagation(); handleShare(bill); }}><Share2 className="mr-2 h-4 w-4 opacity-80" /> Share Encrypted Link</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    {bill.status !== 'PAID' && <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800 rounded-lg" onClick={(e) => { e.stopPropagation(); setConfirmation({ action: 'pay', bill }); }}><CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" /> Verify Payment</DropdownMenuItem>}
+                                                    <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-rose-600 focus:text-rose-700 focus:bg-rose-50 rounded-lg" onClick={(e) => { e.stopPropagation(); setConfirmation({ action: 'delete', bill }); }}><Trash2 className="mr-2 h-4 w-4" /> Shred Document</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                     );
                                     }) : (
-                                    <TableRow><TableCell colSpan={8} className="h-24 text-center">No bills found for this period.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={8} className="h-32 text-center text-sm font-bold uppercase tracking-widest text-slate-400">No documents exist.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>
@@ -506,20 +585,24 @@ export default function TenantDetailPage() {
                 </CardContent>
             </Card>
         </motion.div>
-      </motion.div>
+      </div>
 
+      {/* --- Unified Overlays --- */}
       <AlertDialog open={!!confirmation && confirmation.action === 'delete'} onOpenChange={() => setConfirmation(null)}>
-          <AlertDialogContent className="rounded-[2rem] border-0 shadow-2xl p-6 bg-white/95 backdrop-blur-xl">
+          <AlertDialogContent className="rounded-[2.5rem] border-0 shadow-2xl p-8 bg-white/95 backdrop-blur-xl max-w-sm">
               <AlertDialogHeader>
-                  <AlertDialogTitle className="text-xl font-bold">Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-muted-foreground font-medium">
-                      This action will permanently delete this bill from the statement.
+                  <div className="w-16 h-16 bg-rose-50 rounded-[1.8rem] flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-inner">
+                      <Trash2 className="h-7 w-7 text-rose-600" />
+                  </div>
+                  <AlertDialogTitle className="text-2xl font-black text-center tracking-tight text-slate-800">Shred Document?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-center font-medium text-slate-500 mt-2">
+                      This will permanently purge this explicit bill from the financial ledger. This action is irreversible.
                   </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter className="mt-4 gap-2">
-                  <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleAction} className="rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white">
-                      Confirm
+              <AlertDialogFooter className="mt-8 flex items-center justify-center gap-3 sm:justify-center">
+                  <AlertDialogCancel className="w-full sm:w-1/2 rounded-xl h-12 font-bold shadow-none border-slate-200 text-slate-600 m-0">Abort</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleAction} className="w-full sm:w-1/2 rounded-xl h-12 font-bold bg-rose-600 hover:bg-rose-700 shadow-md text-white m-0">
+                      Confirm Shred
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
@@ -536,6 +619,6 @@ export default function TenantDetailPage() {
               remainingAmount={confirmation.bill.remainingAmount ?? (confirmation.bill.type === 'Rent' ? confirmation.bill.amount : confirmation.bill.totalAmount)} 
           />
       )}
-    </>
+    </div>
   );
 }

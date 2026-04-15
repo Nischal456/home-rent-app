@@ -43,7 +43,9 @@ export const BillShareImage = React.forwardRef<HTMLDivElement, { bill: Statement
                         <p className="font-bold text-slate-700">BILL DATE</p>
                         <p>{bill.billDateBS}</p>
                         <p className="font-bold text-slate-700 mt-1">STATUS</p>
-                        <Badge variant={bill.status === 'PAID' ? 'default' : 'destructive'} className="mt-1 text-xs">{bill.status}</Badge>
+                        <Badge variant={bill.status === 'PAID' ? 'default' : bill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={`mt-1 text-[10px] ${bill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}`}>
+                            {bill.status.replace('_', ' ')}
+                        </Badge>
                     </div>
                 </section>
 
@@ -65,10 +67,28 @@ export const BillShareImage = React.forwardRef<HTMLDivElement, { bill: Statement
                 </section>
 
                 <footer className="mt-4 pt-4 border-t-2 border-dashed border-slate-300">
-                    <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-md font-medium">Total Amount</span>
-                        <span className="text-2xl font-bold text-primary">Rs {(isRentBill ? bill.amount : bill.totalAmount).toLocaleString()}</span>
+                    <div className="flex justify-between items-center text-slate-800 mb-2">
+                        <span className="text-md font-medium">Total Billed</span>
+                        <span className="text-xl font-bold">Rs {(isRentBill ? bill.amount : bill.totalAmount).toLocaleString()}</span>
                     </div>
+                    {bill.status === 'PARTIALLY_PAID' && (
+                        <>
+                            <div className="flex justify-between items-center text-slate-600 mb-1">
+                                <span className="text-sm font-medium">Paid Amount</span>
+                                <span className="text-md font-semibold text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 mt-2 pt-2 bg-red-50/50 p-2 rounded-lg">
+                                <span className="text-md font-black text-red-600">Remaining Due</span>
+                                <span className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? ((isRentBill ? bill.amount : bill.totalAmount) - (bill.paidAmount || 0))).toLocaleString()}</span>
+                            </div>
+                        </>
+                    )}
+                    {bill.status !== 'PARTIALLY_PAID' && (
+                        <div className="flex justify-between items-center text-slate-800 pt-2 border-t border-slate-200">
+                            <span className="text-md font-black">Total Due Now</span>
+                            <span className={`text-2xl font-black ${bill.status === 'PAID' ? 'text-green-600' : 'text-red-600'}`}>Rs {bill.status === 'PAID' ? '0' : (isRentBill ? bill.amount : bill.totalAmount).toLocaleString()}</span>
+                        </div>
+                    )}
                 </footer>
             </div>
             <div className="text-center mt-4 text-xs text-slate-400"><p>Thank you for your tenancy.</p></div>

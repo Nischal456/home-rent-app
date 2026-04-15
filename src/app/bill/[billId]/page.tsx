@@ -281,9 +281,9 @@ export default function PublicBillPage() {
                       isBold={true} 
                     />
                 )}
-                <div className="flex justify-between items-center py-2.5">
-                    <p className="text-base font-bold text-gray-800 uppercase tracking-wider">Remaining Due</p>
-                    <p className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? billAmount).toLocaleString()}</p>
+                <div className="flex justify-between items-center py-2.5 mt-2 bg-red-50 p-4 border border-red-100 rounded-xl shadow-sm">
+                    <p className="text-base font-bold text-red-800 uppercase tracking-wider">Remaining Due</p>
+                    <p className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? (billAmount - (bill.paidAmount || 0))).toLocaleString()}</p>
                 </div>
               </div>
               

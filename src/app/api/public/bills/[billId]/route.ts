@@ -59,21 +59,28 @@ export async function GET(
             RentBill.find({ 
                 tenantId: tenantId, 
                 _id: { $ne: bill._id }, 
-                status: { $in: ['DUE', 'OVERDUE'] } 
+                status: { $in: ['DUE', 'OVERDUE', 'PARTIALLY_PAID'] } 
             }).lean(),
             UtilityBill.find({ 
                 tenantId: tenantId, 
                 _id: { $ne: bill._id }, 
-                status: { $in: ['DUE', 'OVERDUE'] } 
+                status: { $in: ['DUE', 'OVERDUE', 'PARTIALLY_PAID'] } 
             }).lean()
         ]);
         
-        otherRentBills.forEach(b => totalOutstandingDue += (b as IRentBill).amount);
-        otherUtilityBills.forEach(b => totalOutstandingDue += (b as IUtilityBill).totalAmount);
+        otherRentBills.forEach(b => {
+            const rb = b as IRentBill;
+            totalOutstandingDue += (rb.remainingAmount ?? (rb.amount - (rb.paidAmount || 0)));
+        });
+        otherUtilityBills.forEach(b => {
+            const ub = b as IUtilityBill;
+            totalOutstandingDue += (ub.remainingAmount ?? (ub.totalAmount - (ub.paidAmount || 0)));
+        });
         
         if (bill.status !== 'PAID') {
-            const currentBillAmount = billType === 'Rent' ? bill.amount : bill.totalAmount;
-            totalOutstandingDue += currentBillAmount;
+            const currentBillTotalAmount = billType === 'Rent' ? bill.amount : bill.totalAmount;
+            const currentBillRemaining = bill.remainingAmount ?? (currentBillTotalAmount - (bill.paidAmount || 0));
+            totalOutstandingDue += currentBillRemaining;
         }
       }
     } catch (calcError) {
