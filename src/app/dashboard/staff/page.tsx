@@ -1,6 +1,6 @@
 'use client';
-
 import { useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'sonner'; // Upgraded from react-hot-toast for premium feel
@@ -142,7 +142,7 @@ export default function StaffPage() {
   return (
     <>
       <Toaster position="top-center" richColors theme="light" style={{ marginTop: 'calc(env(safe-area-inset-top, 60px) + 50px)', zIndex: 99999 }} />
-      <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+      <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-32 md:pb-8">
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100">
               <div>
@@ -183,7 +183,9 @@ export default function StaffPage() {
                                                   <AvatarFallback className="bg-slate-100 text-[#0B2863] text-xl font-black">{staff.fullName.charAt(0)}</AvatarFallback>
                                               </Avatar>
                                               <div className="pt-1 overflow-hidden">
-                                                  <h3 className="font-extrabold text-xl text-slate-900 truncate">{staff.fullName}</h3>
+                                                  <Link href={`/dashboard/staff/${staff._id}`}>
+                                                      <h3 className="font-extrabold text-xl text-slate-900 hover:text-blue-600 transition-colors truncate">{staff.fullName}</h3>
+                                                  </Link>
                                                   <div className="mt-1">{getRoleBadge(staff.role)}</div>
                                               </div>
                                           </div>

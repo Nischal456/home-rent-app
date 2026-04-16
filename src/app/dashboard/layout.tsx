@@ -147,7 +147,7 @@ function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUs
           { href: "/dashboard/tenants", icon: Users, label: "Tenants" },
           { href: "/dashboard/rent-bills", icon: ReceiptText, label: "Rent" },
           { href: "/dashboard/utility-bills", icon: Zap, label: "Utility" },
-          { href: "/dashboard/security-management", icon: Wallet, label: "Finance" },
+          { href: "/dashboard/staff", icon: Briefcase, label: "Staff" },
           { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu", badgeDot: unreadPaymentsCount > 0 }
       ];
   } else if (user.role === 'TENANT') {

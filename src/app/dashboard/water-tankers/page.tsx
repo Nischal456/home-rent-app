@@ -9,7 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Droplets, TrendingDown, AlertCircle, User, Calendar, Banknote } from 'lucide-react';
+import { Droplets, TrendingDown, AlertCircle, User, Calendar, Banknote, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'react-hot-toast';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -28,8 +30,20 @@ const StatCard = ({ title, value, icon, color, subtext }: any) => (
 );
 
 export default function AdminWaterTankerPage() {
-  const { data: response, error, isLoading } = useSWR('/api/admin/water-tankers', fetcher);
+  const { data: response, error, isLoading, mutate } = useSWR('/api/admin/water-tankers', fetcher);
   const tankers = response?.data || [];
+
+  const handleDelete = async (id: string) => {
+    if(!confirm("Are you sure you want to delete this specific water log?")) return;
+    try {
+        const res = await fetch(`/api/admin/water-tankers/${id}`, { method: 'DELETE' });
+        if(!res.ok) throw new Error("Failed to delete log");
+        toast.success("Water log permanently deleted");
+        mutate();
+    } catch(e: any) {
+        toast.error(e.message || "Deletion failed");
+    }
+  };
 
   // Calculate Stats
   const { totalCost, totalLiters, monthlyCost } = useMemo(() => {
@@ -110,11 +124,12 @@ export default function AdminWaterTankerPage() {
                             <TableHead>Volume</TableHead>
                             <TableHead>Logged By</TableHead>
                             <TableHead className="text-right">Cost</TableHead>
+                            <TableHead className="text-center w-[80px]">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {tankers.length === 0 ? (
-                            <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
                         ) : (
                             tankers.map((t: any) => (
                                 <TableRow key={t._id}>
@@ -137,6 +152,11 @@ export default function AdminWaterTankerPage() {
                                     </TableCell>
                                     <TableCell className="text-right font-bold font-mono text-slate-900">
                                         Rs {t.cost.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(t._id)} className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
