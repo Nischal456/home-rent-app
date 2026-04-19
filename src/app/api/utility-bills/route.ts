@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         new Types.ObjectId(tenantId),
         'New Utility Bill',
         `Your utility bill of Rs ${totalAmount.toLocaleString('en-IN')} for ${billingMonthBS} is ready.`,
-        '/dashboard'
+        `/bill/${newBill._id}?type=utility`
     );
 
     return NextResponse.json({ success: true, message: 'Utility bill created successfully', data: newBill }, { status: 201 });
