@@ -350,3 +350,30 @@
   background: #e2e8f0 !important;
   color: #0B2863 !important;
 }
+
+/* Mobile responsive calendar container adjustments */
+@media (max-width: 640px) {
+  .nepali-date-picker .calender {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 290px !important;
+    max-width: 95vw !important;
+    padding: 1rem !important;
+  }
+  .nepali-date-picker .calender table td {
+    height: 34px !important;
+    width: 34px !important;
+    font-size: 0.75rem !important;
+  }
+  .nepali-date-picker .calender td.month-day.selected::after {
+    height: 32px !important;
+    width: 32px !important;
+  }
+  .nepali-date-picker .calender .calendar-controller .control.month, 
+  .nepali-date-picker .calender .calendar-controller .control.year {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    width: 60px !important;
+  }
+}
+

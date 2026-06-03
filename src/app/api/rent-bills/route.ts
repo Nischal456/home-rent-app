@@ -51,7 +51,8 @@ export async function POST(request: Request) {
         new Types.ObjectId(tenantId),
         'New Rent Bill Created',
         `A new rent bill of Rs ${amount} for "${rentForPeriod}" has been added.`,
-        `/bill/${newBill._id}?type=rent`
+        `/bill/${newBill._id}?type=rent`,
+        'PAYMENT'
     );
 
     return RentBillNextResponse.json({ success: true, message: 'Rent bill created successfully', data: newBill }, { status: 201 });

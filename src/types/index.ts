@@ -99,12 +99,29 @@ export interface ISubmission {
   status: 'UNREAD' | 'READ';
   createdAt: Date;
 }
+export interface IWaterTankerPayment {
+  _id?: string;
+  amount: number;
+  date: Date | string;
+  remarks?: string;
+  receipt?: string;
+  method?: 'CASH' | 'BANK_TRANSFER' | 'ESEWA' | 'KHALTI' | 'OTHER';
+}
+
 export interface IWaterTanker {
   _id: string;
-  entryDate: Date;
+  entryDate: Date | string;
   volumeLiters: number;
   cost: number;
-  addedBy: string; // Guard's ID
+  vendor: string;
+  remarks?: string;
+  paidAmount: number;
+  remainingAmount: number;
+  status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERPAID';
+  paymentHistory?: IWaterTankerPayment[];
+  addedBy?: any; // Guard's or Admin's User details
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface IStaffPayment {

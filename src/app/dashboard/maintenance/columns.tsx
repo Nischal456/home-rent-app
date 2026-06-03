@@ -42,7 +42,15 @@ export const getMaintenanceColumns = (
         header: () => <div className="hidden md:table-cell">Tenant</div>,
         id: 'tenantName',
         cell: ({ row }) => {
-            const tenant = row.original.tenantId as IUser;
+            const tenant = row.original.tenantId as IUser | null;
+            if (!tenant) {
+                return (
+                    <div className="hidden md:flex items-center gap-2 text-muted-foreground italic">
+                        <User size={14} />
+                        <span>Unknown Tenant</span>
+                    </div>
+                );
+            }
             return (
                 // ✅ NEW: Cell is now responsive
                 <div className="hidden md:flex items-center gap-2">
@@ -59,7 +67,15 @@ export const getMaintenanceColumns = (
         // ✅ NEW: Header is now responsive
         header: () => <div className="hidden lg:table-cell">Room</div>,
         cell: ({ row }) => {
-            const room = row.original.roomId as IRoom;
+            const room = row.original.roomId as IRoom | null;
+            if (!room) {
+                return (
+                    <div className="hidden lg:flex items-center gap-2 text-muted-foreground italic">
+                        <Home size={14} />
+                        <span>N/A</span>
+                    </div>
+                );
+            }
             return (
                  // ✅ NEW: Cell is now responsive
                  <div className="hidden lg:flex items-center gap-2">

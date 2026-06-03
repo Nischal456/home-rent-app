@@ -45,7 +45,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
                 updatedBill.tenantId._id as Types.ObjectId,
                 'Rent Bill Paid!',
                 `Your rent bill of Rs ${updatedBill.amount} has been marked as paid. Thank you!`,
-                '/dashboard'
+                '/dashboard',
+                'PAYMENT'
             );
 
             if (adminUser) {
@@ -53,7 +54,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
                     new Types.ObjectId(adminUser.id), 
                     'Payment Recorded',
                     `You marked a rent bill of Rs ${updatedBill.amount} as paid.`,
-                    '/dashboard/rent-bills'
+                    '/dashboard/rent-bills',
+                    'PAYMENT'
                 );
             }
         }

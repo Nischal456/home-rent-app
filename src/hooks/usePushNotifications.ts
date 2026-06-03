@@ -27,12 +27,46 @@ export function usePushNotifications() {
     if ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
       setIsSupported(true);
       setPermissionState(Notification.permission);
-      // Register service worker immediately for intercepting events
-      navigator.serviceWorker.register('/sw.js').then(reg => {
-          reg.pushManager.getSubscription().then(sub => {
-              if (sub) setIsSubscribed(true);
-          });
-      }).catch(err => console.error("SW Registration failed:", err));
+      
+      const syncSubscription = async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('/sw.js');
+          const sub = await reg.pushManager.getSubscription();
+
+          if (sub) {
+            setIsSubscribed(true);
+            // Always sync existing subscription to backend for the current user (idempotent)
+            await fetch('/api/notifications/subscribe', {
+              method: 'POST',
+              body: JSON.stringify({ subscription: sub }),
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } else if (Notification.permission === 'granted') {
+            // Auto-subscribe if permission is already granted but no browser subscription exists
+            const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (publicVapidKey) {
+              const newSub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+              });
+              
+              const res = await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({ subscription: newSub }),
+                headers: { 'Content-Type': 'application/json' },
+              });
+              
+              if (res.ok) {
+                setIsSubscribed(true);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("SW / Push subscription synchronization failed:", err);
+        }
+      };
+
+      syncSubscription();
     }
   }, []);
 

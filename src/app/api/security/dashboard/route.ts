@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import NepaliDate from 'nepali-date-converter';
 
 // Explicitly register models
 import User from '@/models/User';
@@ -29,26 +30,82 @@ export async function GET(request: NextRequest) {
     const recentWater = await WaterTanker.find({}).populate('addedBy', 'fullName').sort({ entryDate: -1 }).limit(10).lean();
 
     // 2. Fetch Finance History & Fix Balance Logic
-    let finances;
-    let netBalance = 0; // Positive means Admin owes Guard. Negative means Guard took excess advance.
-
-    const financeQuery = decoded.role === 'ADMIN' ? {} : { staffId: decoded.id };
-    finances = await StaffPayment.find(financeQuery).populate('staffId', 'fullName').sort({ date: -1 }).lean();
-
+    let finances: any[] = [];
+    let netBalance = 0;
     let totalSalaryPaid = 0;
     let totalAdvanceGiven = 0;
+    let totalBonus = 0;
+    let currentMonthAdvances = 0;
+    let currentMonthSalaryPaid = 0;
+    let baseSalary = 25000;
 
-    finances.forEach((record: any) => {
-      // ✅ ACCURATE MATH: 
-      // Salary logged means the guard EARNED it.
-      // Advance logged means the guard TOOK it early.
-      if (record.type === 'ADVANCE') totalAdvanceGiven += record.amount;
-      else if (record.type === 'SALARY' || record.type === 'BONUS') totalSalaryPaid += record.amount;
-    });
+    // Fetch the target staff user document (Security Guard)
+    let staffUser = null;
+    if (decoded.role === 'ADMIN') {
+      staffUser = await User.findOne({ role: 'SECURITY' }).lean();
+    } else {
+      staffUser = await User.findById(decoded.id).lean();
+    }
 
-    // If Admin pays 25k salary, and gave 5k advance. The net settled balance depends on your accounting.
-    // Assuming: Net Balance = Total Earned - Total Advanced
-    netBalance = totalSalaryPaid - totalAdvanceGiven;
+    if (staffUser) {
+      const staffId = staffUser._id;
+      const role = staffUser.role;
+      if (role === 'CLEANER') baseSalary = 8000;
+      else if (role === 'ACCOUNTANT') baseSalary = 15000;
+
+      finances = await StaffPayment.find({ staffId }).populate('staffId', 'fullName').sort({ date: -1 }).lean();
+
+      // Current Nepali month formatting (e.g. "2083-02")
+      const nowNp = new NepaliDate();
+      const currentMonthStr = `${nowNp.getYear()}-${String(nowNp.getMonth() + 1).padStart(2, '0')}`;
+      const uniqueMonths = new Set<string>();
+
+      finances.forEach((record: any) => {
+        if (record.type === 'ADVANCE') {
+          totalAdvanceGiven += record.amount;
+        } else if (record.type === 'SALARY') {
+          totalSalaryPaid += record.amount;
+        } else if (record.type === 'BONUS') {
+          totalBonus += record.amount;
+        }
+
+        // Determine Nepali month string (YYYY-MM)
+        let monthStr = '';
+        if (record.month && typeof record.month === 'string') {
+          const match = record.month.match(/^(\d{4}-\d{2})/);
+          if (match) {
+            monthStr = match[1];
+          } else {
+            try {
+              const npDate = new NepaliDate(new Date(record.date));
+              monthStr = `${npDate.getYear()}-${String(npDate.getMonth() + 1).padStart(2, '0')}`;
+            } catch (e) {}
+          }
+        } else {
+          try {
+            const npDate = new NepaliDate(new Date(record.date));
+            monthStr = `${npDate.getYear()}-${String(npDate.getMonth() + 1).padStart(2, '0')}`;
+          } catch (e) {}
+        }
+
+        if (monthStr) {
+          uniqueMonths.add(monthStr);
+          if (monthStr === currentMonthStr) {
+            if (record.type === 'ADVANCE') {
+              currentMonthAdvances += record.amount;
+            } else if (record.type === 'SALARY') {
+              currentMonthSalaryPaid += record.amount;
+            }
+          }
+        }
+      });
+
+      const uniqueMonthsCount = uniqueMonths.size;
+      const totalSalaryEarned = (uniqueMonthsCount * baseSalary) + totalBonus;
+      netBalance = totalSalaryEarned - (totalAdvanceGiven + totalSalaryPaid);
+    }
+
+    const currentMonthReceivable = baseSalary - currentMonthAdvances;
 
     // 3. Fetch Active Maintenance
     const activeMaintenance = await MaintenanceRequest.find({ status: { $ne: 'COMPLETED' } })
@@ -69,10 +126,15 @@ export async function GET(request: NextRequest) {
         recentWater,
         finances,
         netBalance,
-        totalSalaryPaid, // Send these for accurate UI display
+        totalSalaryPaid,
         totalAdvanceGiven,
+        totalBonus,
+        baseSalary,
+        currentMonthAdvances,
+        currentMonthSalaryPaid,
+        currentMonthReceivable,
         activeMaintenance,
-        tasks, // ✅ Sent to UI
+        tasks,
         userRole: decoded.role
       }
     });

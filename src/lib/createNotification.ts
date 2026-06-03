@@ -3,6 +3,8 @@ import User from "@/models/User";
 import { Types } from "mongoose";
 import webpush from "web-push";
 
+import { pusherServer } from "@/lib/pusher";
+
 // Configure web-push with VAPID keys statically
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(
@@ -22,6 +24,21 @@ export const createNotification = async (
     try {
         const notification = new Notification({ userId, title, message, link, type });
         await notification.save();
+
+        // REAL-TIME PUSHER NOTIFICATION
+        try {
+            await pusherServer.trigger(`user-${userId.toString()}`, 'notification', {
+                _id: notification._id.toString(),
+                title,
+                message,
+                isRead: false,
+                link,
+                type,
+                createdAt: notification.createdAt.toISOString()
+            });
+        } catch (pusherError) {
+            console.error("Pusher trigger failed (non-fatal):", pusherError);
+        }
 
         // NATIVE BACKGROUND PUSH LOGIC
         if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {

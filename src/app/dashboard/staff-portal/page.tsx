@@ -120,8 +120,17 @@ export default function StaffPortalDashboard() {
             </div>
         );
     }
-
-    const { finances = [], tasks = [], netBalance = 0 } = apiData?.data || {};
+    const { 
+        finances = [], 
+        tasks = [], 
+        netBalance = 0,
+        totalSalaryPaid = 0,
+        totalAdvanceGiven = 0,
+        baseSalary = 25000,
+        currentMonthAdvances = 0,
+        currentMonthSalaryPaid = 0,
+        currentMonthReceivable = 0
+    } = apiData?.data || {};
 
     const activeTasks = tasks.filter((t: any) => t.status !== 'COMPLETED');
     const doneTasks = tasks.filter((t: any) => t.status === 'COMPLETED');
@@ -153,23 +162,48 @@ export default function StaffPortalDashboard() {
             </header>
 
             <main className="px-3 md:px-8 -mt-8 md:-mt-16 space-y-5 md:space-y-6 max-w-[1600px] mx-auto relative z-20">
+                {/* --- Accurate Net Balance Card --- */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                     <Card className="border border-white/60 shadow-[0_20px_50px_rgba(0,0,0,0.06)] bg-white/90 backdrop-blur-2xl rounded-[2rem] md:rounded-[2.5rem] overflow-hidden">
-                        <CardContent className="p-5 md:p-8 flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] md:text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Total Cash Ledger</p>
-                                <h3 className={cn("text-3xl md:text-5xl font-black tracking-tight drop-shadow-sm", netBalance < 0 ? "text-red-500" : "text-purple-900")}>
-                                    Rs {Math.abs(netBalance).toLocaleString('en-IN')}
-                                </h3>
-                                <div className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] md:text-xs font-bold bg-slate-50 px-2.5 py-1.5 rounded-full border border-slate-100 shadow-sm">
-                                    {netBalance < 0 ? (
-                                        <><TrendingDown className="w-3.5 h-3.5 text-red-500" /> <span className="text-slate-600">Advance exceeds salary</span></>
-                                    ) : (
-                                        <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> <span className="text-slate-600">Salary Given </span></>
-                                    )}
+                        <CardContent className="p-5 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="space-y-4 w-full">
+                                <div>
+                                    <p className="text-[10px] md:text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Net Payable Balance</p>
+                                    <h3 className={cn("text-3xl md:text-5xl font-black tracking-tight drop-shadow-sm", netBalance < 0 ? "text-red-500" : "text-purple-900")}>
+                                        Rs {Math.abs(netBalance).toLocaleString('en-IN')}
+                                    </h3>
+                                    <div className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] md:text-xs font-bold bg-slate-50 px-2.5 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                                        {netBalance < 0 ? (
+                                            <><TrendingDown className="w-3.5 h-3.5 text-red-500" /> <span className="text-slate-600">Advance exceeds salary</span></>
+                                        ) : (
+                                            <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> <span className="text-slate-600">Salary Given </span></>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Calculation Breakdown requested by User */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200/50">
+                                    <div className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">💰 Advances Taken</p>
+                                        <p className="font-extrabold text-sm text-slate-700 mt-1">Rs {currentMonthAdvances.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <div className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">💵 Salary Received</p>
+                                        <p className="font-extrabold text-sm text-slate-700 mt-1">Rs {totalSalaryPaid.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <div className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">📊 Net Calculation</p>
+                                        <p className="text-[11px] font-semibold text-slate-600 mt-1 leading-snug">
+                                            {baseSalary.toLocaleString('en-IN')} (Salary) - {currentMonthAdvances.toLocaleString('en-IN')} (Advance)
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">🔻 Remaining Due</p>
+                                        <p className="font-extrabold text-sm text-purple-900 mt-1">Rs {currentMonthReceivable.toLocaleString('en-IN')}</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="hidden sm:flex bg-purple-50 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-purple-100 shadow-inner">
+                            <div className="hidden sm:flex bg-purple-50 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-purple-100 shadow-inner self-start">
                                 <Wallet className="text-purple-600 w-10 h-10 md:w-12 md:h-12" />
                             </div>
                         </CardContent>

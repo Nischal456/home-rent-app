@@ -74,7 +74,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       payment.tenantId,
       'Payment Verified!',
       `Your payment of Rs ${payment.amount.toLocaleString()} has been verified and your bills are now marked as paid. Thank you!`,
-      '/dashboard/statement'
+      '/dashboard/statement',
+      'PAYMENT'
     );
 
     return NextResponse.json({ success: true, message: 'Payment verified successfully.' });

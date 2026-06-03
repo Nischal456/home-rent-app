@@ -92,7 +92,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           new Types.ObjectId(adminUser.id),
           titleAdmin,
           adminMsg,
-          `/dashboard/tenants/${tenantIdStr}`
+          `/dashboard/tenants/${tenantIdStr}`,
+          'PAYMENT'
         );
       }
       
@@ -102,7 +103,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           tenantIdObj,
           titleTenant,
           tenantMsg,
-          `/tenant/dashboard`
+          `/tenant/dashboard`,
+          'PAYMENT'
         );
       }
 

@@ -111,6 +111,9 @@ export default function SecurityManagementPage() {
     const netBalance = data?.data?.netBalance || 0;
     const totalSalaryPaid = data?.data?.totalSalaryPaid || 0;
     const totalAdvanceGiven = data?.data?.totalAdvanceGiven || 0;
+    const baseSalary = data?.data?.baseSalary || 25000;
+    const currentMonthAdvances = data?.data?.currentMonthAdvances || 0;
+    const currentMonthReceivable = data?.data?.currentMonthReceivable || 0;
 
     if (isLoading) {
         return <div className="min-h-[100dvh] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-[#0B2863]" /></div>;
@@ -153,7 +156,7 @@ export default function SecurityManagementPage() {
                             <CardHeader className="pb-2"><CardTitle className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Salary Paid</CardTitle></CardHeader>
                             <CardContent>
                                 <span className="text-3xl font-extrabold text-[#0B2863]">Rs {totalSalaryPaid.toLocaleString()}</span>
-                                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-bold"><TrendingUp className="h-4 w-4 text-emerald-500" /> Total amount earned by staff.</p>
+                                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-bold"><TrendingUp className="h-4 w-4 text-emerald-500" /> Disbursed salary payments.</p>
                             </CardContent>
                         </Card>
 
@@ -167,13 +170,20 @@ export default function SecurityManagementPage() {
 
                         <Card className={cn("rounded-[2rem] border", netBalance < 0 ? "border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100" : "border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100")}>
                             <CardHeader className="pb-2"><CardTitle className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Net Calculated Balance</CardTitle></CardHeader>
-                            <CardContent>
-                                <span className={cn("text-3xl font-extrabold", netBalance < 0 ? "text-orange-700" : "text-emerald-700")}>
-                                    Rs {Math.abs(netBalance).toLocaleString()}
-                                </span>
-                                <p className="text-xs text-slate-600 mt-2 font-bold">
-                                    {netBalance < 0 ? "Guard owes advance recovery." : "Net settled amount."}
-                                </p>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <span className={cn("text-3xl font-extrabold", netBalance < 0 ? "text-orange-700" : "text-emerald-700")}>
+                                        Rs {Math.abs(netBalance).toLocaleString()}
+                                    </span>
+                                    <p className="text-xs text-slate-600 mt-1 font-bold">
+                                        {netBalance < 0 ? "Guard owes advance recovery." : "Net settled amount."}
+                                    </p>
+                                </div>
+                                <div className="pt-2 border-t border-slate-200/50 text-[11px] space-y-1 text-slate-600 font-semibold">
+                                    <div className="flex justify-between"><span>Base Monthly Salary:</span><span>Rs {baseSalary.toLocaleString()}</span></div>
+                                    <div className="flex justify-between text-orange-700"><span>Current Month Advances:</span><span>Rs {currentMonthAdvances.toLocaleString()}</span></div>
+                                    <div className="flex justify-between text-emerald-700"><span>Remaining Monthly Due:</span><span>Rs {currentMonthReceivable.toLocaleString()}</span></div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -294,7 +304,7 @@ export default function SecurityManagementPage() {
                             </Select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2"><label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Amount (Rs)</label>
                                 <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rs</span><Input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="pl-10 rounded-xl h-12 font-bold text-lg bg-white" placeholder="0" /></div>
                             </div>
@@ -339,7 +349,7 @@ export default function SecurityManagementPage() {
                         <div className="space-y-2"><label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Location (Optional)</label>
                             <Input value={taskLocation} onChange={e => setTaskLocation(e.target.value)} placeholder="e.g. 4th Floor Roof" className="rounded-xl h-12 font-bold bg-white" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2"><label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Priority</label>
                                 <Select value={taskPriority} onValueChange={setTaskPriority}>
                                     <SelectTrigger className="rounded-xl h-12 font-bold bg-white"><SelectValue /></SelectTrigger>

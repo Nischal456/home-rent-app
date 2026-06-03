@@ -331,7 +331,7 @@ export default function StaffPage() {
                           </Select>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                               <label className="text-xs font-bold text-slate-500 uppercase">Disbursed Amount</label>
                               <div className="relative">
@@ -381,7 +381,7 @@ export default function StaffPage() {
                           <Input placeholder="Extra notes for the employee..." value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} className="h-12 rounded-xl font-semibold bg-slate-50 border-transparent focus-visible:border-slate-300 focus-visible:ring-0" />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                               <label className="text-xs font-bold text-slate-500 uppercase">Priority</label>
                               <Select value={taskForm.priority} onValueChange={(v) => setTaskForm({...taskForm, priority: v})}>

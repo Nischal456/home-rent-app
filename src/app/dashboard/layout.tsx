@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'react-hot-toast';
 import { Separator } from '@/components/ui/separator';
 import { PushPrompt } from '@/components/PushPrompt';
+import Pusher from 'pusher-js';
 
 // --- Icons from lucide-react ---
 import {
@@ -377,6 +378,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
     fetchInitialData();
   }, [router, fetchNotifications, fetchAdminData]);
+
+  useEffect(() => {
+    if (!user || !process.env.NEXT_PUBLIC_PUSHER_KEY) return;
+
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2'
+    });
+
+    const channelName = `user-${user._id}`;
+    const channel = pusher.subscribe(channelName);
+
+    channel.bind('notification', (newNotif: any) => {
+      // Map to ClientNotification structure
+      const parsedNotif: ClientNotification = {
+        _id: newNotif._id,
+        title: newNotif.title,
+        message: newNotif.message,
+        isRead: newNotif.isRead,
+        createdAt: newNotif.createdAt,
+        type: (newNotif.type || 'GENERAL').toLowerCase() as 'payment' | 'maintenance' | 'general'
+      };
+
+      setNotifications(prev => [parsedNotif, ...prev]);
+
+      toast.success(`${parsedNotif.title}: ${parsedNotif.message}`, {
+        icon: '🔔',
+        duration: 5000
+      });
+    });
+
+    return () => {
+      pusher.unsubscribe(channelName);
+      pusher.disconnect();
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     document.cookie = 'token=; path=/; max-age=0';
