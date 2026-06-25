@@ -107,24 +107,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           'PAYMENT'
         );
       }
-
-      // Try triggering realtime pusher event
-      try {
-        const notificationPayload = {
-          title: adminUser.id === tenantIdStr ? titleTenant : titleAdmin,
-          message: adminUser.id === tenantIdStr ? tenantMsg : adminMsg,
-        };
-        await pusherServer.trigger(`user-${adminUser.id}`, 'notification', notificationPayload);
-        
-        if (tenantIdStr) {
-            await pusherServer.trigger(`user-${tenantIdStr}`, 'notification', {
-              title: titleTenant,
-              message: tenantMsg
-            });
-        }
-      } catch (err) {
-         console.error("Pusher error (non-fatal):", err);
-      }
     }
 
     return NextResponse.json({ success: true, message: 'Payment recorded successfully', data: updatedBill });

@@ -268,7 +268,11 @@ function NotificationBell({ notifications, onMarkAllRead, customTrigger }: { not
                     <div className="flex-1 space-y-1">
                       <p className={cn("text-sm", !n.isRead ? "font-bold text-slate-900" : "font-medium text-slate-700")}>{n.title}</p>
                       <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{n.message}</p>
-                      <p className="text-[10px] font-bold text-slate-400">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        {n.createdAt && !isNaN(new Date(n.createdAt).getTime())
+                          ? formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })
+                          : 'Just now'}
+                      </p>
                     </div>
                   </DropdownMenuItem>
                 ))}
