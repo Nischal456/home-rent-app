@@ -26,12 +26,25 @@ export function usePushNotifications() {
   useEffect(() => {
     if ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
       setIsSupported(true);
-      setPermissionState(Notification.permission);
+      try {
+        setPermissionState(Notification.permission || 'default');
+      } catch (e) {
+        console.warn("Failed to get initial Notification.permission:", e);
+      }
       
       const syncSubscription = async () => {
         try {
           const reg = await navigator.serviceWorker.register('/sw.js');
           const sub = await reg.pushManager.getSubscription();
+
+          const currentPermission = (() => {
+            try {
+              return Notification.permission;
+            } catch (e) {
+              console.warn("Failed to read Notification.permission in syncSubscription:", e);
+              return 'default';
+            }
+          })();
 
           if (sub) {
             setIsSubscribed(true);
@@ -41,7 +54,7 @@ export function usePushNotifications() {
               body: JSON.stringify({ subscription: sub }),
               headers: { 'Content-Type': 'application/json' },
             });
-          } else if (Notification.permission === 'granted') {
+          } else if (currentPermission === 'granted') {
             // Auto-subscribe if permission is already granted but no browser subscription exists
             const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
             if (publicVapidKey) {
