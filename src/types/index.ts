@@ -5,7 +5,7 @@ export interface IUser {
   fullName: string;
   email: string;
   password?: string;
-  role: 'ADMIN' | 'TENANT' | 'SECURITY' | 'ACCOUNTANT' | 'CLEANER'; 
+  role: 'ADMIN' | 'TENANT' | 'SECURITY' | 'ACCOUNTANT' | 'CLEANER';
   status: 'ACTIVE' | 'INACTIVE';
   phoneNumber?: string;
   roomId?: Types.ObjectId | IRoom;
@@ -15,6 +15,7 @@ export interface IUser {
   phone?: string;
   profilePicture?: string;
   pushSubscriptions?: any[];
+  hasThreePhaseMeter?: boolean;
 }
 
 export interface IRoom {
@@ -26,39 +27,40 @@ export interface IRoom {
 }
 
 export interface IRentBill {
-    _id: Types.ObjectId;
-    tenantId: Types.ObjectId | IUser;
-    roomId: Types.ObjectId | IRoom;
-    billDateBS: string;
-    billDateAD: Date;
-    rentForPeriod: string;
-    amount: number;
-    paidAmount?: number;
-    remainingAmount?: number;
-    paymentHistory?: { amount: number; date: Date; remarks?: string }[];
-    status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
-    paidOnBS?: string;
-    remarks?: string;
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId | IUser;
+  roomId: Types.ObjectId | IRoom;
+  billDateBS: string;
+  billDateAD: Date;
+  rentForPeriod: string;
+  amount: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentHistory?: { amount: number; date: Date; remarks?: string }[];
+  status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
+  paidOnBS?: string;
+  remarks?: string;
 }
 
 export interface IUtilityBill {
-    _id: Types.ObjectId;
-    tenantId: Types.ObjectId | IUser;
-    roomId: Types.ObjectId | IRoom;
-    billingMonthBS: string;
-    billDateBS: string;
-    billDateAD: Date;
-    electricity: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
-    water: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
-    serviceCharge: number;
-    securityCharge: number;
-    totalAmount: number;
-    paidAmount?: number;
-    remainingAmount?: number;
-    paymentHistory?: { amount: number; date: Date; remarks?: string }[];
-    status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
-    paidOnBS?: string;
-    remarks?: string;
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId | IUser;
+  roomId: Types.ObjectId | IRoom;
+  billingMonthBS: string;
+  billDateBS: string;
+  billDateAD: Date;
+  electricity: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
+  threePhase?: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
+  water: { amount: number; previousReading: number; currentReading: number; unitsConsumed: number; rate?: number; ratePerUnit?: number; };
+  serviceCharge: number;
+  securityCharge: number;
+  totalAmount: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentHistory?: { amount: number; date: Date; remarks?: string }[];
+  status: 'DUE' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
+  paidOnBS?: string;
+  remarks?: string;
 }
 
 export interface IMaintenanceRequest {
@@ -73,11 +75,11 @@ export interface IMaintenanceRequest {
 }
 
 export interface IPayment {
-    _id: Types.ObjectId;
-    tenantId: Types.ObjectId | IUser;
-    amount: number;
-    status: 'PENDING' | 'VERIFIED';
-    createdAt: Date;
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId | IUser;
+  amount: number;
+  status: 'PENDING' | 'VERIFIED';
+  createdAt: Date;
 }
 
 export interface IExpense {
@@ -99,29 +101,12 @@ export interface ISubmission {
   status: 'UNREAD' | 'READ';
   createdAt: Date;
 }
-export interface IWaterTankerPayment {
-  _id?: string;
-  amount: number;
-  date: Date | string;
-  remarks?: string;
-  receipt?: string;
-  method?: 'CASH' | 'BANK_TRANSFER' | 'ESEWA' | 'KHALTI' | 'OTHER';
-}
-
 export interface IWaterTanker {
   _id: string;
-  entryDate: Date | string;
+  entryDate: Date;
   volumeLiters: number;
   cost: number;
-  vendor: string;
-  remarks?: string;
-  paidAmount: number;
-  remainingAmount: number;
-  status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERPAID';
-  paymentHistory?: IWaterTankerPayment[];
-  addedBy?: any; // Guard's or Admin's User details
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  addedBy: string; // Guard's ID
 }
 
 export interface IStaffPayment {

@@ -15,6 +15,7 @@ const UserSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
   profilePicture: { type: String }, // Native Base64 storage
   pushSubscriptions: { type: Array, default: [] }, // Array of Web-Push Subscription Objects
+  hasThreePhaseMeter: { type: Boolean, default: false },
 });
 
 if (models.User) {

@@ -16,16 +16,16 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
 
   const isRentBill = 'rentForPeriod' in bill;
   const billType = isRentBill ? 'Rent Bill' : 'Utility Bill';
-  
+
   const billDateAD = new Date(bill.billDateAD);
   const billDateBS = bill.billDateBS || new NepaliDate(billDateAD).format('YYYY/MM/DD');
   const billDateADFormatted = `${billDateAD.getFullYear()}/${String(billDateAD.getMonth() + 1).padStart(2, '0')}/${String(billDateAD.getDate()).padStart(2, '0')}`;
-  
+
   const totalAmount = isRentBill ? bill.amount : bill.totalAmount;
   const paidAmount = bill.paidAmount || 0;
   const remainingAmount = bill.remainingAmount ?? (totalAmount - paidAmount);
   const amountInWords = numberToWords(remainingAmount > 0 ? remainingAmount : totalAmount);
-  
+
   const billTitle = isRentBill ? "RENTAL" : "UTILITY";
   const billingPeriod = isRentBill ? bill.rentForPeriod : (bill as IUtilityBill).billingMonthBS;
 
@@ -41,6 +41,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
     const utilityBill = bill as IUtilityBill;
     descriptionRows = `
       ${utilityBill.electricity.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Electricity Charge</td><td class="p-2 text-right">Rs ${utilityBill.electricity.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
+      ${utilityBill.threePhase && utilityBill.threePhase.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Three Phase Meter</td><td class="p-2 text-right">Rs ${utilityBill.threePhase.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
       ${utilityBill.water.amount > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Water Charge</td><td class="p-2 text-right">Rs ${utilityBill.water.amount.toLocaleString('en-IN')}/-</td></tr>` : ''}
       ${utilityBill.serviceCharge > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Service Charge</td><td class="p-2 text-right">Rs ${utilityBill.serviceCharge.toLocaleString('en-IN')}/-</td></tr>` : ''}
       ${utilityBill.securityCharge > 0 ? `<tr class="border-b border-black"><td class="border-r border-black p-2">Security Charge</td><td class="p-2 text-right">Rs ${utilityBill.securityCharge.toLocaleString('en-IN')}/-</td></tr>` : ''}
@@ -50,6 +51,21 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
   let utilityDetailsSection = '';
   if (!isRentBill) {
     const utilityBill = bill as IUtilityBill;
+    let tpReadings = '';
+    if (utilityBill.threePhase && utilityBill.threePhase.amount > 0) {
+      tpReadings = `
+        <div class="border border-yellow-100 bg-yellow-50/20 p-3 rounded-lg mt-2">
+            <h4 class="font-bold text-sm text-amber-800">Three Phase Meter (@ Rs ${utilityBill.threePhase.ratePerUnit || utilityBill.threePhase.rate || 19}/unit)</h4>
+            <div class="text-xs text-gray-600 space-y-1 mt-1">
+                <div class="flex justify-between"><p>Previous Reading:</p><p>${utilityBill.threePhase.previousReading}</p></div>
+                <div class="flex justify-between"><p>Current Reading:</p><p>${utilityBill.threePhase.currentReading}</p></div>
+                <div class="flex justify-between font-semibold text-amber-900"><p>Units Consumed:</p><p>${utilityBill.threePhase.unitsConsumed}</p></div>
+                <div class="flex justify-between font-bold text-amber-900 border-t pt-1 mt-1 border-yellow-200"><p>Total Amount:</p><p>Rs ${utilityBill.threePhase.amount.toLocaleString('en-IN')}</p></div>
+            </div>
+        </div>
+      `;
+    }
+
     utilityDetailsSection = `
         <section class="mt-8">
             <h3 class="text-lg font-semibold text-gray-700 mb-2 border-b pb-1">Utility Meter Readings</h3>
@@ -62,6 +78,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
                         <div class="flex justify-between font-semibold"><p>Units Consumed:</p><p>${utilityBill.electricity.unitsConsumed}</p></div>
                         <div class="flex justify-between font-bold text-black border-t pt-1 mt-1 border-gray-300"><p>Total Amount:</p><p>Rs ${utilityBill.electricity.amount.toLocaleString('en-IN')}</p></div>
                     </div>
+                    ${tpReadings}
                 </div>
                 <div>
                     <h4 class="font-bold text-md text-gray-800">Water (@ Rs ${utilityBill.water.ratePerUnit || utilityBill.water.rate || WATER_RATE_PER_UNIT}/Litre)</h4>
@@ -76,13 +93,20 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
         </section>
     `;
   }
-  
+
   let ratesInfoStr = '';
+  let threePhaseStr = '';
   if (!isRentBill) {
-      const utilityBill = bill as IUtilityBill;
-      const eRate = utilityBill.electricity.ratePerUnit || utilityBill.electricity.rate || ELECTRICITY_RATE_PER_UNIT;
-      const wRate = utilityBill.water.ratePerUnit || utilityBill.water.rate || WATER_RATE_PER_UNIT;
-      ratesInfoStr = `Elec Rate: Rs ${eRate}/unit, Water Rate: Rs ${wRate}/Litre.\\n`;
+    const utilityBill = bill as IUtilityBill;
+    const eRate = utilityBill.electricity.ratePerUnit || utilityBill.electricity.rate || ELECTRICITY_RATE_PER_UNIT;
+    const wRate = utilityBill.water.ratePerUnit || utilityBill.water.rate || WATER_RATE_PER_UNIT;
+    ratesInfoStr = `Elec Rate: Rs ${eRate}/unit`;
+    if (utilityBill.threePhase && utilityBill.threePhase.amount > 0) {
+      const tpRate = utilityBill.threePhase.ratePerUnit || utilityBill.threePhase.rate || 19;
+      ratesInfoStr += `, Three Phase Rate: Rs ${tpRate}/unit`;
+      threePhaseStr = `Three Phase Charge: Rs ${utilityBill.threePhase.amount.toLocaleString('en-IN')} (${utilityBill.threePhase.unitsConsumed} Units)\\n`;
+    }
+    ratesInfoStr += `, Water Rate: Rs ${wRate}/Litre.\\n`;
   }
 
   const billContent = `
@@ -191,6 +215,7 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
                                    'Total: Rs ${totalAmount.toLocaleString('en-IN')}. ' +
                                    'Remaining: Rs ${remainingAmount.toLocaleString('en-IN')}. ' +
                                    'Status: ' + billStatus + '.\\n' +
+                                   '${threePhaseStr}' +
                                    '${ratesInfoStr}' +
                                    (remarksData ? 'Remarks: ' + remarksData + '\\n\\n' : '\\n') + 
                                    'View Full Details Here:';

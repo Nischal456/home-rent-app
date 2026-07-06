@@ -382,10 +382,10 @@ export default function RentBillsPage() {
                 
                 <DrawerFooter className="px-0 pt-6">
                     <div className="grid grid-cols-2 gap-3 w-full">
-                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); printBill(selectedBill); }}>
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { printBill(selectedBill); setSelectedBill(null); }}>
                             <Printer className="w-4 h-4" /> Print
                         </Button>
-                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); handleShare(selectedBill); }}>
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { handleShare(selectedBill); setSelectedBill(null); }}>
                             <Share2 className="w-4 h-4" /> Share
                         </Button>
                         {selectedBill.status !== 'PAID' && (

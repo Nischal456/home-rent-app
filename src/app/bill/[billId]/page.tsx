@@ -16,33 +16,33 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'react-hot-toast';
 
 // ✅ "BEST OF BEST" ICONS
-import { 
-    AlertCircle, Printer, Zap, Droplets, Banknote, Calendar, Home, User, Scale, 
-    Shield, Wrench, FileText, CheckCircle, Share2
+import {
+  AlertCircle, Printer, Zap, Droplets, Banknote, Calendar, Home, User, Scale,
+  Shield, Wrench, FileText, CheckCircle, Share2
 } from 'lucide-react';
 
-type BillData = (IRentBill | IUtilityBill) & { 
+type BillData = (IRentBill | IUtilityBill) & {
   type: 'Rent' | 'Utility',
   tenantId: IUser,
   roomId: IRoom,
-  totalOutstandingDue: number 
+  totalOutstandingDue: number
 };
 
 // --- Professional, Reusable Detail Row ---
 const DetailRow = ({ label, value, isBold = false, isTotal = false }: { label: string, value: string | number | ReactNode, isBold?: boolean, isTotal?: boolean }) => (
   <div className={cn(
-    "flex justify-between items-center py-2.5 border-b print:py-1.5", 
+    "flex justify-between items-center py-2.5 border-b print:py-1.5",
     isTotal && "border-t-2 border-dashed mt-2 pt-3"
   )}>
     <p className={cn(
-      "text-sm text-muted-foreground", 
+      "text-sm text-muted-foreground",
       isTotal && "text-base font-bold text-gray-800"
     )}>
       {label}
     </p>
     <p className={cn(
-      "font-semibold text-sm text-gray-900", 
-      isBold && "font-bold", 
+      "font-semibold text-sm text-gray-900",
+      isBold && "font-bold",
       isTotal && "text-2xl font-bold text-primary"
     )}>
       {value}
@@ -96,22 +96,29 @@ export default function PublicBillPage() {
 
   const handleShare = async () => {
     if (!bill) return;
-    const billUrl = window.location.href; 
+    const billUrl = window.location.href;
     const isUtility = bill.type === 'Utility';
-    
+
     // Explicit typing 
     const utilityBill = bill as unknown as IUtilityBill;
     const rentBill = bill as unknown as IRentBill;
-    
+
     const tenantName = bill.tenantId?.fullName || 'Tenant';
     const total = isUtility ? utilityBill.totalAmount : rentBill.amount;
     const period = isUtility ? utilityBill.billingMonthBS : rentBill.rentForPeriod;
 
     let ratesStr = '';
+    let threePhaseStr = '';
     if (isUtility) {
       const eRate = utilityBill.electricity?.ratePerUnit || utilityBill.electricity?.rate || 19;
       const wRate = utilityBill.water?.ratePerUnit || utilityBill.water?.rate || 0.30;
-      ratesStr = `Rates: Elec Rs ${eRate}/unit, Water Rs ${wRate}/Litre.\n`;
+      ratesStr = `Rates: Elec Rs ${eRate}/unit`;
+      if (utilityBill.threePhase && utilityBill.threePhase.amount > 0) {
+        const tpRate = utilityBill.threePhase.ratePerUnit || utilityBill.threePhase.rate || 19;
+        ratesStr += `, Three Phase Rs ${tpRate}/unit`;
+        threePhaseStr = `Three Phase Charge: Rs ${utilityBill.threePhase.amount.toLocaleString('en-IN')} (${utilityBill.threePhase.unitsConsumed} Units)\n`;
+      }
+      ratesStr += `, Water Rs ${wRate}/Litre.\n`;
     }
 
     const remarksData = bill.remarks?.trim() || '';
@@ -119,8 +126,9 @@ export default function PublicBillPage() {
     const shareText = `${bill.type} Bill for ${tenantName} (${period}). ` +
       `Total: Rs ${total.toLocaleString('en-IN')}. ` +
       `Status: ${bill.status}.\n` +
+      threePhaseStr +
       ratesStr +
-      (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) + 
+      (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) +
       `View Full Details Here:`;
 
     if (navigator.share) {
@@ -194,7 +202,7 @@ export default function PublicBillPage() {
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-purple-200 rounded-full filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-200 rounded-full filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
-      
+
       <div className="min-h-screen p-4 sm:p-8 flex flex-col items-center justify-center print-container">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} className="w-full max-w-2xl mx-auto">
           <Card className="w-full bg-white/70 backdrop-blur-xl shadow-2xl rounded-2xl border border-white/50 print-card">
@@ -215,7 +223,7 @@ export default function PublicBillPage() {
                 <div className="space-y-1"><h3 className="font-semibold text-gray-500">BILLED TO</h3><p className="font-medium text-gray-900">{bill.tenantId.fullName}</p><p className="text-gray-700">Room: {bill.roomId.roomNumber}</p></div>
                 <div className="text-right space-y-1"><h3 className="font-semibold text-gray-500">BILL DETAILS</h3><p className="font-medium text-gray-900">Date: {new NepaliDate(new Date(bill.billDateAD)).format('YYYY MMMM DD')}</p><p className="text-gray-700">For: {billPeriod}</p></div>
               </div>
-              
+
               <Separator />
 
               {isUtility && (
@@ -228,6 +236,15 @@ export default function PublicBillPage() {
                     <DetailRow label="Units Consumed" value={utilityBill.electricity.unitsConsumed} />
                     <DetailRow label="Electricity Total" value={`Rs ${utilityBill.electricity.amount.toLocaleString()}`} isBold={true} />
                   </div>
+                  {utilityBill.threePhase && utilityBill.threePhase.amount > 0 && (
+                    <div className="p-4 rounded-lg bg-yellow-50/20 border border-yellow-200 print-utility-box">
+                      <h4 className="font-medium text-amber-800 flex items-center gap-1"><Zap className="w-4 h-4 text-amber-600" /> Three Phase Meter (Rate: Rs {utilityBill.threePhase.ratePerUnit || utilityBill.threePhase.rate || 19} / unit)</h4>
+                      <DetailRow label="Previous Reading" value={utilityBill.threePhase.previousReading} />
+                      <DetailRow label="Current Reading" value={utilityBill.threePhase.currentReading} />
+                      <DetailRow label="Units Consumed" value={utilityBill.threePhase.unitsConsumed} />
+                      <DetailRow label="Three Phase Total" value={`Rs ${utilityBill.threePhase.amount.toLocaleString()}`} isBold={true} />
+                    </div>
+                  )}
                   <div className="p-4 rounded-lg bg-gray-50 border print-utility-box">
                     <h4 className="font-medium text-gray-700">Water (Rate: Rs {utilityBill.water.ratePerUnit || utilityBill.water.rate || 0.3} / Litre)</h4>
                     <DetailRow label="Previous Reading" value={utilityBill.water.previousReading} />
@@ -245,7 +262,10 @@ export default function PublicBillPage() {
                   {isUtility ? (
                     <>
                       {/* ✅ FIX: Correctly accessing properties from 'utilityBill' */}
-                      <DetailRow label="Total Utility Charges" value={`Rs ${(utilityBill.electricity.amount + utilityBill.water.amount).toLocaleString()}`} />
+                      <DetailRow label="Total Utility Charges" value={`Rs ${(utilityBill.electricity.amount + utilityBill.water.amount + (utilityBill.threePhase?.amount || 0)).toLocaleString()}`} />
+                      {utilityBill.threePhase && utilityBill.threePhase.amount > 0 && (
+                        <DetailRow label="Three Phase Meter" value={`Rs ${utilityBill.threePhase.amount.toLocaleString()}`} />
+                      )}
                       <DetailRow label="Service Charge" value={`Rs ${utilityBill.serviceCharge.toLocaleString()}`} />
                       <DetailRow label="Security Charge" value={`Rs ${utilityBill.securityCharge.toLocaleString()}`} />
                     </>
@@ -269,96 +289,96 @@ export default function PublicBillPage() {
             {/* Footer */}
             <CardFooter className="bg-muted/50 p-6 rounded-b-2xl flex flex-col gap-5 print-footer">
               <div className="w-full">
-                <DetailRow 
-                  label="Bill Total" 
-                  value={`Rs ${billAmount.toLocaleString()}`} 
-                  isTotal={true} 
+                <DetailRow
+                  label="Bill Total"
+                  value={`Rs ${billAmount.toLocaleString()}`}
+                  isTotal={true}
                 />
                 {(parseFloat(bill.paidAmount as any) > 0 || bill.status === 'PARTIALLY_PAID') && (
-                    <DetailRow 
-                      label="Paid Amount" 
-                      value={<span className="text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span>} 
-                      isBold={true} 
-                    />
+                  <DetailRow
+                    label="Paid Amount"
+                    value={<span className="text-green-600">Rs {(bill.paidAmount || 0).toLocaleString()}</span>}
+                    isBold={true}
+                  />
                 )}
                 <div className="flex justify-between items-center py-2.5 mt-2 bg-red-50 p-4 border border-red-100 rounded-xl shadow-sm">
-                    <p className="text-base font-bold text-red-800 uppercase tracking-wider">Remaining Due</p>
-                    <p className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? (billAmount - (bill.paidAmount || 0))).toLocaleString()}</p>
+                  <p className="text-base font-bold text-red-800 uppercase tracking-wider">Remaining Due</p>
+                  <p className="text-2xl font-black text-red-600">Rs {(bill.remainingAmount ?? (billAmount - (bill.paidAmount || 0))).toLocaleString()}</p>
                 </div>
               </div>
-              
-              <div className="w-full space-y-3">
-                  <AnimatePresence mode="wait">
-                    {/* Status of THIS specific bill */}
-                    {bill.status === 'PAID' ? (
-                      <motion.div 
-                        key="paid"
-                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                        className="w-full p-4 rounded-xl bg-green-100/60 border border-green-200 text-green-800 flex items-center justify-center gap-3"
-                      >
-                        <CheckCircle className="h-6 w-6" />
-                        <div className="text-left">
-                            <p className="font-bold text-lg">Fully Paid</p>
-                            {bill.paidOnBS && <p className="text-xs opacity-80 font-medium">Clearance Date: {bill.paidOnBS}</p>}
-                        </div>
-                      </motion.div>
-                    ) : bill.status === 'PARTIALLY_PAID' ? (
-                      <motion.div 
-                        key="partial"
-                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                        className="w-full p-4 rounded-xl bg-blue-50 border border-blue-200 text-center"
-                      >
-                        <p className="text-sm font-bold text-blue-800 mb-1 tracking-wider uppercase">This Bill Status</p>
-                        <p className="text-xl font-black text-blue-600">PARTIALLY PAID</p>
-                      </motion.div>
-                    ) : (
-                      <motion.div 
-                        key="due"
-                        initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                        className="w-full p-4 rounded-xl bg-orange-50 border border-orange-200 text-center"
-                      >
-                        <p className="text-sm font-bold text-orange-800 mb-1 tracking-wider uppercase">This Bill Status</p>
-                        <p className="text-xl font-black text-orange-600">DUE</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
-                  {/* Comprehensive Outstanding Balance Summary for entire Tenant Account */}
-                  <AnimatePresence mode="wait">
-                    {bill.totalOutstandingDue > 0 ? (
-                      <motion.div 
-                          key="outstanding"
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          className="w-full p-4 mt-2 rounded-xl bg-red-50 border-2 border-red-200 text-center shadow-sm"
-                      >
-                        <p className="text-xs font-bold text-red-800/80 mb-1 uppercase tracking-widest">Total Outstanding Balance</p>
-                        <p className="text-sm font-medium text-red-800/80 mb-2">(Including all pending rent & utility bills)</p>
-                        <p className="text-3xl font-extrabold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
-                      </motion.div>
-                    ) : (
-                      <motion.div 
-                          key="cleared"
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          className="w-full p-4 mt-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center flex flex-col items-center justify-center gap-1 shadow-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                           <Shield className="h-5 w-5" />
-                           <p className="font-extrabold text-lg">All Cleared!</p>
-                        </div>
-                        <p className="text-sm font-medium opacity-80">You have no pending outstanding balances.</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              <div className="w-full space-y-3">
+                <AnimatePresence mode="wait">
+                  {/* Status of THIS specific bill */}
+                  {bill.status === 'PAID' ? (
+                    <motion.div
+                      key="paid"
+                      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                      className="w-full p-4 rounded-xl bg-green-100/60 border border-green-200 text-green-800 flex items-center justify-center gap-3"
+                    >
+                      <CheckCircle className="h-6 w-6" />
+                      <div className="text-left">
+                        <p className="font-bold text-lg">Fully Paid</p>
+                        {bill.paidOnBS && <p className="text-xs opacity-80 font-medium">Clearance Date: {bill.paidOnBS}</p>}
+                      </div>
+                    </motion.div>
+                  ) : bill.status === 'PARTIALLY_PAID' ? (
+                    <motion.div
+                      key="partial"
+                      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                      className="w-full p-4 rounded-xl bg-blue-50 border border-blue-200 text-center"
+                    >
+                      <p className="text-sm font-bold text-blue-800 mb-1 tracking-wider uppercase">This Bill Status</p>
+                      <p className="text-xl font-black text-blue-600">PARTIALLY PAID</p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="due"
+                      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                      className="w-full p-4 rounded-xl bg-orange-50 border border-orange-200 text-center"
+                    >
+                      <p className="text-sm font-bold text-orange-800 mb-1 tracking-wider uppercase">This Bill Status</p>
+                      <p className="text-xl font-black text-orange-600">DUE</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Comprehensive Outstanding Balance Summary for entire Tenant Account */}
+                <AnimatePresence mode="wait">
+                  {bill.totalOutstandingDue > 0 ? (
+                    <motion.div
+                      key="outstanding"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      className="w-full p-4 mt-2 rounded-xl bg-red-50 border-2 border-red-200 text-center shadow-sm"
+                    >
+                      <p className="text-xs font-bold text-red-800/80 mb-1 uppercase tracking-widest">Total Outstanding Balance</p>
+                      <p className="text-sm font-medium text-red-800/80 mb-2">(Including all pending rent & utility bills)</p>
+                      <p className="text-3xl font-extrabold text-red-600">Rs {bill.totalOutstandingDue.toLocaleString()}</p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="cleared"
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      className="w-full p-4 mt-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center flex flex-col items-center justify-center gap-1 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        <p className="font-extrabold text-lg">All Cleared!</p>
+                      </div>
+                      <p className="text-sm font-medium opacity-80">You have no pending outstanding balances.</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </CardFooter>
           </Card>
-          
+
           <div className="text-center mt-10 mb-12 print-hidden">
-            <Button 
-                onClick={handleShare} 
-                className="shadow-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-full px-10 py-7 text-lg font-bold transition-all hover:-translate-y-1 hover:shadow-indigo-500/50 active:scale-95 flex items-center justify-center mx-auto"
+            <Button
+              onClick={handleShare}
+              className="shadow-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-full px-10 py-7 text-lg font-bold transition-all hover:-translate-y-1 hover:shadow-indigo-500/50 active:scale-95 flex items-center justify-center mx-auto"
             >
-                <Share2 className="mr-3 h-6 w-6" /> Share This Bill
+              <Share2 className="mr-3 h-6 w-6" /> Share This Bill
             </Button>
             <p className="mt-4 text-xs tracking-wide text-gray-500 font-semibold uppercase">Quick share via WhatsApp or Messenger</p>
           </div>

@@ -22,9 +22,9 @@ interface TenantForSelect extends Pick<IUser, '_id' | 'fullName'> {
   roomId?: Pick<IRoom, '_id' | 'roomNumber'>;
 }
 
-export function AddRentBillForm({ onSuccess }: { onSuccess: () => void; }) {
+export function AddRentBillForm({ onSuccess, preselectedTenantId }: { onSuccess: () => void; preselectedTenantId?: string }) {
   const [formState, setFormState] = useState<FormState>({
-    tenantId: '',
+    tenantId: preselectedTenantId || '',
     rentForPeriod: '',
     amount: '',
     remarks: '',
@@ -61,12 +61,13 @@ export function AddRentBillForm({ onSuccess }: { onSuccess: () => void; }) {
 
         if (data.success) {
           const { lastBill, defaultRentAmount } = data.data;
-          
+
           // Use a functional update to avoid stale state issues
           setFormState(prev => ({
             ...prev,
             amount: defaultRentAmount > 0 ? String(defaultRentAmount) : prev.amount,
             rentForPeriod: lastBill ? lastBill.rentForPeriod : prev.rentForPeriod,
+            remarks: lastBill ? lastBill.remarks || '' : prev.remarks,
           }));
 
           if (lastBill) {
@@ -109,9 +110,9 @@ export function AddRentBillForm({ onSuccess }: { onSuccess: () => void; }) {
     setIsSubmitting(true);
     const selectedTenant = tenants.find(t => t._id.toString() === formState.tenantId);
     if (!selectedTenant || !selectedTenant.roomId) {
-        toast.error("Selected tenant is not assigned to a room.");
-        setIsSubmitting(false);
-        return;
+      toast.error("Selected tenant is not assigned to a room.");
+      setIsSubmitting(false);
+      return;
     }
 
     const finalBillData = {
@@ -154,18 +155,22 @@ export function AddRentBillForm({ onSuccess }: { onSuccess: () => void; }) {
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="tenantId">Tenant</Label>
-          <Select value={formState.tenantId} onValueChange={(value) => handleChange('tenantId', value)}>
-            <SelectTrigger id="tenantId">
-              <SelectValue placeholder="Select a tenant" />
-            </SelectTrigger>
-            <SelectContent>
-              {tenants.map(t => (
-                <SelectItem key={t._id.toString()} value={t._id.toString()}>
-                  {t.fullName} ({t.roomId?.roomNumber || 'No Room'})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {preselectedTenantId ? (
+            <Input id="tenantId" value={tenants.find(t => t._id.toString() === formState.tenantId)?.fullName || 'Loading...'} disabled />
+          ) : (
+            <Select value={formState.tenantId} onValueChange={(value) => handleChange('tenantId', value)}>
+              <SelectTrigger id="tenantId">
+                <SelectValue placeholder="Select a tenant" />
+              </SelectTrigger>
+              <SelectContent>
+                {tenants.map(t => (
+                  <SelectItem key={t._id.toString()} value={t._id.toString()}>
+                    {t.fullName} ({t.roomId?.roomNumber || 'No Room'})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           {errors.tenantId && <p className="text-sm font-medium text-destructive">{errors.tenantId}</p>}
         </div>
 

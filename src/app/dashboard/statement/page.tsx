@@ -209,6 +209,25 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
                     </div>
                 </div>
 
+                {/* Three Phase Meter Card */}
+                {(bill as IUtilityBill).threePhase && ((bill as IUtilityBill).threePhase?.amount ?? 0) > 0 && (
+                  <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-yellow-600"></div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-50 text-yellow-700 rounded-xl"><Zap className="w-5 h-5" /></div>
+                        <h4 className="font-extrabold text-slate-800 text-base">Three Phase Meter</h4>
+                      </div>
+                      <span className="font-black text-slate-900 text-lg">Rs {(bill as IUtilityBill).threePhase?.amount?.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-xl p-3 text-center">
+                       <div><p className="text-[10px] font-extrabold text-slate-400 uppercase">Prev</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).threePhase?.previousReading}</p></div>
+                       <div className="border-x border-slate-200"><p className="text-[10px] font-extrabold text-slate-400 uppercase">Curr</p><p className="font-bold text-slate-700 mt-0.5">{(bill as IUtilityBill).threePhase?.currentReading}</p></div>
+                       <div><p className="text-[10px] font-extrabold text-yellow-600 uppercase">Units</p><p className="font-black text-slate-900 mt-0.5">{(bill as IUtilityBill).threePhase?.unitsConsumed}</p></div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Additional Charges */}
                 {((bill as IUtilityBill).serviceCharge > 0 || (bill as IUtilityBill).securityCharge > 0) && (
                   <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-3">
@@ -269,16 +288,22 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
       </div>
 
       {/* Sticky Footer - Locked at Bottom */}
-      <div className="bg-white border-t border-slate-100 p-5 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex items-center justify-between shrink-0 gap-4">
+      <div className="bg-white border-t border-slate-100 p-5 pb-10 sm:pb-6 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-10 flex items-center justify-between shrink-0 gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Total Payable</span>
-            <span className="text-xl sm:text-2xl font-black text-[#0B2863] tracking-tight">Rs {(bill.remainingAmount ?? totalAmount).toLocaleString('en-IN')}</span>
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Payable</span>
+            <span className="text-lg sm:text-xl font-black text-[#0B2863] tracking-tight">Rs {(bill.remainingAmount ?? totalAmount).toLocaleString('en-IN')}</span>
           </div>
           <div className="flex gap-2">
             <Button 
                 onClick={() => {
                    const url = `${window.location.origin}/bill/${bill._id}`;
-                   const text = `Hello! Here is your ${bill.type} Bill for ${period}.\nTotal Amount: Rs ${totalAmount.toLocaleString()}\nRemaining Due: Rs ${(bill.remainingAmount ?? totalAmount).toLocaleString()}`;
+                   let text = `Hello! Here is your ${bill.type} Bill for ${period}.\nTotal Amount: Rs ${totalAmount.toLocaleString()}\nRemaining Due: Rs ${(bill.remainingAmount ?? totalAmount).toLocaleString()}`;
+                   if (bill.type === 'Utility') {
+                     const utBill = bill as IUtilityBill;
+                     if (utBill.threePhase && utBill.threePhase.amount > 0) {
+                       text += `\nThree Phase Charge: Rs ${utBill.threePhase.amount.toLocaleString('en-IN')} (${utBill.threePhase.unitsConsumed} Units)`;
+                     }
+                   }
                    if (navigator.share) {
                         navigator.share({ title: `${bill.type} Bill`, text: text, url: url }).catch(console.error);
                    } else {
@@ -286,11 +311,11 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
                         toast.success('Link copied to clipboard!', { icon: '🔗' });
                    }
                 }}
-                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 rounded-xl shadow-sm font-bold h-12 px-4 shrink-0 transition-all active:scale-95"
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 rounded-xl shadow-sm font-bold h-10 w-10 p-0 shrink-0 transition-all active:scale-95 flex items-center justify-center"
             >
-                <Share2 className="h-5 w-5" />
+                <Share2 className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={onClose} className="rounded-xl h-12 px-5 sm:px-6 font-bold text-slate-600 border-slate-200">
+            <Button variant="outline" onClick={onClose} className="rounded-xl h-10 px-4 font-bold text-xs text-slate-600 border-slate-200">
                 Close
             </Button>
           </div>

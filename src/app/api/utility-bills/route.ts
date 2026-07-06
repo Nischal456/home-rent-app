@@ -14,7 +14,7 @@ export async function GET() {
       .populate('tenantId', 'fullName')
       .populate('roomId', 'roomNumber')
       .sort({ billDateAD: -1 });
-      
+
     return NextResponse.json({ success: true, data: bills });
   } catch (error) {
     console.error("Error fetching utility bills:", error);
@@ -26,8 +26,8 @@ export async function POST(request: Request) {
   await dbConnect();
   try {
     const body = await request.json();
-    
-    const { tenantId, roomId, billingMonthBS, electricity, water, serviceCharge, securityCharge, totalAmount, remarks } = body;
+
+    const { tenantId, roomId, billingMonthBS, electricity, threePhase, water, serviceCharge, securityCharge, totalAmount, remarks } = body;
 
     if (!tenantId || !roomId || !billingMonthBS || totalAmount === undefined || totalAmount === null) {
       return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       billDateAD: todayAD,
       billDateBS: todayBS,
       electricity,
+      threePhase,
       water,
       serviceCharge,
       securityCharge,
@@ -54,11 +55,11 @@ export async function POST(request: Request) {
     await newBill.save();
 
     await createNotification(
-        new Types.ObjectId(tenantId),
-        'New Utility Bill',
-        `Your utility bill of Rs ${totalAmount.toLocaleString('en-IN')} for ${billingMonthBS} is ready.`,
-        `/bill/${newBill._id}?type=utility`,
-        'PAYMENT'
+      new Types.ObjectId(tenantId),
+      'New Utility Bill',
+      `Your utility bill of Rs ${totalAmount.toLocaleString('en-IN')} for ${billingMonthBS} is ready.`,
+      `/bill/${newBill._id}?type=utility`,
+      'PAYMENT'
     );
 
     return NextResponse.json({ success: true, message: 'Utility bill created successfully', data: newBill }, { status: 201 });
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
   } catch (error) {
     let errorMessage = "An unknown error occurred.";
     if (error instanceof Error) {
-        errorMessage = error.message;
+      errorMessage = error.message;
     }
     console.error('Error creating utility bill:', errorMessage);
     return NextResponse.json({ success: false, message: 'Error creating utility bill' }, { status: 500 });

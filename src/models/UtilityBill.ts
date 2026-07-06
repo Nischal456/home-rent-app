@@ -16,6 +16,13 @@ const UtilityBillSchema = new Schema({
     ratePerUnit: Number,
     amount: Number,
   },
+  threePhase: {
+    previousReading: Number,
+    currentReading: Number,
+    unitsConsumed: Number,
+    ratePerUnit: Number,
+    amount: Number,
+  },
   water: {
     previousReading: Number,
     currentReading: Number,
@@ -48,5 +55,8 @@ UtilityBillSchema.pre('save', function (next) {
   next();
 });
 
-const UtilityBill: Model<IUtilityBillDocument> = models.UtilityBill || model<IUtilityBillDocument>('UtilityBill', UtilityBillSchema);
+if (models.UtilityBill) {
+  delete models.UtilityBill;
+}
+const UtilityBill: Model<IUtilityBillDocument> = model<IUtilityBillDocument>('UtilityBill', UtilityBillSchema);
 export default UtilityBill;

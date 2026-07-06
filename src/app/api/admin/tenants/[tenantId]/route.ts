@@ -15,7 +15,7 @@ export async function GET(
 ) {
   // --- IMPORTANT: Add your admin authentication logic here ---
   // For example, you would verify a JWT token from the request headers or cookies.
-  
+
   const { tenantId } = params;
 
   if (!tenantId) {
@@ -49,6 +49,47 @@ export async function GET(
 
   } catch (error) {
     console.error(`Error fetching details for tenant ${tenantId}:`, error);
+    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { tenantId: string } }
+) {
+  const { tenantId } = params;
+
+  if (!tenantId) {
+    return NextResponse.json({ success: false, message: 'Tenant ID is required.' }, { status: 400 });
+  }
+
+  try {
+    await dbConnect();
+    const body = await request.json();
+    const { hasThreePhaseMeter } = body;
+
+    if (hasThreePhaseMeter === undefined) {
+      return NextResponse.json({ success: false, message: 'hasThreePhaseMeter field is required.' }, { status: 400 });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      tenantId,
+      { hasThreePhaseMeter },
+      { new: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return NextResponse.json({ success: false, message: 'Tenant not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Tenant settings updated successfully.',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    console.error(`Error updating settings for tenant ${tenantId}:`, error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }

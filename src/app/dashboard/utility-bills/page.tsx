@@ -65,24 +65,24 @@ const UtilityBillCard = ({ bill, onAction, onShare, onPrint, onClick }: { bill: 
                         </div>
                         {parseFloat(bill.paidAmount as any) > 0 && bill.status !== 'PAID' && (
                             <div className="text-right">
-                                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">Paid</p>
-                                 <div className="text-xs font-semibold text-green-600 leading-none">Rs {(bill.paidAmount || 0).toLocaleString()}</div>
+                                <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">Paid</p>
+                                <div className="text-xs font-semibold text-green-600 leading-none">Rs {(bill.paidAmount || 0).toLocaleString()}</div>
                             </div>
                         )}
                     </div>
                     {/* Progress Bar added for partial payments */}
                     {parseFloat(bill.paidAmount as any) > 0 && bill.status !== 'PAID' && (
                         <>
-                        <div className="w-full bg-blue-100 rounded-full h-1 mb-2 overflow-hidden mt-0.5 text-right">
-                            <div 
-                                className="bg-blue-600 h-1 rounded-full transition-all duration-500 ease-in-out" 
-                                style={{ width: `${Math.min(((bill.paidAmount || 0) / bill.totalAmount) * 100, 100)}%` }}
-                            ></div>
-                        </div>
-                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                            <p>Remaining: <span className="font-semibold text-red-500">Rs {((bill.remainingAmount ?? bill.totalAmount) || 0).toLocaleString()}</span></p>
-                            <p>For: <span className="font-medium text-gray-700">{bill.billingMonthBS}</span></p>
-                        </div>
+                            <div className="w-full bg-blue-100 rounded-full h-1 mb-2 overflow-hidden mt-0.5 text-right">
+                                <div
+                                    className="bg-blue-600 h-1 rounded-full transition-all duration-500 ease-in-out"
+                                    style={{ width: `${Math.min(((bill.paidAmount || 0) / bill.totalAmount) * 100, 100)}%` }}
+                                ></div>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                                <p>Remaining: <span className="font-semibold text-red-500">Rs {((bill.remainingAmount ?? bill.totalAmount) || 0).toLocaleString()}</span></p>
+                                <p>For: <span className="font-medium text-gray-700">{bill.billingMonthBS}</span></p>
+                            </div>
                         </>
                     )}
                     {(!parseFloat(bill.paidAmount as any) || bill.status === 'PAID') && (
@@ -138,13 +138,22 @@ export default function UtilityBillsPage() {
         const remarksData = bill.remarks || '';
         const eRate = bill.electricity?.ratePerUnit || bill.electricity?.rate || 19;
         const wRate = bill.water?.ratePerUnit || bill.water?.rate || 0.30;
-        
+        let ratesStr = `Elec Rate: Rs ${eRate}/unit`;
+        let threePhaseStr = '';
+        if (bill.threePhase && bill.threePhase.amount > 0) {
+            const tpRate = bill.threePhase.ratePerUnit || bill.threePhase.rate || 19;
+            ratesStr += `, Three Phase Rate: Rs ${tpRate}/unit`;
+            threePhaseStr = `Three Phase Charge: Rs ${bill.threePhase.amount.toLocaleString('en-IN')} (${bill.threePhase.unitsConsumed} Units)\n`;
+        }
+        ratesStr += `, Water Rate: Rs ${wRate}/Litre.\n`;
+
         const shareText = `Utility Bill for ${tenant?.fullName || 'Tenant'} (${bill.billingMonthBS}). ` +
             `Total: Rs ${totalA.toLocaleString('en-IN')}. ` +
             `Remaining: Rs ${remainingA.toLocaleString('en-IN')}. ` +
             `Status: ${billStatus}.\n` +
-            `Rates: Elec Rs ${eRate}/unit, Water Rs ${wRate}/Litre.\n` +
-            (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) + 
+            threePhaseStr +
+            ratesStr +
+            (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) +
             `View Full Details Here:`;
 
         if (navigator.share) {
@@ -175,17 +184,17 @@ export default function UtilityBillsPage() {
     const handleAction = async () => {
         if (!confirmation) return;
         const { action, bill } = confirmation;
-        
+
         // Safety check, handleAction now only actually processes 'delete' since 'pay' opens a Dialog instead
         if (action === 'delete') {
             const url = `/api/utility-bills/${bill._id}`;
             const promise = fetch(url, { method: 'DELETE' }).then(res => {
                 if (!res.ok) throw new Error(`Failed to delete bill.`);
                 return res.json();
-            }).then(() => { 
+            }).then(() => {
                 mutate(apiUrl);
             });
-            
+
             toast.promise(promise, {
                 loading: `Deleting bill...`,
                 success: `Bill deleted successfully!`,
@@ -270,117 +279,123 @@ export default function UtilityBillsPage() {
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Utility Bill
                     </Button>
                 </div>
-                
+
                 {/* ✅ ADDED: Mobile Search Bar */}
                 {isMobile && (
                     <div className="relative mb-6">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search by tenant name..." 
-                            value={searchQuery} 
-                            onChange={(e) => setSearchQuery(e.target.value)} 
-                            className="pl-10" 
+                        <Input
+                            placeholder="Search by tenant name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
                         />
                     </div>
                 )}
-                
+
                 {renderContent()}
             </div>
-            
+
             <Button onClick={() => setAddDialogOpen(true)} className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom,40px))] right-6 h-16 w-16 rounded-full shadow-lg z-[60] flex items-center justify-center md:hidden bg-primary hover:bg-primary/90 transition-transform active:scale-95">
                 <PlusCircle className="h-8 w-8" />
                 <span className="sr-only">Add Utility Bill</span>
             </Button>
-            
+
             {/* Mobile Pop-Up Drawer equivalent to Tenant views */}
             <Drawer open={!!selectedBill} onOpenChange={(isOpen) => !isOpen && setSelectedBill(null)}>
-              <DrawerContent className="p-0 outline-none pb-safe">
-                {selectedBill && (
-                   <div className="w-full sm:max-w-md mx-auto p-5 overflow-y-auto max-h-[85vh]">
-                      <DrawerHeader className="mb-4 px-0 pb-0">
-                          <DrawerTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
-                              <Zap className="text-primary" /> Utility Bill
-                          </DrawerTitle>
-                          <DrawerDescription className="text-center mt-1 text-base">Bill for: {selectedBill.billingMonthBS}</DrawerDescription>
-                      </DrawerHeader>
-                      
-                      <div className="space-y-2 mt-4 px-1">
-                          <DetailRow icon={<CircleUserRound size={16} />} label="Tenant" value={(selectedBill.tenantId as IUser)?.fullName ?? 'N/A'} />
-                          <DetailRow icon={<Calendar size={16} />} label="Bill Date" value={selectedBill.billDateBS} />
-                          <DetailRow icon={<Hash size={16} />} label="Status" value={<Badge variant={selectedBill.status === 'PAID' ? 'default' : selectedBill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={selectedBill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}>{selectedBill.status}</Badge>} />
-                          
-                          <h4 className="font-semibold pt-4 text-primary text-sm uppercase tracking-wider">Utility Breakdown</h4>
-                          <DetailRow icon={<Zap size={16} />} label="Elec. Units" value={selectedBill.electricity.unitsConsumed} />
-                          <DetailRow icon={<Banknote size={16} />} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
-                          <DetailRow icon={<Droplets size={16} />} label="Water Units" value={selectedBill.water.unitsConsumed} />
-                          <DetailRow icon={<Banknote size={16} />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
-                          
-                          <h4 className="font-semibold pt-4 text-secondary text-sm uppercase tracking-wider">Other Charges</h4>
-                          <DetailRow icon={<Wrench size={16} />} label="Service Charge" value={`Rs ${selectedBill.serviceCharge.toLocaleString()}`} />
-                          <DetailRow icon={<Shield size={16} />} label="Security Charge" value={`Rs ${selectedBill.securityCharge.toLocaleString()}`} />
-                          
-                          <div className="flex justify-between items-center pt-5 mt-5 border-t-2 border-primary/20">
-                              <div className="font-bold text-sm text-muted-foreground uppercase tracking-wider">Total Amount</div>
-                              <div className="font-extrabold text-2xl text-primary">Rs {selectedBill.totalAmount.toLocaleString()}</div>
-                          </div>
-                          
-                          {(parseFloat(selectedBill.paidAmount as any) > 0) && (
-                              <div className="bg-muted/50 p-4 rounded-xl mt-4 border">
-                                  <div className="flex justify-between text-sm mb-2">
-                                      <span className="font-medium">Paid</span>
-                                      <span className="font-bold text-green-600 text-lg">Rs {(selectedBill.paidAmount || 0).toLocaleString()}</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
-                                      <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min(((selectedBill.paidAmount || 0) / selectedBill.totalAmount) * 100, 100)}%` }}></div>
-                                  </div>
-                                  <div className="flex justify-between text-sm">
-                                      <span className="font-medium text-muted-foreground">Remaining</span>
-                                      <span className="font-bold text-red-500 text-lg uppercase">Rs {(selectedBill.remainingAmount ?? selectedBill.totalAmount).toLocaleString()}</span>
-                                  </div>
-                              </div>
-                          )}
-                          
-                          {selectedBill.paymentHistory && selectedBill.paymentHistory.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-dashed">
-                                  <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payment Tracker</h5>
-                                  <div className="space-y-2">
-                                      {selectedBill.paymentHistory.map((pmt: any, idx: number) => (
-                                          <div key={idx} className="flex flex-row justify-between items-start text-xs bg-white/60 p-2.5 rounded-lg border shadow-sm">
-                                              <div className="flex-1 min-w-0 pr-2">
-                                                  <div className="font-semibold text-gray-800">{formatNepaliDate(pmt.date)}</div>
-                                                  {pmt.remarks && <div className="text-[10px] text-muted-foreground italic mt-0.5 truncate">{pmt.remarks}</div>}
-                                              </div>
-                                              <div className="font-bold text-green-600 shrink-0">Rs {pmt.amount.toLocaleString()}</div>
-                                          </div>
-                                      ))}
-                                  </div>
-                              </div>
-                          )}
-                      </div>
-                      
-                      <DrawerFooter className="px-0 pt-6">
-                          <div className="grid grid-cols-2 gap-3 w-full">
-                              <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); printBill(selectedBill); }}>
-                                  <Printer className="w-4 h-4" /> Print
-                              </Button>
-                              <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); handleShare(selectedBill); }}>
-                                  <Share2 className="w-4 h-4" /> Share
-                              </Button>
-                              {selectedBill.status !== 'PAID' && (
-                                  <Button className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm" onClick={() => { setSelectedBill(null); setConfirmation({ action: 'pay', bill: selectedBill }); }}>
-                                      <CheckCircle2 className="w-4 h-4" /> Pay
-                                  </Button>
-                              )}
-                              <Button variant="destructive" className={`w-full flex items-center justify-center gap-2 font-bold shadow-sm ${selectedBill.status === 'PAID' ? "col-span-2" : ""}`} onClick={() => { setSelectedBill(null); setConfirmation({ action: 'delete', bill: selectedBill }); }}>
-                                  <Trash2 className="w-4 h-4" /> Delete
-                              </Button>
-                          </div>
-                      </DrawerFooter>
-                   </div>
-                )}
-              </DrawerContent>
+                <DrawerContent className="p-0 outline-none pb-safe">
+                    {selectedBill && (
+                        <div className="w-full sm:max-w-md mx-auto p-5 overflow-y-auto max-h-[85vh]">
+                            <DrawerHeader className="mb-4 px-0 pb-0">
+                                <DrawerTitle className="flex items-center justify-center gap-3 text-2xl font-bold">
+                                    <Zap className="text-primary" /> Utility Bill
+                                </DrawerTitle>
+                                <DrawerDescription className="text-center mt-1 text-base">Bill for: {selectedBill.billingMonthBS}</DrawerDescription>
+                            </DrawerHeader>
+
+                            <div className="space-y-2 mt-4 px-1">
+                                <DetailRow icon={<CircleUserRound size={16} />} label="Tenant" value={(selectedBill.tenantId as IUser)?.fullName ?? 'N/A'} />
+                                <DetailRow icon={<Calendar size={16} />} label="Bill Date" value={selectedBill.billDateBS} />
+                                <DetailRow icon={<Hash size={16} />} label="Status" value={<Badge variant={selectedBill.status === 'PAID' ? 'default' : selectedBill.status === 'PARTIALLY_PAID' ? 'outline' : 'destructive'} className={selectedBill.status === 'PARTIALLY_PAID' ? 'border-primary text-primary' : ''}>{selectedBill.status}</Badge>} />
+
+                                <h4 className="font-semibold pt-4 text-primary text-sm uppercase tracking-wider">Utility Breakdown</h4>
+                                <DetailRow icon={<Zap size={16} />} label="Elec. Units" value={selectedBill.electricity.unitsConsumed} />
+                                <DetailRow icon={<Banknote size={16} />} label="Elec. Amount" value={`Rs ${selectedBill.electricity.amount.toLocaleString()}`} />
+                                {selectedBill.threePhase && selectedBill.threePhase.amount > 0 && (
+                                    <>
+                                        <DetailRow icon={<Zap className="text-yellow-600" size={16} />} label="Three Phase Units" value={selectedBill.threePhase.unitsConsumed} />
+                                        <DetailRow icon={<Banknote className="text-yellow-600" size={16} />} label="Three Phase Amount" value={`Rs ${selectedBill.threePhase.amount.toLocaleString()}`} />
+                                    </>
+                                )}
+                                <DetailRow icon={<Droplets size={16} />} label="Water Units" value={selectedBill.water.unitsConsumed} />
+                                <DetailRow icon={<Banknote size={16} />} label="Water Amount" value={`Rs ${selectedBill.water.amount.toLocaleString()}`} />
+
+                                <h4 className="font-semibold pt-4 text-secondary text-sm uppercase tracking-wider">Other Charges</h4>
+                                <DetailRow icon={<Wrench size={16} />} label="Service Charge" value={`Rs ${selectedBill.serviceCharge.toLocaleString()}`} />
+                                <DetailRow icon={<Shield size={16} />} label="Security Charge" value={`Rs ${selectedBill.securityCharge.toLocaleString()}`} />
+
+                                <div className="flex justify-between items-center pt-5 mt-5 border-t-2 border-primary/20">
+                                    <div className="font-bold text-sm text-muted-foreground uppercase tracking-wider">Total Amount</div>
+                                    <div className="font-extrabold text-2xl text-primary">Rs {selectedBill.totalAmount.toLocaleString()}</div>
+                                </div>
+
+                                {(parseFloat(selectedBill.paidAmount as any) > 0) && (
+                                    <div className="bg-muted/50 p-4 rounded-xl mt-4 border">
+                                        <div className="flex justify-between text-sm mb-2">
+                                            <span className="font-medium">Paid</span>
+                                            <span className="font-bold text-green-600 text-lg">Rs {(selectedBill.paidAmount || 0).toLocaleString()}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
+                                            <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min(((selectedBill.paidAmount || 0) / selectedBill.totalAmount) * 100, 100)}%` }}></div>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-medium text-muted-foreground">Remaining</span>
+                                            <span className="font-bold text-red-500 text-lg uppercase">Rs {(selectedBill.remainingAmount ?? selectedBill.totalAmount).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedBill.paymentHistory && selectedBill.paymentHistory.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-dashed">
+                                        <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payment Tracker</h5>
+                                        <div className="space-y-2">
+                                            {selectedBill.paymentHistory.map((pmt: any, idx: number) => (
+                                                <div key={idx} className="flex flex-row justify-between items-start text-xs bg-white/60 p-2.5 rounded-lg border shadow-sm">
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="font-semibold text-gray-800">{formatNepaliDate(pmt.date)}</div>
+                                                        {pmt.remarks && <div className="text-[10px] text-muted-foreground italic mt-0.5 truncate">{pmt.remarks}</div>}
+                                                    </div>
+                                                    <div className="font-bold text-green-600 shrink-0">Rs {pmt.amount.toLocaleString()}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DrawerFooter className="px-0 pt-6">
+                                <div className="grid grid-cols-2 gap-3 w-full">
+                                    <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); printBill(selectedBill); }}>
+                                        <Printer className="w-4 h-4" /> Print
+                                    </Button>
+                                    <Button variant="outline" className="w-full flex items-center justify-center gap-2 font-semibold shadow-sm" onClick={() => { setSelectedBill(null); handleShare(selectedBill); }}>
+                                        <Share2 className="w-4 h-4" /> Share
+                                    </Button>
+                                    {selectedBill.status !== 'PAID' && (
+                                        <Button className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold shadow-sm" onClick={() => { setSelectedBill(null); setConfirmation({ action: 'pay', bill: selectedBill }); }}>
+                                            <CheckCircle2 className="w-4 h-4" /> Pay
+                                        </Button>
+                                    )}
+                                    <Button variant="destructive" className={`w-full flex items-center justify-center gap-2 font-bold shadow-sm ${selectedBill.status === 'PAID' ? "col-span-2" : ""}`} onClick={() => { setSelectedBill(null); setConfirmation({ action: 'delete', bill: selectedBill }); }}>
+                                        <Trash2 className="w-4 h-4" /> Delete
+                                    </Button>
+                                </div>
+                            </DrawerFooter>
+                        </div>
+                    )}
+                </DrawerContent>
             </Drawer>
-            
+
             <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -390,7 +405,7 @@ export default function UtilityBillsPage() {
                     <AddUtilityBillForm onSuccess={handleSuccess} />
                 </DialogContent>
             </Dialog>
-            
+
             <AlertDialog open={!!confirmation && confirmation.action === 'delete'} onOpenChange={() => setConfirmation(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -403,16 +418,16 @@ export default function UtilityBillsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            
+
             {confirmation?.action === 'pay' && (
-                <RecordPaymentDialog 
-                    isOpen={true} 
-                    onClose={() => setConfirmation(null)} 
-                    onSuccess={handleSuccess} 
-                    billId={confirmation.bill._id.toString()} 
-                    targetUrl={`/api/utility-bills/${confirmation.bill._id}/pay`} 
-                    totalAmount={confirmation.bill.totalAmount} 
-                    remainingAmount={confirmation.bill.remainingAmount ?? confirmation.bill.totalAmount} 
+                <RecordPaymentDialog
+                    isOpen={true}
+                    onClose={() => setConfirmation(null)}
+                    onSuccess={handleSuccess}
+                    billId={confirmation.bill._id.toString()}
+                    targetUrl={`/api/utility-bills/${confirmation.bill._id}/pay`}
+                    totalAmount={confirmation.bill.totalAmount}
+                    remainingAmount={confirmation.bill.remainingAmount ?? confirmation.bill.totalAmount}
                 />
             )}
         </>
