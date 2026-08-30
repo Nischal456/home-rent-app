@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { MacbookScrollDemo } from '@/components/macbook-scroll-demo';
+import { PhoneScrollShowcase } from '@/components/phone-scroll-showcase';
 
 // --- Premium Number Counter ---
 const AnimatedCounter = ({ to }: { to: number }) => {
@@ -265,6 +267,20 @@ export default function HomePage() {
               </Button>
             </motion.div>
           </motion.div>
+        </section>
+
+        {/* =========================================
+            MACBOOK SCROLL SHOWCASE
+        ============================================= */}
+        <section className="relative z-20 bg-[#F8FAFC]">
+          <MacbookScrollDemo />
+        </section>
+
+        {/* =========================================
+            PHONE SCROLL SHOWCASE
+        ============================================= */}
+        <section className="relative z-20">
+          <PhoneScrollShowcase />
         </section>
 
         {/* =========================================
