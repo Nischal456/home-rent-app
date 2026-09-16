@@ -54,7 +54,7 @@ const INITIAL_DONATIONS = [
   {
     donorName: 'STG Tower Management',
     phone: 'Management',
-    amount: 20000,
+    amount: 5000,
     paymentMethod: 'esewa',
     transactionId: 'ESW-STG-MGMT',
     isAnonymous: false,
