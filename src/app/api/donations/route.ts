@@ -8,26 +8,37 @@ const TARGET_AMOUNT = 200000; // Rs. 2,00,000
 
 const INITIAL_DONATIONS = [
   {
-    donorName: 'Sangita DiDi (7th floor)',
-    phone: '7th Floor',
+    donorName: 'STG Tower Management',
+    phone: 'Management',
     amount: 5000,
     paymentMethod: 'esewa',
-    transactionId: 'ESW-SANGITA-7',
+    transactionId: 'ESW-STG-MGMT',
     isAnonymous: false,
-    message: 'speedy recovery Suman bhai',
+    message: 'हाम्रो परिवारको तर्फबाट सक्दो सहयोग। स्वास्थ्य लाभको कामना।',
     status: 'VERIFIED',
-    createdAt: new Date('2026-09-16T09:00:00Z'),
+    createdAt: new Date('2026-09-16T10:30:00Z'),
   },
   {
-    donorName: 'Roshan Shrestha (2nd floor)',
-    phone: '2nd Floor',
-    amount: 5000,
+    donorName: 'Gecko Works Members',
+    phone: 'Office',
+    amount: 6000,
     paymentMethod: 'esewa',
-    transactionId: 'ESW-ROSHAN-2',
+    transactionId: 'ESW-GECKO-TEAM',
     isAnonymous: false,
-    message: 'god bless him',
+    message: 'Ujjwal — Rs. 1,000\nNischal — Rs. 1,000\nPrashant — Rs. 1,000\nManindra — Rs. 1,000\nAnjal — Rs. 2,000',
     status: 'VERIFIED',
-    createdAt: new Date('2026-09-16T09:30:00Z'),
+    createdAt: new Date('2026-09-16T11:00:00Z'),
+  },
+  {
+    donorName: 'James Subedi',
+    phone: 'N/A',
+    amount: 1000,
+    paymentMethod: 'esewa',
+    transactionId: 'ESW-JAMES-SUBEDI',
+    isAnonymous: false,
+    message: 'Get well soon',
+    status: 'VERIFIED',
+    createdAt: new Date('2026-09-16T11:05:00Z'),
   },
   {
     donorName: 'Faruk Ansari (2nd floor)',
@@ -41,49 +52,43 @@ const INITIAL_DONATIONS = [
     createdAt: new Date('2026-09-16T10:00:00Z'),
   },
   {
-    donorName: 'Gecko Works',
-    phone: 'Office',
+    donorName: 'Roshan Shrestha (2nd floor)',
+    phone: '2nd Floor',
     amount: 5000,
     paymentMethod: 'esewa',
-    transactionId: 'ESW-GECKO-WORKS',
+    transactionId: 'ESW-ROSHAN-2',
     isAnonymous: false,
-    message: 'Wishing Suman Bhai a speedy recovery!',
+    message: 'god bless him',
     status: 'VERIFIED',
-    createdAt: new Date('2026-09-16T10:15:00Z'),
+    createdAt: new Date('2026-09-16T09:30:00Z'),
   },
   {
-    donorName: 'STG Tower Management',
-    phone: 'Management',
+    donorName: 'Sangita DiDi (7th floor)',
+    phone: '7th Floor',
     amount: 5000,
     paymentMethod: 'esewa',
-    transactionId: 'ESW-STG-MGMT',
+    transactionId: 'ESW-SANGITA-7',
     isAnonymous: false,
-    message: 'हाम्रो परिवारको तर्फबाट सक्दो सहयोग। स्वास्थ्य लाभको कामना।',
+    message: 'speedy recovery Suman bhai',
     status: 'VERIFIED',
-    createdAt: new Date('2026-09-16T10:30:00Z'),
+    createdAt: new Date('2026-09-16T09:00:00Z'),
+  },
+  {
+    donorName: 'Anonymous',
+    phone: 'N/A',
+    amount: 1000,
+    paymentMethod: 'esewa',
+    transactionId: 'ESW-ANON-1000',
+    isAnonymous: true,
+    message: 'Speedy recovery 🙏',
+    status: 'VERIFIED',
+    createdAt: new Date('2026-09-16T11:10:00Z'),
   }
 ];
 
 async function ensureSeedData() {
-  // Check if Gecko Works already exists in database
-  const geckoExists = await Donation.findOne({ donorName: /Gecko Works/i });
-  if (!geckoExists) {
-    await Donation.create({
-      donorName: 'Gecko Works',
-      phone: 'Office',
-      amount: 5000,
-      paymentMethod: 'esewa',
-      transactionId: 'ESW-GECKO-WORKS',
-      isAnonymous: false,
-      message: 'Wishing Suman Bhai a speedy recovery!',
-      status: 'VERIFIED',
-      createdAt: new Date('2026-09-16T10:15:00Z'),
-    });
-  }
-
-  // Also check if initial list is present
-  const sangitaExists = await Donation.findOne({ donorName: /Sangita DiDi/i });
-  if (!sangitaExists) {
+  const count = await Donation.countDocuments();
+  if (count === 0) {
     await Donation.insertMany(INITIAL_DONATIONS);
   }
 }
@@ -109,10 +114,22 @@ export async function GET() {
       donorName: d.isAnonymous ? 'Anonymous' : d.donorName,
       phone: d.phone,
       amount: d.amount,
-      isAnonymous: d.isAnonymous,
+      isAnonymous: Boolean(d.isAnonymous || d.donorName.toLowerCase().trim() === 'anonymous'),
       message: d.message || '',
       createdAt: d.createdAt,
     }));
+
+    // STG Tower Management always at top, then A-Z, then Anonymous at the very last
+    donors.sort((a, b) => {
+      const isMgmtA = /STG.*Management|Tower Management/i.test(a.donorName);
+      const isMgmtB = /STG.*Management|Tower Management/i.test(b.donorName);
+      if (isMgmtA && !isMgmtB) return -1;
+      if (!isMgmtA && isMgmtB) return 1;
+
+      if (a.isAnonymous && !b.isAnonymous) return 1;
+      if (!a.isAnonymous && b.isAnonymous) return -1;
+      return a.donorName.localeCompare(b.donorName, undefined, { sensitivity: 'base' });
+    });
 
     return NextResponse.json({
       success: true,

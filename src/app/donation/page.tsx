@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Heart, Copy, Check, Download, Users, PlusCircle, 
-  Calendar, Clock, ShieldCheck, Sparkles, ArrowRight, 
+import {
+  Heart, Copy, Check, Download, Users, PlusCircle,
+  Calendar, Clock, ShieldCheck, Sparkles, ArrowRight,
   TrendingUp, Phone, CheckCircle2, Loader2
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
@@ -67,6 +67,22 @@ export default function DonationPage() {
   const percentage = data?.stats.percentage ?? Math.min(100, Math.round((collected / target) * 100));
   const donorCount = data?.stats.totalDonors || data?.donors.length || 0;
 
+  const sortedDonors = useMemo(() => {
+    if (!data?.donors) return [];
+    return [...data.donors].sort((a, b) => {
+      const isMgmtA = /STG.*Management|Tower Management/i.test(a.donorName);
+      const isMgmtB = /STG.*Management|Tower Management/i.test(b.donorName);
+      if (isMgmtA && !isMgmtB) return -1;
+      if (!isMgmtA && isMgmtB) return 1;
+
+      const aAnon = a.isAnonymous || a.donorName.toLowerCase().trim() === 'anonymous';
+      const bAnon = b.isAnonymous || b.donorName.toLowerCase().trim() === 'anonymous';
+      if (aAnon && !bAnon) return 1;
+      if (!aAnon && bAnon) return -1;
+      return a.donorName.localeCompare(b.donorName, undefined, { sensitivity: 'base' });
+    });
+  }, [data?.donors]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50/60 via-slate-50 to-white text-slate-900 py-8 px-4 sm:px-6">
       <Toaster position="top-center" />
@@ -80,7 +96,7 @@ export default function DonationPage() {
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            ❤️ सुमन भाइको उपचारको लागि सहयोग
+            सुमन भाइको उपचारको लागि सहयोग
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
@@ -149,7 +165,7 @@ export default function DonationPage() {
             </div>
 
             <div className="w-full h-4 sm:h-5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000 shadow-sm"
                 style={{ width: `${Math.min(100, percentage)}%` }}
               />
@@ -159,7 +175,7 @@ export default function DonationPage() {
 
         {/* 3. The eSewa QR Code & Scan Section */}
         <div className="bg-white rounded-3xl border-2 border-emerald-300 shadow-xl p-6 sm:p-10 text-center space-y-6">
-          
+
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-600" />
             <span>Official eSewa QR Code</span>
@@ -211,7 +227,7 @@ export default function DonationPage() {
           </div>
 
           <div className="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-line font-serif">
-{`हाम्रो STG Community का सुरक्षा गार्ड सुमन भाइ गम्भीर स्वास्थ्य अवस्थामा ICU मा उपचाररत हुनुहुन्छ। यस्तो कठिन परिस्थितिमा उहाँ र उहाँको परिवारलाई हाम्रो सानो सहयोगले पनि ठूलो सहारा दिन सक्छ।
+            {`हाम्रो STG Community का सुरक्षा गार्ड सुमन भाइ गम्भीर स्वास्थ्य अवस्थामा ICU मा उपचाररत हुनुहुन्छ। यस्तो कठिन परिस्थितिमा उहाँ र उहाँको परिवारलाई हाम्रो सानो सहयोगले पनि ठूलो सहारा दिन सक्छ।
 
 त्यसैले STG Community का सम्पूर्ण सदस्यहरू मिलेर आफ्नो इच्छाअनुसार सानो–ठूलो सहयोग/दान गरिदिनुहुन हार्दिक अनुरोध गर्दछौँ। सहयोगको रकमभन्दा पनि हाम्रो एकता, मानवता र साथ ठूलो कुरा हो।
 
@@ -236,8 +252,8 @@ STG Community`}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {(data?.donors && data.donors.length > 0) ? (
-              data.donors.map((d) => (
+            {sortedDonors.length > 0 ? (
+              sortedDonors.map((d) => (
                 <div
                   key={d._id}
                   className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-white hover:border-rose-200 hover:shadow-sm transition-all flex flex-col justify-between space-y-2"
@@ -263,9 +279,9 @@ STG Community`}
                   </div>
 
                   {d.message && (
-                    <p className="text-xs text-slate-600 italic bg-white p-2 rounded-xl border border-slate-100">
-                      "{d.message}"
-                    </p>
+                    <div className="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100 whitespace-pre-line font-medium leading-relaxed">
+                      {d.message}
+                    </div>
                   )}
                 </div>
               ))
