@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import Donation from '@/models/Donation';
+import Donation from '../../../models/Donation';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +41,17 @@ const INITIAL_DONATIONS = [
     createdAt: new Date('2026-09-16T10:00:00Z'),
   },
   {
+    donorName: 'Gecko Works',
+    phone: 'Office',
+    amount: 5000,
+    paymentMethod: 'esewa',
+    transactionId: 'ESW-GECKO-WORKS',
+    isAnonymous: false,
+    message: 'Wishing Suman Bhai a speedy recovery!',
+    status: 'VERIFIED',
+    createdAt: new Date('2026-09-16T10:15:00Z'),
+  },
+  {
     donorName: 'STG Tower Management',
     phone: 'Management',
     amount: 20000,
@@ -54,11 +65,25 @@ const INITIAL_DONATIONS = [
 ];
 
 async function ensureSeedData() {
-  // Check if initial donations already contain Sangita DiDi
-  const exists = await Donation.findOne({ donorName: 'Sangita DiDi (7th floor)' });
-  if (!exists) {
-    // Clear out old test seeds and populate with the user's exact 4 donations
-    await Donation.deleteMany({});
+  // Check if Gecko Works already exists in database
+  const geckoExists = await Donation.findOne({ donorName: /Gecko Works/i });
+  if (!geckoExists) {
+    await Donation.create({
+      donorName: 'Gecko Works',
+      phone: 'Office',
+      amount: 5000,
+      paymentMethod: 'esewa',
+      transactionId: 'ESW-GECKO-WORKS',
+      isAnonymous: false,
+      message: 'Wishing Suman Bhai a speedy recovery!',
+      status: 'VERIFIED',
+      createdAt: new Date('2026-09-16T10:15:00Z'),
+    });
+  }
+
+  // Also check if initial list is present
+  const sangitaExists = await Donation.findOne({ donorName: /Sangita DiDi/i });
+  if (!sangitaExists) {
     await Donation.insertMany(INITIAL_DONATIONS);
   }
 }
@@ -69,7 +94,7 @@ export async function GET() {
     await ensureSeedData();
 
     const verified = await Donation.find({ status: 'VERIFIED' }).sort({ createdAt: -1 });
-    
+
     let totalCollected = 0;
     for (const d of verified) {
       totalCollected += d.amount;

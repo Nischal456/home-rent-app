@@ -201,12 +201,6 @@ export default function DonationPage() {
             </button>
           </div>
 
-          {/* Instruction Note */}
-          <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm p-4 rounded-2xl font-medium leading-relaxed text-center">
-            <p className="font-bold text-slate-900 mb-0.5">📢 eSewa भुक्तानी गर्दा ध्यान दिनुपर्ने:</p>
-            कृपया रकम पठाउँदा Remarks मा <strong>"Suman Upachar"</strong> र आफ्नो नाम/फ्ल्याट नम्बर लेखिदिनुहोला।
-          </div>
-
         </div>
 
         {/* 4. Heartfelt Nepali Message */}

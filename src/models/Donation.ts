@@ -1,18 +1,5 @@
-
-import { Schema, model, models, Document, Model } from 'mongoose';
-
-export interface IDonation extends Document {
-  donorName: string;
-  phone?: string;
-  amount: number;
-  paymentMethod: string;
-  transactionId: string;
-  screenshot?: string;
-  isAnonymous: boolean;
-  message?: string;
-  status: 'VERIFIED' | 'PENDING' | 'REJECTED';
-  createdAt: Date;
-}
+import mongoose, { Schema, model, models } from 'mongoose';
+import { IDonation } from '@/types';
 
 const DonationSchema = new Schema<IDonation>({
   donorName: { type: String, required: true, trim: true },
@@ -27,5 +14,6 @@ const DonationSchema = new Schema<IDonation>({
   createdAt: { type: Date, default: Date.now },
 });
 
-const Donation: Model<IDonation> = models.Donation || model<IDonation>('Donation', DonationSchema);
+const Donation = models.Donation || model<IDonation>('Donation', DonationSchema);
+
 export default Donation;

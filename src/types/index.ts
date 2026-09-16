@@ -118,3 +118,17 @@ export interface IStaffPayment {
   remarks?: string;
   month?: string; // e.g., "Bhadra 2082" for Salary
 }
+
+export interface IDonation {
+  _id: Types.ObjectId;
+  donorName: string;
+  phone?: string;
+  amount: number;
+  paymentMethod?: string;
+  transactionId?: string;
+  screenshot?: string;
+  isAnonymous?: boolean;
+  message?: string;
+  status?: 'VERIFIED' | 'PENDING' | 'REJECTED';
+  createdAt: Date;
+}
