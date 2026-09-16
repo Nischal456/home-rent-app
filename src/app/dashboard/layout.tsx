@@ -20,7 +20,7 @@ import Pusher from 'pusher-js';
 // --- Icons from lucide-react ---
 import {
   Bell, Home, LogOut, ReceiptText, Settings, Users, Loader2, Building, Menu,
-  Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, Newspaper,CreditCard, PanelsTopLeft,
+  Banknote, LifeBuoy, FileClock, Wrench, ChevronDown, Sparkles, Newspaper, CreditCard, PanelsTopLeft,
   ShieldCheck, Droplets, Wallet, Grid2X2, Zap, AlertCircle, Briefcase
 } from 'lucide-react';
 
@@ -143,60 +143,60 @@ function MobileBottomNav({ user, unreadPaymentsCount, onMenuClick }: { user: IUs
 
   let mobileItems: any[] = [];
   if (user.role === 'ADMIN') {
-      mobileItems = [
-          { href: "/dashboard", icon: Home, label: "Home" },
-          { href: "/dashboard/tenants", icon: Users, label: "Tenants" },
-          { href: "/dashboard/rent-bills", icon: ReceiptText, label: "Rent" },
-          { href: "/dashboard/utility-bills", icon: Zap, label: "Utility" },
-          { href: "/dashboard/staff", icon: Briefcase, label: "Staff" },
-          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu", badgeDot: unreadPaymentsCount > 0 }
-      ];
+    mobileItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/dashboard/tenants", icon: Users, label: "Tenants" },
+      { href: "/dashboard/rent-bills", icon: ReceiptText, label: "Rent" },
+      { href: "/dashboard/utility-bills", icon: Zap, label: "Utility" },
+      { href: "/dashboard/staff", icon: Briefcase, label: "Staff" },
+      { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu", badgeDot: unreadPaymentsCount > 0 }
+    ];
   } else if (user.role === 'TENANT') {
-      mobileItems = [
-          { href: "/dashboard", icon: Home, label: "Home" },
-          { href: "/dashboard/statement", icon: FileClock, label: "Bills" },
-          { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
-          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
-      ];
+    mobileItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/dashboard/statement", icon: FileClock, label: "Bills" },
+      { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
+      { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+    ];
   } else if (user.role === 'SECURITY') {
-      mobileItems = [
-          { href: "/dashboard", icon: Home, label: "Home" },
-          { href: "/dashboard/security", icon: ShieldCheck, label: "Portal" },
-          { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
-          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
-      ];
+    mobileItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/dashboard/security", icon: ShieldCheck, label: "Portal" },
+      { href: "/dashboard/support", icon: LifeBuoy, label: "Support" },
+      { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+    ];
   } else if (user.role === 'ACCOUNTANT' || user.role === 'CLEANER') {
-      mobileItems = [
-          { href: "/dashboard", icon: Home, label: "Home" },
-          { href: "/dashboard/staff-portal", icon: Briefcase, label: "Portal" },
-          { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-          { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
-      ];
+    mobileItems = [
+      { href: "/dashboard", icon: Home, label: "Home" },
+      { href: "/dashboard/staff-portal", icon: Briefcase, label: "Portal" },
+      { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+      { isAction: true, action: onMenuClick, icon: Grid2X2, label: "Menu" }
+    ];
   }
 
   return (
     <div className="md:hidden fixed bottom-6 left-3 right-3 bg-white/95 backdrop-blur-2xl rounded-[2.5rem] z-50 flex items-center justify-around px-2 py-2.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.05)] border border-white/60">
       <LayoutGroup id="mobile-nav">
         {mobileItems.map((item, idx) => {
-            if (item.isAction) {
-                return (
-                    <button key={item.label} onClick={item.action} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
-                        <item.icon className="w-[22px] h-[22px] text-slate-400 mb-1 group-hover:text-[#0B2863] transition-colors" strokeWidth={2.5} />
-                        {item.label && <span className="text-[10px] font-bold text-slate-400 group-hover:text-[#0B2863] transition-colors tracking-tight">{item.label}</span>}
-                        {item.badgeDot && <span className="absolute top-1 right-2 lg:right-4 inline-flex rounded-full h-2.5 w-2.5 bg-[#ef4444] border-2 border-white shadow-sm"></span>}
-                    </button>
-                );
-            }
-
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
+          if (item.isAction) {
             return (
-                <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
-                    {isActive && <motion.div layoutId="dock-active" className="absolute inset-0 bg-slate-100/80 rounded-3xl -z-10" transition={{ type: 'spring', stiffness: 500, damping: 30 }} />}
-                    <Icon className={cn("w-[22px] h-[22px] mb-1 transition-colors", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")} strokeWidth={isActive ? 3 : 2.5} />
-                    {item.label && <span className={cn("text-[10px] font-bold transition-colors tracking-tight", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")}>{item.label}</span>}
-                </Link>
+              <button key={item.label} onClick={item.action} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
+                <item.icon className="w-[22px] h-[22px] text-slate-400 mb-1 group-hover:text-[#0B2863] transition-colors" strokeWidth={2.5} />
+                {item.label && <span className="text-[10px] font-bold text-slate-400 group-hover:text-[#0B2863] transition-colors tracking-tight">{item.label}</span>}
+                {item.badgeDot && <span className="absolute top-1 right-2 lg:right-4 inline-flex rounded-full h-2.5 w-2.5 bg-[#ef4444] border-2 border-white shadow-sm"></span>}
+              </button>
             );
+          }
+
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center flex-1 max-w-[60px] h-[52px] flex-shrink-0 active:scale-95 transition-transform group focus:outline-none">
+              {isActive && <motion.div layoutId="dock-active" className="absolute inset-0 bg-slate-100/80 rounded-3xl -z-10" transition={{ type: 'spring', stiffness: 500, damping: 30 }} />}
+              <Icon className={cn("w-[22px] h-[22px] mb-1 transition-colors", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")} strokeWidth={isActive ? 3 : 2.5} />
+              {item.label && <span className={cn("text-[10px] font-bold transition-colors tracking-tight", isActive ? "text-[#0B2863]" : "text-slate-400 group-hover:text-slate-600")}>{item.label}</span>}
+            </Link>
+          );
         })}
       </LayoutGroup>
     </div>
@@ -281,7 +281,7 @@ function NotificationBell({ notifications, onMarkAllRead, customTrigger }: { not
           ) : (
             <div className="text-center py-10 px-4">
               <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                 <Newspaper className="h-8 w-8 text-slate-300" />
+                <Newspaper className="h-8 w-8 text-slate-300" />
               </div>
               <p className="font-bold text-slate-900">All caught up!</p>
               <p className="text-sm text-slate-500 mt-1">You have no new notifications.</p>
@@ -325,14 +325,14 @@ function UserNav({ user, onLogout }: { user: IUser; onLogout: () => void; }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="opacity-50" />
         <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3 focus:bg-slate-50">
-           <Link href="/dashboard/settings"><Settings className="mr-3 h-4 w-4 text-slate-500" /><span className="font-semibold text-slate-700">Settings</span></Link>
+          <Link href="/dashboard/settings"><Settings className="mr-3 h-4 w-4 text-slate-500" /><span className="font-semibold text-slate-700">Settings</span></Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3 focus:bg-slate-50">
-           <Link href="/dashboard/support"><LifeBuoy className="mr-3 h-4 w-4 text-slate-500" /><span className="font-semibold text-slate-700">Support</span></Link>
+          <Link href="/dashboard/support"><LifeBuoy className="mr-3 h-4 w-4 text-slate-500" /><span className="font-semibold text-slate-700">Support</span></Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="opacity-50" />
         <DropdownMenuItem onClick={onLogout} className="rounded-xl cursor-pointer p-3 text-red-600 focus:bg-red-50 focus:text-red-700">
-           <LogOut className="mr-3 h-4 w-4" /><span className="font-bold">Logout</span>
+          <LogOut className="mr-3 h-4 w-4" /><span className="font-bold">Logout</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -442,7 +442,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex items-center justify-center min-h-[100dvh] bg-[#f8fafc]">
         <div className="flex flex-col items-center gap-6">
           <div className="relative w-20 h-20 animate-pulse drop-shadow-lg">
-             <Image src="/home.png" alt="Logo" fill sizes="40px" className="object-contain" priority />
+            <Image src="/home.png" alt="Logo" fill sizes="40px" className="object-contain" priority />
           </div>
           <Loader2 className="h-8 w-8 animate-spin text-[#0B2863]" />
         </div>
@@ -452,7 +452,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="grid min-h-[100dvh] w-full md:grid-cols-[280px_1fr] bg-[#f8fafc] font-sans selection:bg-[#0B2863] selection:text-white overflow-hidden">
-      
+
       {/* --- Desktop Premium Sidebar (Hidden on Mobile) --- */}
       <aside className="hidden md:flex flex-col bg-white border-r border-slate-100 h-[100dvh] sticky top-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
         <div className="flex h-20 items-center px-8 border-b border-slate-50">
@@ -470,10 +470,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* --- Main Content Area --- */}
       <div className="flex flex-col h-[100dvh] relative overflow-hidden">
-        
+
         {/* --- Premium Header --- */}
         <header className="flex h-[calc(4rem+env(safe-area-inset-top))] md:h-[calc(5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between gap-4 bg-white/80 px-4 md:px-8 backdrop-blur-xl z-30 sticky top-0 border-b border-slate-100/50">
-          
+
           {/* Mobile Logo View (Replaces Hamburger) */}
           <div className="flex md:hidden items-center gap-3">
             <div className="h-8 w-8 relative">
@@ -508,12 +508,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </motion.div>
           </AnimatePresence>
         </main>
-        
+
         {/* --- Native App Style Floating Pill Dock --- */}
-        <MobileBottomNav 
-           user={user} 
-           unreadPaymentsCount={pendingPaymentsCount} 
-           onMenuClick={() => setSheetOpen(true)} 
+        <MobileBottomNav
+          user={user}
+          unreadPaymentsCount={pendingPaymentsCount}
+          onMenuClick={() => setSheetOpen(true)}
         />
 
         {/* --- Sheet Triggered by Bottom Nav "More" Button --- */}
@@ -536,15 +536,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Sheet>
 
         {/* --- Toaster Configuration --- */}
-        <Toaster 
-          position="top-center" 
+        <Toaster
+          position="top-center"
           containerStyle={{
             top: 'calc(env(safe-area-inset-top, 50px) + 32px)'
           }}
           toastOptions={{
-             className: 'rounded-2xl font-bold shadow-xl border border-slate-100 z-[100]',
-             style: { background: '#fff', color: '#0f172a' }
-          }} 
+            className: 'rounded-2xl font-bold shadow-xl border border-slate-100 z-[100]',
+            style: { background: '#fff', color: '#0f172a' }
+          }}
         />
       </div>
     </div>
