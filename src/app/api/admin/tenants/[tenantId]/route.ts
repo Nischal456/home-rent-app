@@ -66,17 +66,36 @@ export async function PATCH(
   try {
     await dbConnect();
     const body = await request.json();
-    const { hasThreePhaseMeter } = body;
+    const {
+      hasThreePhaseMeter,
+      phoneNumber,
+      phone,
+      leaseEndDate,
+      leaseStartDate,
+      contractDocument,
+      contractName,
+    } = body;
 
-    if (hasThreePhaseMeter === undefined) {
-      return NextResponse.json({ success: false, message: 'hasThreePhaseMeter field is required.' }, { status: 400 });
+    const updateFields: any = {};
+    if (hasThreePhaseMeter !== undefined) updateFields.hasThreePhaseMeter = Boolean(hasThreePhaseMeter);
+    if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber?.trim?.() ?? phoneNumber;
+    if (phone !== undefined && updateFields.phoneNumber === undefined) {
+      updateFields.phoneNumber = phone?.trim?.() ?? phone;
     }
+    if (leaseEndDate !== undefined) {
+      updateFields.leaseEndDate = leaseEndDate ? new Date(leaseEndDate) : null;
+    }
+    if (leaseStartDate !== undefined) {
+      updateFields.leaseStartDate = leaseStartDate ? new Date(leaseStartDate) : null;
+    }
+    if (contractDocument !== undefined) updateFields.contractDocument = contractDocument;
+    if (contractName !== undefined) updateFields.contractName = contractName;
 
     const updatedUser = await User.findByIdAndUpdate(
       tenantId,
-      { hasThreePhaseMeter },
+      { $set: updateFields },
       { new: true }
-    ).select('-password');
+    ).select('-password').populate('roomId');
 
     if (!updatedUser) {
       return NextResponse.json({ success: false, message: 'Tenant not found.' }, { status: 404 });
@@ -84,12 +103,12 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: 'Tenant settings updated successfully.',
-      data: updatedUser
+      message: 'Tenant details updated successfully.',
+      data: updatedUser,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error updating settings for tenant ${tenantId}:`, error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error?.message || 'Internal Server Error' }, { status: 500 });
   }
 }

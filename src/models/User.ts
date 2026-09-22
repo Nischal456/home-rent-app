@@ -16,6 +16,8 @@ const UserSchema = new Schema({
   profilePicture: { type: String }, // Native Base64 storage
   pushSubscriptions: { type: Array, default: [] }, // Array of Web-Push Subscription Objects
   hasThreePhaseMeter: { type: Boolean, default: false },
+  contractDocument: { type: String }, // Cloudinary URL (PDF or Image)
+  contractName: { type: String },     // Original file name
 });
 
 if (models.User) {

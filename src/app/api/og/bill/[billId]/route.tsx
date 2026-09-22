@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { getPublicBill } from '@/lib/getPublicBill';
+import fs from 'fs';
+import path from 'path';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +14,16 @@ export async function GET(
   try {
     const { billId } = params;
     const bill = await getPublicBill(billId);
+
+    // Read public/logo.png (official STG Tower logo with silhouette and subtext)
+    let logoBase64 = '';
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+      const logoBuffer = fs.readFileSync(logoPath);
+      logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+    } catch (e) {
+      console.error('Error loading public/logo.png for OG bill:', e);
+    }
 
     if (!bill) {
       return new ImageResponse(
@@ -40,6 +52,7 @@ export async function GET(
     const isUtility = bill.type === 'Utility';
     const tenantName = bill.tenantId?.fullName || 'Tenant';
     const roomNumber = bill.roomId?.roomNumber || 'Apartment';
+    const tenantPhone = bill.tenantId?.phoneNumber || bill.tenantId?.phone || '';
     const period = isUtility ? bill.billingMonthBS : bill.rentForPeriod;
     const billDate = bill.billDateBS || 'Current';
 
@@ -49,8 +62,10 @@ export async function GET(
 
     const isPaid = bill.status === 'PAID';
     const isPartial = bill.status === 'PARTIALLY_PAID';
-    const statusBg = isPaid ? '#15803d' : isPartial ? '#b45309' : '#b91c1c';
     const statusText = isPaid ? 'PAID' : isPartial ? 'PARTIALLY PAID' : 'DUE';
+    const statusColor = isPaid ? '#16a34a' : isPartial ? '#d97706' : '#dc2626';
+
+    const billHeadingTitle = isUtility ? 'UTILITY' : 'RENTAL';
 
     return new ImageResponse(
       (
@@ -60,158 +75,167 @@ export async function GET(
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#ffffff',
             fontFamily: 'sans-serif',
-            padding: 40,
+            padding: '28px 36px',
             justifyContent: 'space-between',
           }}
         >
-          {/* Top Header */}
+          {/* Top Header: Logo on left, UTILITY/RENTAL Bill on right */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '3px solid #e2e8f0',
-              paddingBottom: 20,
+              width: '100%',
+              borderBottom: '2px solid #000000',
+              paddingBottom: 12,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 16,
-                  backgroundColor: '#2563eb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  fontSize: 28,
-                  fontWeight: 'bold',
-                }}
-              >
-                🏢
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 32, fontWeight: '900', color: '#0f172a', letterSpacing: '-0.5px' }}>
-                  STG TOWER
-                </span>
-                <span style={{ fontSize: 16, fontWeight: '700', color: '#64748b', letterSpacing: '1px' }}>
-                  OFFICIAL {bill.type.toUpperCase()} BILL RECEIPT
-                </span>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {logoBase64 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoBase64}
+                  width="220"
+                  height="58"
+                  alt="STG Tower"
+                  style={{
+                    width: 220,
+                    height: 58,
+                    objectFit: 'contain',
+                  }}
+                />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 32, fontWeight: '900', color: '#000000' }}>STG TOWER</span>
+                  <span style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>YOUR LIVING • YOUR COMFORT</span>
+                </div>
+              )}
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: statusBg,
-                color: '#ffffff',
-                padding: '10px 24px',
-                borderRadius: 999,
-                fontSize: 20,
-                fontWeight: '900',
-                letterSpacing: '1px',
-              }}
-            >
-              {statusText}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 40, fontWeight: '900', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
+                {billHeadingTitle}
+              </span>
+              <span style={{ fontSize: 18, fontWeight: '700', color: '#64748b', marginTop: 3 }}>
+                Bill
+              </span>
             </div>
           </div>
 
-          {/* Tenant & Bill Metadata Cards */}
+          {/* Sub Header: BILL FROM & BILL TO (matching print bill layout exactly) */}
           <div
             style={{
               display: 'flex',
-              gap: 20,
-              marginTop: 18,
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              width: '100%',
+              marginTop: 10,
             }}
           >
-            <div
-              style={{
-                flex: 1,
-                backgroundColor: '#ffffff',
-                border: '2px solid #e2e8f0',
-                borderRadius: 16,
-                padding: '16px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-                Billed To
+            {/* BILL FROM */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', letterSpacing: '0.5px' }}>
+                BILL FROM:
               </span>
-              <span style={{ fontSize: 24, fontWeight: '900', color: '#0f172a', marginTop: 4 }}>
-                {tenantName}
+              <span style={{ fontSize: 22, fontWeight: '900', color: '#0f172a', marginTop: 2 }}>
+                STG Tower
               </span>
-              <span style={{ fontSize: 16, fontWeight: '600', color: '#2563eb', marginTop: 2 }}>
-                Flat/Room: {roomNumber}
+              <span style={{ fontSize: 15, fontWeight: '500', color: '#334155', marginTop: 2 }}>
+                Bhotebahal, Kathmandu
+              </span>
+              <span style={{ fontSize: 14, fontWeight: '500', color: '#64748b', marginTop: 2 }}>
+                stgtowerhouse@gmail.com
               </span>
             </div>
 
-            <div
-              style={{
-                flex: 1,
-                backgroundColor: '#ffffff',
-                border: '2px solid #e2e8f0',
-                borderRadius: 16,
-                padding: '16px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
-                Billing Period & Date
+            {/* BILL TO + Date & Status table */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', letterSpacing: '0.5px' }}>
+                BILL TO:
               </span>
-              <span style={{ fontSize: 24, fontWeight: '900', color: '#0f172a', marginTop: 4 }}>
-                {period}
+              <span style={{ fontSize: 22, fontWeight: '900', color: '#0f172a', marginTop: 2 }}>
+                {tenantName}
               </span>
-              <span style={{ fontSize: 16, fontWeight: '600', color: '#64748b', marginTop: 2 }}>
-                Date: {billDate}
+              <span style={{ fontSize: 15, fontWeight: '600', color: '#334155', marginTop: 2 }}>
+                Flat: {roomNumber}
               </span>
+              {tenantPhone ? (
+                <span style={{ fontSize: 14, fontWeight: '600', color: '#475569', marginTop: 2 }}>
+                  {tenantPhone}
+                </span>
+              ) : null}
+
+              {/* Date, Billing Month, Status rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+                    Date (B.S.) :
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>
+                    {billDate}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+                    Billing Month :
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>
+                    {period}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+                    Status :
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: '900', color: statusColor }}>
+                    {statusText}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Itemized Breakdown Box */}
           <div
             style={{
-              backgroundColor: '#ffffff',
-              border: '2px solid #e2e8f0',
-              borderRadius: 16,
-              padding: '18px 24px',
+              backgroundColor: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: 12,
+              padding: '12px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 10,
-              marginTop: 16,
+              gap: 8,
+              marginTop: 8,
             }}
           >
             {isUtility ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 18, fontWeight: '700', color: '#334155' }}>
+                  <span style={{ fontSize: 16, fontWeight: '700', color: '#334155' }}>
                     ⚡ Electricity ({bill.electricity?.unitsConsumed || 0} Units @ Rs {bill.electricity?.ratePerUnit || bill.electricity?.rate || 19}/unit)
                   </span>
-                  <span style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>
+                  <span style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>
                     Rs {Number(bill.electricity?.amount || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 18, fontWeight: '700', color: '#334155' }}>
+                  <span style={{ fontSize: 16, fontWeight: '700', color: '#334155' }}>
                     💧 Water ({Number(bill.water?.unitsConsumed || 0).toLocaleString('en-IN')} Litres @ Rs {bill.water?.ratePerUnit || bill.water?.rate || 0.3}/L)
                   </span>
-                  <span style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>
+                  <span style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>
                     Rs {Number(bill.water?.amount || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
 
                 {bill.threePhase && (bill.threePhase.amount || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 18, fontWeight: '700', color: '#d97706' }}>
+                    <span style={{ fontSize: 16, fontWeight: '700', color: '#d97706' }}>
                       ⚡ Three Phase ({bill.threePhase.unitsConsumed || 0} Units)
                     </span>
-                    <span style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>
+                    <span style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>
                       Rs {Number(bill.threePhase.amount || 0).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -219,10 +243,10 @@ export async function GET(
 
                 {(Number(bill.serviceCharge || 0) + Number(bill.securityCharge || 0)) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 18, fontWeight: '700', color: '#334155' }}>
+                    <span style={{ fontSize: 16, fontWeight: '700', color: '#334155' }}>
                       🛡️ Service & Security Charges
                     </span>
-                    <span style={{ fontSize: 20, fontWeight: '800', color: '#0f172a' }}>
+                    <span style={{ fontSize: 18, fontWeight: '800', color: '#0f172a' }}>
                       Rs {(Number(bill.serviceCharge || 0) + Number(bill.securityCharge || 0)).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -230,10 +254,10 @@ export async function GET(
               </div>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 22, fontWeight: '700', color: '#334155' }}>
+                <span style={{ fontSize: 18, fontWeight: '700', color: '#334155' }}>
                   🏠 Rent for Period: {period}
                 </span>
-                <span style={{ fontSize: 24, fontWeight: '900', color: '#0f172a' }}>
+                <span style={{ fontSize: 22, fontWeight: '900', color: '#0f172a' }}>
                   Rs {totalAmount.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -244,25 +268,25 @@ export async function GET(
           <div
             style={{
               display: 'flex',
-              gap: 16,
-              marginTop: 18,
+              gap: 14,
+              marginTop: 10,
             }}
           >
             <div
               style={{
                 flex: 1,
-                backgroundColor: '#f1f5f9',
-                border: '2px solid #cbd5e1',
-                borderRadius: 16,
-                padding: '14px 18px',
+                backgroundColor: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: 12,
+                padding: '10px 14px',
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 12, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
                 Bill Total Amount
               </span>
-              <span style={{ fontSize: 28, fontWeight: '900', color: '#0f172a', marginTop: 2 }}>
+              <span style={{ fontSize: 24, fontWeight: '900', color: '#0f172a', marginTop: 2 }}>
                 Rs {totalAmount.toLocaleString('en-IN')}
               </span>
             </div>
@@ -271,36 +295,36 @@ export async function GET(
               style={{
                 flex: 1,
                 backgroundColor: isPaid ? '#f0fdf4' : '#fff7ed',
-                border: `2px solid ${isPaid ? '#bbf7d0' : '#fed7aa'}`,
-                borderRadius: 16,
-                padding: '14px 18px',
+                border: `1.5px solid ${isPaid ? '#bbf7d0' : '#fed7aa'}`,
+                borderRadius: 12,
+                padding: '10px 14px',
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: '800', color: isPaid ? '#166534' : '#c2410c', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 12, fontWeight: '800', color: isPaid ? '#166534' : '#c2410c', textTransform: 'uppercase' }}>
                 This Bill Remaining
               </span>
-              <span style={{ fontSize: 28, fontWeight: '900', color: isPaid ? '#15803d' : '#ea580c', marginTop: 2 }}>
+              <span style={{ fontSize: 24, fontWeight: '900', color: isPaid ? '#15803d' : '#ea580c', marginTop: 2 }}>
                 Rs {remainingAmount.toLocaleString('en-IN')}
               </span>
             </div>
 
             <div
               style={{
-                flex: 1.4,
+                flex: 1.3,
                 backgroundColor: totalOutstandingDue > 0 ? '#fef2f2' : '#ecfdf5',
-                border: `3px solid ${totalOutstandingDue > 0 ? '#fca5a5' : '#86efac'}`,
-                borderRadius: 16,
-                padding: '14px 18px',
+                border: `2px solid ${totalOutstandingDue > 0 ? '#fca5a5' : '#86efac'}`,
+                borderRadius: 12,
+                padding: '10px 14px',
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: '900', color: totalOutstandingDue > 0 ? '#991b1b' : '#065f46', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 12, fontWeight: '900', color: totalOutstandingDue > 0 ? '#991b1b' : '#065f46', textTransform: 'uppercase' }}>
                 Total Remaining Balance (Altogether)
               </span>
-              <span style={{ fontSize: 30, fontWeight: '900', color: totalOutstandingDue > 0 ? '#dc2626' : '#059669', marginTop: 2 }}>
+              <span style={{ fontSize: 26, fontWeight: '900', color: totalOutstandingDue > 0 ? '#dc2626' : '#059669', marginTop: 2 }}>
                 Rs {totalOutstandingDue.toLocaleString('en-IN')}
               </span>
             </div>
@@ -312,15 +336,15 @@ export async function GET(
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderTop: '2px solid #e2e8f0',
-              paddingTop: 12,
-              marginTop: 12,
+              borderTop: '1px solid #e2e8f0',
+              paddingTop: 8,
+              marginTop: 8,
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b' }}>
+            <span style={{ fontSize: 12, fontWeight: '700', color: '#64748b' }}>
               STG Community • Elevated Living
             </span>
-            <span style={{ fontSize: 14, fontWeight: '800', color: '#2563eb' }}>
+            <span style={{ fontSize: 12, fontWeight: '800', color: '#2563eb' }}>
               View full details online at stgtower.com
             </span>
           </div>

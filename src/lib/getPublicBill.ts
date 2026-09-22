@@ -59,11 +59,11 @@ export async function getPublicBill(billId: string): Promise<PublicBillData | nu
   // Run RentBill and UtilityBill lookups in parallel for maximum speed
   const [rentDoc, utilityDoc] = await Promise.all([
     RentBill.findById(billId)
-      .populate('tenantId', 'fullName email phone')
+      .populate('tenantId', 'fullName email phone phoneNumber')
       .populate('roomId', 'roomNumber floor rentAmount')
       .lean(),
     UtilityBill.findById(billId)
-      .populate('tenantId', 'fullName email phone')
+      .populate('tenantId', 'fullName email phone phoneNumber')
       .populate('roomId', 'roomNumber floor rentAmount')
       .lean(),
   ]);

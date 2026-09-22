@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- Icons from lucide-react ---
-import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building, AlertCircle as AlertCircleIcon, CalendarDays, Droplets, ZapIcon, Wallet } from 'lucide-react';
+import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building, AlertCircle as AlertCircleIcon, CalendarDays, Droplets, ZapIcon, Wallet, ExternalLink } from 'lucide-react';
 
 // --- Animation with Framer Motion ---
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
@@ -24,6 +24,7 @@ import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
 import { IRentBill, IUtilityBill, IUser, IMaintenanceRequest, IRoom, IPayment } from '@/types';
 import { cn } from '@/lib/utils';
+import { ContractViewerDialog } from '@/components/contract-viewer-dialog';
 
 // --- Lazy-loaded Components ---
 const RequestMaintenanceForm = lazy(() => import('./request-maintenance-form').then(module => ({ default: module.RequestMaintenanceForm })));
@@ -78,6 +79,7 @@ export function TenantDashboard() {
   const [isPaymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<IPayment | null>(null);
   const [selectedBill, setSelectedBill] = useState<CombinedBill | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const fetchAllData = useCallback(async (isInitialLoad = false) => {
     if (isInitialLoad) setLoading(true);
@@ -270,9 +272,30 @@ export function TenantDashboard() {
                   <span className="font-semibold text-slate-500">Monthly Rent</span>
                   <span className="font-extrabold text-slate-900 text-base">Rs {roomInfo?.rentAmount.toLocaleString('en-IN') || 'N/A'}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <span className="font-semibold text-slate-500">Lease End Date</span>
                   <span className="font-bold text-slate-700">{user?.leaseEndDate ? new NepaliDate(new Date(user.leaseEndDate)).format('MMM D, YYYY') : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    Agreement Contract
+                  </span>
+                  {user?.contractDocument ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsViewerOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200/60 px-3 py-1.5 rounded-xl transition-colors shadow-xs h-8"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>View Contract</span>
+                    </Button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
+                      No contract added
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -456,6 +479,16 @@ export function TenantDashboard() {
 
         </motion.div>
       </motion.div>
+
+      {user?.contractDocument && (
+        <ContractViewerDialog
+          isOpen={isViewerOpen}
+          onClose={() => setIsViewerOpen(false)}
+          contractUrl={user.contractDocument}
+          contractName={user.contractName}
+          tenantName={user.fullName}
+        />
+      )}
     </>
   );
 }

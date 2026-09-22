@@ -16,6 +16,8 @@ export interface IUser {
   profilePicture?: string;
   pushSubscriptions?: any[];
   hasThreePhaseMeter?: boolean;
+  contractDocument?: string;
+  contractName?: string;
 }
 
 export interface IRoom {

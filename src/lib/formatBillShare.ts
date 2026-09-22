@@ -91,18 +91,13 @@ export function formatBillShare(input: BillShareInput): {
   const remarksText = input.remarks?.trim() ? `📝 *Remarks:* ${input.remarks.trim()}\n` : '';
 
   const text = 
-`🏢 *STG TOWER MANAGEMENT*
-📄 *${isUtility ? 'Utility Bill' : 'Rent Bill'} for ${tenant}${room}*
-📅 *Period:* ${period}${input.billDateBS ? ` | *Date:* ${input.billDateBS}` : ''}
-
-━━━━━━━━━━━━━━━━━━━━
-💵 *Bill Total Amount:* Rs ${total.toLocaleString('en-IN')}
-💳 *This Bill Remaining:* Rs ${thisBillRemaining.toLocaleString('en-IN')}
-${statusEmoji} *Total Remaining Balance (Altogether):* Rs ${totalDueAltogether.toLocaleString('en-IN')}
+`🏢 *STG TOWER - ${isUtility ? 'Utility Bill' : 'Rent Bill'}*
+👤 *${tenant}${room}* | 📅 *${period}*
+💵 *Total Amount:* Rs ${total.toLocaleString('en-IN')}
+${statusEmoji} *Balance Due:* Rs ${thisBillRemaining.toLocaleString('en-IN')}
 📌 *Status:* ${statusLabel}
-━━━━━━━━━━━━━━━━━━━━
-${breakdown}${remarksText}
-🔗 *View & Download Full Bill Photo Here:*
+
+🔗 *View Full Bill Photo & Details:*
 ${billUrl}`;
 
   const title = `STG Tower - ${isUtility ? 'Utility' : 'Rent'} Bill (${tenant})`;
@@ -120,16 +115,17 @@ ${billUrl}`;
 }
 
 /**
- * Universal safe share helper: triggers native mobile share or copies formatted text to clipboard
+ * Universal safe share helper: triggers native mobile share or copies formatted text to clipboard.
+ * When sharing natively (e.g. WhatsApp), passes url and title so WhatsApp displays the rich bill photo card without an overwhelming wall of text.
  */
 export async function shareBill(input: BillShareInput): Promise<{ success: boolean; method: 'share' | 'clipboard' }> {
   const { title, text, url } = formatBillShare(input);
 
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
+      // Pass clean URL and title so WhatsApp shows the rich bill photo preview without duplicate full message text
       await navigator.share({
         title,
-        text,
         url,
       });
       return { success: true, method: 'share' };
@@ -140,7 +136,7 @@ export async function shareBill(input: BillShareInput): Promise<{ success: boole
     }
   }
 
-  // Fallback to clipboard
+  // Fallback to clipboard (for desktop/browser where native share isn't available)
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     await navigator.clipboard.writeText(text);
     return { success: true, method: 'clipboard' };

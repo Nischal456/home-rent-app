@@ -165,42 +165,69 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="w-full max-w-2xl mx-auto">
           <Card className="w-full bg-white shadow-2xl rounded-3xl border border-slate-200/80 overflow-hidden print-card">
             
-            {/* Header */}
-            <CardHeader className="p-6 sm:p-8 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 print-header">
-              <div className="flex justify-between items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
-                    🏢
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl font-black text-slate-900 tracking-tight print-title">STG Tower</CardTitle>
-                    <CardDescription className="font-semibold text-slate-500">Official {bill.type} Bill Receipt</CardDescription>
-                  </div>
+            {/* Header: Exact match to Print Bill / Share Bill Screenshot */}
+            <CardHeader className="p-6 sm:p-8 bg-white border-b-2 border-slate-900 print-header">
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/logo.png"
+                    alt="STG Tower"
+                    className="h-14 sm:h-18 w-auto object-contain max-w-[240px]"
+                  />
                 </div>
-                <Badge
-                  variant={bill.status === 'PAID' ? 'default' : bill.status === 'PARTIALLY_PAID' ? 'secondary' : 'destructive'}
-                  className={cn(
-                    "h-8 px-3.5 text-xs font-black uppercase tracking-wider rounded-xl shadow-xs",
-                    bill.status === 'PAID' ? "bg-emerald-600 hover:bg-emerald-700" : bill.status === 'PARTIALLY_PAID' ? "bg-amber-600 text-white" : "bg-red-600 text-white"
-                  )}
-                >
-                  {bill.status}
-                </Badge>
+                <div className="text-right">
+                  <h2 className="text-3xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight leading-none print-title">
+                    {isUtility ? 'UTILITY' : 'RENTAL'}
+                  </h2>
+                  <p className="text-base sm:text-lg font-bold text-slate-500 mt-1">Bill</p>
+                </div>
               </div>
             </CardHeader>
 
             {/* Content */}
             <CardContent className="p-6 sm:p-8 space-y-6 print-content">
-              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
-                <div className="space-y-1">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">BILLED TO</h3>
-                  <p className="font-black text-slate-900 text-base">{bill.tenantId?.fullName || 'Tenant'}</p>
-                  <p className="text-slate-600 font-medium">Room: {bill.roomId?.roomNumber || 'Apartment'}</p>
+              {/* BILL FROM & BILL TO Section (matching print bill) */}
+              <div className="grid grid-cols-2 gap-4 text-sm pt-1">
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">BILL FROM:</p>
+                  <p className="font-black text-slate-900 text-base sm:text-lg mt-0.5">STG Tower</p>
+                  <p className="text-slate-600 font-medium">Bhotebahal, Kathmandu</p>
+                  <p className="text-slate-500 text-xs sm:text-sm">stgtowerhouse@gmail.com</p>
                 </div>
-                <div className="text-right space-y-1">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">BILL DETAILS</h3>
-                  <p className="font-bold text-slate-900">Period: <span className="text-blue-600">{billPeriod}</span></p>
-                  <p className="text-slate-600 text-xs">Date: {bill.billDateBS || new NepaliDate(new Date(bill.billDateAD)).format('YYYY MMMM DD')}</p>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">BILL TO:</p>
+                  <p className="font-black text-slate-900 text-base sm:text-lg mt-0.5">{bill.tenantId?.fullName || 'Tenant'}</p>
+                  <p className="text-slate-700 font-medium">Flat: {bill.roomId?.roomNumber || 'Apartment'}</p>
+                  {(bill.tenantId?.phoneNumber || bill.tenantId?.phone) && (
+                    <p className="text-slate-500 text-xs sm:text-sm">{bill.tenantId?.phoneNumber || bill.tenantId?.phone}</p>
+                  )}
+                  
+                  <div className="mt-3 space-y-0.5 text-xs sm:text-sm font-medium">
+                    <p className="text-slate-600">
+                      <span className="font-bold text-slate-500">Date (B.S.) :</span>{' '}
+                      <span className="font-bold text-slate-900">{bill.billDateBS || 'Current'}</span>
+                    </p>
+                    <p className="text-slate-600">
+                      <span className="font-bold text-slate-500">Billing Month :</span>{' '}
+                      <span className="font-bold text-slate-900">{billPeriod}</span>
+                    </p>
+                    <p className="text-slate-600">
+                      <span className="font-bold text-slate-500">Status :</span>{' '}
+                      <span
+                        className={cn(
+                          "font-black",
+                          bill.status === 'PAID'
+                            ? "text-emerald-600"
+                            : bill.status === 'PARTIALLY_PAID'
+                            ? "text-amber-600"
+                            : "text-rose-600"
+                        )}
+                      >
+                        {bill.status}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
 

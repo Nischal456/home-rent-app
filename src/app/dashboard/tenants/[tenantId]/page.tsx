@@ -29,9 +29,11 @@ import { shareBill } from '@/lib/formatBillShare';
 import { RecordPaymentDialog } from '@/components/record-payment-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
+import { EditTenantDialog } from './edit-tenant-dialog';
+import { ContractViewerDialog } from '@/components/contract-viewer-dialog';
 import {
     Building, Receipt, Zap, Calendar, Phone, AlertCircle, Download, ArrowLeft,
-    Banknote, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield, FileText, CheckCircle2, Share2, Printer, Trash2, MoreHorizontal, Loader2
+    Banknote, Hash, CircleUserRound, TrendingUp, TrendingDown, Scale, Droplets, Wrench, Shield, FileText, CheckCircle2, Share2, Printer, Trash2, MoreHorizontal, Loader2, ExternalLink, Plus
 } from 'lucide-react';
 
 // --- Types ---
@@ -64,15 +66,24 @@ const formatNepaliDate = (date: Date | string | undefined): string => {
     return new NepaliDate(new Date(date)).format('YYYY MMMM DD');
 };
 
-const InfoItem = ({ icon, label, value, colorClass }: { icon: React.ReactNode, label: string, value?: string | number | null, colorClass: string }) => (
-    <div className="flex flex-col bg-white/70 p-4 rounded-3xl border border-white/60 shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+const InfoItem = ({ icon, label, value, colorClass, onClick, hint }: { icon: React.ReactNode, label: string, value?: string | number | null, colorClass: string, onClick?: () => void, hint?: string }) => (
+    <div 
+        onClick={onClick}
+        className={cn(
+            "flex flex-col bg-white/70 p-4 rounded-3xl border border-white/60 shadow-[0_4px_15px_rgba(0,0,0,0.02)] transition-all",
+            onClick && "cursor-pointer hover:border-blue-300 hover:shadow-md hover:bg-white active:scale-95 group"
+        )}
+    >
         <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClass}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClass} ${onClick ? 'group-hover:scale-105 transition-transform' : ''}`}>
                 {icon}
             </div>
-            <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-                <p className="font-bold text-slate-800 text-sm mt-0.5">{value || 'N/A'}</p>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                    {hint && <span className="text-[9px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{hint}</span>}
+                </div>
+                <p className="font-bold text-slate-800 text-sm mt-0.5 truncate">{value || 'N/A'}</p>
             </div>
         </div>
     </div>
@@ -186,6 +197,8 @@ export default function TenantDetailPage() {
     const [isUpdatingToggle, setIsUpdatingToggle] = useState(false);
     const [isAddRentDialogOpen, setIsAddRentDialogOpen] = useState(false);
     const [isAddUtilityDialogOpen, setIsAddUtilityDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
 
     const handleToggleThreePhase = async () => {
         if (!tenant) return;
@@ -488,7 +501,18 @@ export default function TenantDetailPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                        {tenant?.contractDocument ? (
+                            <Button onClick={() => setIsEditDialogOpen(true)} variant="outline" className="flex-1 md:flex-initial rounded-2xl h-12 font-bold shadow-sm hover:bg-slate-50 border-slate-200 text-[#0B2863] bg-white flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-blue-600" />
+                                Edit & Contract
+                            </Button>
+                        ) : (
+                            <Button onClick={() => setIsEditDialogOpen(true)} className="flex-1 md:flex-initial rounded-2xl h-12 font-bold bg-[#0B2863] hover:bg-[#0B2863]/90 shadow-md text-white flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                Add Contract
+                            </Button>
+                        )}
                         <Button onClick={() => setIsAddRentDialogOpen(true)} className="flex-1 md:flex-initial rounded-2xl h-12 font-bold bg-[#0B2863] hover:bg-[#0B2863]/90 shadow-md text-white">
                             Add Rent Bill
                         </Button>
@@ -503,9 +527,89 @@ export default function TenantDetailPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                         <InfoItem icon={<Building className="text-blue-500 h-5 w-5" />} label="Unit" value={roomInfo?.roomNumber} colorClass="bg-blue-50" />
                         <InfoItem icon={<Receipt className="text-indigo-500 h-5 w-5" />} label="Rent" value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}` : 'N/A'} colorClass="bg-indigo-50" />
-                        <InfoItem icon={<Phone className="text-emerald-500 h-5 w-5" />} label="Mobile" value={tenant?.phoneNumber} colorClass="bg-emerald-50" />
-                        <InfoItem icon={<Calendar className="text-orange-500 h-5 w-5" />} label="Lease End" value={formatNepaliDate(tenant?.leaseEndDate)} colorClass="bg-orange-50" />
+                        <InfoItem 
+                            icon={<Phone className="text-emerald-500 h-5 w-5" />} 
+                            label="Mobile" 
+                            value={tenant?.phoneNumber} 
+                            colorClass="bg-emerald-50" 
+                            onClick={() => setIsEditDialogOpen(true)}
+                            hint="Edit"
+                        />
+                        <InfoItem 
+                            icon={<Calendar className="text-orange-500 h-5 w-5" />} 
+                            label="Lease End" 
+                            value={formatNepaliDate(tenant?.leaseEndDate)} 
+                            colorClass="bg-orange-50" 
+                            onClick={() => setIsEditDialogOpen(true)}
+                            hint="Edit"
+                        />
                     </div>
+                </motion.div>
+
+                {/* Contract & Agreement Document Card */}
+                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 }} className="w-full">
+                    <Card className={cn(
+                        "border shadow-[0_8px_30px_rgba(0,0,0,0.02)] rounded-[2.5rem] backdrop-blur-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all",
+                        tenant?.contractDocument
+                            ? "border-blue-200/70 bg-gradient-to-r from-blue-50/40 via-indigo-50/20 to-white/80"
+                            : "border-amber-200/80 bg-gradient-to-r from-amber-50/40 via-orange-50/20 to-white/80"
+                    )}>
+                        <div className="flex items-center gap-4">
+                            <div className={cn(
+                                "w-12 h-12 rounded-[1.3rem] flex items-center justify-center shadow-inner flex-shrink-0",
+                                tenant?.contractDocument ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600"
+                            )}>
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="font-extrabold text-slate-800 text-lg tracking-tight">Rental Agreement Contract</h4>
+                                    {tenant?.contractDocument ? (
+                                        <Badge className="bg-emerald-100 text-emerald-800 border-none text-[10px] font-bold tracking-widest uppercase">
+                                            Active Contract
+                                        </Badge>
+                                    ) : (
+                                        <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-bold tracking-widest uppercase">
+                                            No contract added
+                                        </Badge>
+                                    )}
+                                </div>
+                                <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                                    {tenant?.contractDocument
+                                        ? `Attached: ${tenant.contractName || 'Agreement Document'} (Cloudinary secure storage)`
+                                        : 'No contract added yet for this tenant. Upload PDF or document photo.'}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+                            {tenant?.contractDocument ? (
+                                <>
+                                    <Button
+                                        onClick={() => setIsViewerOpen(true)}
+                                        className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl px-5 h-11 font-bold bg-[#0B2863] hover:bg-[#0B2863]/90 text-white shadow-md transition-all active:scale-95 text-xs"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        View Contract
+                                    </Button>
+                                    <Button
+                                        onClick={() => setIsEditDialogOpen(true)}
+                                        variant="outline"
+                                        className="flex-1 md:flex-initial rounded-2xl px-5 h-11 font-bold transition-all active:scale-95 text-xs bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                                    >
+                                        Replace Contract
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    onClick={() => setIsEditDialogOpen(true)}
+                                    className="flex-1 md:flex-initial rounded-2xl px-6 h-11 font-bold bg-[#0B2863] hover:bg-[#0B2863]/90 text-white shadow-md transition-all active:scale-95 text-xs flex items-center gap-1.5"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add Contract
+                                </Button>
+                            )}
+                        </div>
+                    </Card>
                 </motion.div>
 
                 {/* Three Phase Meter Toggle Card */}
@@ -710,6 +814,29 @@ export default function TenantDetailPage() {
                     <AddUtilityBillForm onSuccess={() => { setIsAddUtilityDialogOpen(false); mutate(); }} preselectedTenantId={tenantId} />
                 </DialogContent>
             </Dialog>
+
+            {tenant && (
+                <EditTenantDialog
+                    isOpen={isEditDialogOpen}
+                    onClose={() => setIsEditDialogOpen(false)}
+                    tenant={tenant}
+                    onSuccess={() => mutate()}
+                    onViewContract={() => {
+                        setIsEditDialogOpen(false);
+                        setIsViewerOpen(true);
+                    }}
+                />
+            )}
+
+            {tenant?.contractDocument && (
+                <ContractViewerDialog
+                    isOpen={isViewerOpen}
+                    onClose={() => setIsViewerOpen(false)}
+                    contractUrl={tenant.contractDocument}
+                    contractName={tenant.contractName}
+                    tenantName={tenant.fullName}
+                />
+            )}
         </div>
     );
 }
