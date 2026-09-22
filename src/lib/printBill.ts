@@ -211,14 +211,20 @@ export const printBill = (bill: IRentBill | IUtilityBill) => {
         const shareBtn = document.getElementById('share-btn');
         const billStatus = '${bill.status}';
         const remarksData = \`${(bill.remarks || '').replace(/`/g, '\\`')}\`;
-        const generatedShareText = '${billType} for ${tenant?.fullName || 'Tenant'} (${billingPeriod}). ' +
-                                   'Total: Rs ${totalAmount.toLocaleString('en-IN')}. ' +
-                                   'Remaining: Rs ${remainingAmount.toLocaleString('en-IN')}. ' +
-                                   'Status: ' + billStatus + '.\\n' +
+        const totalDueAltogether = ${(bill as any).totalOutstandingDue != null ? (bill as any).totalOutstandingDue : remainingAmount};
+        const statusEmoji = billStatus === 'PAID' ? '🟢' : billStatus === 'PARTIALLY_PAID' ? '🟡' : '🔴';
+        const generatedShareText = '🏢 *STG TOWER MANAGEMENT*\\n' +
+                                   '📄 *${billType} for ${tenant?.fullName || 'Tenant'} (${billingPeriod})*\\n\\n' +
+                                   '━━━━━━━━━━━━━━━━━━━━\\n' +
+                                   '💵 *Bill Total Amount:* Rs ${totalAmount.toLocaleString('en-IN')}\\n' +
+                                   '💳 *This Bill Remaining:* Rs ${remainingAmount.toLocaleString('en-IN')}\\n' +
+                                   statusEmoji + ' *Total Remaining Balance (Altogether):* Rs ' + Number(totalDueAltogether).toLocaleString('en-IN') + '\\n' +
+                                   '📌 *Status:* ' + billStatus + '\\n' +
+                                   '━━━━━━━━━━━━━━━━━━━━\\n' +
                                    '${threePhaseStr}' +
                                    '${ratesInfoStr}' +
-                                   (remarksData ? 'Remarks: ' + remarksData + '\\n\\n' : '\\n') + 
-                                   'View Full Details Here:';
+                                   (remarksData ? '📝 *Remarks:* ' + remarksData + '\\n\\n' : '\\n') + 
+                                   '🔗 *View & Download Full Bill Photo Here:*\\n${billUrl}';
 
         const shareData = {
           title: '${billType}',

@@ -7,15 +7,58 @@ import NepaliDate from 'nepali-date-converter';
 import { createNotification } from '@/lib/createNotification';
 import { Types } from 'mongoose';
 
+import UtilityBill from '@/models/UtilityBill';
+
 export async function GET() {
   await dbConnectRent();
   try {
-    const bills = await RentBill.find({})
-      .populate('tenantId', 'fullName')
-      .populate('roomId', 'roomNumber')
-      .sort({ billDateAD: -1 });
+    const [bills, utilityDues, rentDues] = await Promise.all([
+      RentBill.find({})
+        .populate('tenantId', 'fullName email phone')
+        .populate('roomId', 'roomNumber floor')
+        .sort({ billDateAD: -1 })
+        .lean(),
+      UtilityBill.aggregate([
+        { $match: { status: { $in: ['DUE', 'OVERDUE', 'PARTIALLY_PAID'] } } },
+        {
+          $group: {
+            _id: '$tenantId',
+            due: { $sum: { $ifNull: ['$remainingAmount', { $subtract: ['$totalAmount', { $ifNull: ['$paidAmount', 0] }] }] } },
+          },
+        },
+      ]),
+      RentBill.aggregate([
+        { $match: { status: { $in: ['DUE', 'OVERDUE', 'PARTIALLY_PAID'] } } },
+        {
+          $group: {
+            _id: '$tenantId',
+            due: { $sum: { $ifNull: ['$remainingAmount', { $subtract: ['$amount', { $ifNull: ['$paidAmount', 0] }] }] } },
+          },
+        },
+      ]),
+    ]);
 
-    return RentBillNextResponse.json({ success: true, data: bills });
+    const tenantDueMap = new Map<string, number>();
+    utilityDues.forEach((d: any) => {
+      const id = d._id?.toString();
+      if (id) tenantDueMap.set(id, (tenantDueMap.get(id) || 0) + Math.max(0, d.due));
+    });
+    rentDues.forEach((d: any) => {
+      const id = d._id?.toString();
+      if (id) tenantDueMap.set(id, (tenantDueMap.get(id) || 0) + Math.max(0, d.due));
+    });
+
+    const enrichedBills = bills.map((b: any) => {
+      const tenantId = b.tenantId?._id?.toString();
+      const thisRem = b.status === 'PAID' ? 0 : (b.remainingAmount ?? (b.amount - (b.paidAmount || 0)));
+      return {
+        ...b,
+        remainingAmount: thisRem,
+        totalOutstandingDue: tenantId ? (tenantDueMap.get(tenantId) || 0) : thisRem,
+      };
+    });
+
+    return RentBillNextResponse.json({ success: true, data: enrichedBills });
   } catch (error) {
     console.error("Error fetching rent bills:", error);
     return RentBillNextResponse.json({ success: false, message: 'Error fetching rent bills' }, { status: 500 });

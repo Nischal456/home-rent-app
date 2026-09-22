@@ -26,12 +26,22 @@ const RentBillSchema = new Schema({
 });
 
 RentBillSchema.pre('save', function (next) {
-  if (this.amount != null) {
+  if (this.status === 'PAID') {
+    this.remainingAmount = 0;
+    if (!this.paidAmount || this.paidAmount === 0) {
+      this.paidAmount = this.amount;
+    }
+  } else if (this.amount != null) {
     const currentPaid = this.paidAmount || 0;
-    this.remainingAmount = this.amount - currentPaid;
+    this.remainingAmount = Math.max(0, this.amount - currentPaid);
   }
   next();
 });
+
+// Indexes for ultra-fast queries & bill loading
+RentBillSchema.index({ tenantId: 1, status: 1 });
+RentBillSchema.index({ billDateAD: -1 });
+RentBillSchema.index({ roomId: 1 });
 
 const RentBill: Model<IRentBillDocument> = models.RentBill || model<IRentBillDocument>('RentBill', RentBillSchema);
 export default RentBill;

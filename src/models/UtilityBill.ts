@@ -48,15 +48,22 @@ const UtilityBillSchema = new Schema({
 });
 
 UtilityBillSchema.pre('save', function (next) {
-  if (this.totalAmount != null) {
+  if (this.status === 'PAID') {
+    this.remainingAmount = 0;
+    if (!this.paidAmount || this.paidAmount === 0) {
+      this.paidAmount = this.totalAmount;
+    }
+  } else if (this.totalAmount != null) {
     const currentPaid = this.paidAmount || 0;
-    this.remainingAmount = this.totalAmount - currentPaid;
+    this.remainingAmount = Math.max(0, this.totalAmount - currentPaid);
   }
   next();
 });
 
-if (models.UtilityBill) {
-  delete models.UtilityBill;
-}
-const UtilityBill: Model<IUtilityBillDocument> = model<IUtilityBillDocument>('UtilityBill', UtilityBillSchema);
+// Indexes for ultra-fast queries & bill loading
+UtilityBillSchema.index({ tenantId: 1, status: 1 });
+UtilityBillSchema.index({ billDateAD: -1 });
+UtilityBillSchema.index({ roomId: 1 });
+
+const UtilityBill: Model<IUtilityBillDocument> = models.UtilityBill || model<IUtilityBillDocument>('UtilityBill', UtilityBillSchema);
 export default UtilityBill;

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from 'usehooks-ts';
 import { toast } from 'react-hot-toast';
 import NepaliDate from 'nepali-date-converter';
+import { shareBill } from '@/lib/formatBillShare';
 
 // --- UI Components & Icons ---
 import { Button } from '@/components/ui/button';
@@ -154,28 +155,24 @@ export default function RentBillsPage() {
   // ✅ Professional Link Sharing Logic
   const handleShare = async (bill: RentBillData) => {
     const tenant = bill.tenantId as IUser;
-    const billUrl = `${window.location.origin}/bill/${bill._id}`; // Uses the public bill page
+    const room = bill.roomId as any;
     
-    const remainingA = bill.remainingAmount ?? bill.amount;
-    const shareText = `Rent Bill for ${tenant.fullName} (${bill.rentForPeriod}). Total: Rs ${bill.amount.toLocaleString('en-IN')}. Remaining: Rs ${remainingA.toLocaleString('en-IN')}. View details here:`;
+    const res = await shareBill({
+      billId: bill._id,
+      type: 'Rent',
+      tenantName: tenant?.fullName,
+      roomNumber: room?.roomNumber,
+      billingPeriod: bill.rentForPeriod,
+      billDateBS: bill.billDateBS,
+      totalAmount: bill.amount,
+      remainingAmount: bill.remainingAmount,
+      totalOutstandingDue: (bill as any).totalOutstandingDue,
+      status: bill.status,
+      remarks: bill.remarks,
+    });
 
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: `Rent Bill: ${tenant.fullName}`,
-                text: shareText,
-                url: billUrl,
-            });
-        } catch (err) {
-            console.error("Share failed/cancelled:", err);
-        }
-    } else {
-        try {
-            await navigator.clipboard.writeText(`${shareText} ${billUrl}`);
-            toast.success('Bill link copied to clipboard!');
-        } catch (err) {
-            toast.error('Could not copy link.');
-        }
+    if (res.method === 'clipboard' && res.success) {
+      toast.success('Bill breakdown & link copied to clipboard!');
     }
   };
 

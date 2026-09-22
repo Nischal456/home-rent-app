@@ -4,6 +4,7 @@ import React from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import NepaliDate from 'nepali-date-converter';
 import { toast } from 'react-hot-toast';
+import { shareBill } from '@/lib/formatBillShare';
 
 // --- UI Components ---
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -118,16 +119,31 @@ export function BillDetailsDialog({ bill, tenant, onClose }: { bill: StatementEn
   const billPrintUrl = `${billUrl}?print=true`;
 
   const handleShare = async () => {
-    const shareText = `Bill for ${tenant.fullName}. View details here: ${billUrl}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `${bill.type} Bill`, text: shareText, url: billUrl });
-      } catch (error) { console.error('Error sharing:', error); }
-    } else {
-      try {
-        await navigator.clipboard.writeText(billUrl);
-        toast.success('Bill link copied to clipboard!');
-      } catch (err) { toast.error('Failed to copy link.'); }
+    const isRent = bill.type === 'Rent';
+    const amount = isRent ? bill.amount : bill.totalAmount;
+    const utilityBill = !isRent ? (bill as IUtilityBill) : undefined;
+
+    const res = await shareBill({
+      billId: bill._id,
+      type: bill.type,
+      tenantName: tenant.fullName,
+      roomNumber: (tenant as any).roomId?.roomNumber,
+      billingPeriod: isRent ? bill.rentForPeriod : bill.billingMonthBS,
+      billDateBS: bill.billDateBS,
+      totalAmount: amount,
+      remainingAmount: bill.remainingAmount,
+      totalOutstandingDue: (bill as any).totalOutstandingDue,
+      status: bill.status,
+      electricity: utilityBill?.electricity,
+      water: utilityBill?.water,
+      threePhase: utilityBill?.threePhase,
+      serviceCharge: utilityBill?.serviceCharge,
+      securityCharge: utilityBill?.securityCharge,
+      remarks: bill.remarks,
+    });
+
+    if (res.method === 'clipboard' && res.success) {
+      toast.success('Bill breakdown & link copied to clipboard!');
     }
   };
 

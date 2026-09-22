@@ -25,6 +25,7 @@ import { AddRentBillForm } from "@/app/dashboard/rent-bills/add-rent-bill-form";
 import { AddUtilityBillForm } from "@/app/dashboard/utility-bills/add-utility-bill-form";
 import { toast } from 'react-hot-toast';
 import { printBill } from '@/lib/printBill';
+import { shareBill } from '@/lib/formatBillShare';
 import { RecordPaymentDialog } from '@/components/record-payment-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
@@ -207,48 +208,31 @@ export default function TenantDetailPage() {
     };
 
     const handleShare = async (bill: StatementEntry) => {
-        const billUrl = `${window.location.origin}/bill/${bill._id}`;
-        const desc = bill.type === 'Rent' ? `Rent Bill for ${tenant?.fullName} (${bill.rentForPeriod})` : `Utility Bill for ${tenant?.fullName} (${bill.billingMonthBS})`;
-
         const isRent = bill.type === 'Rent';
         const amount = isRent ? bill.amount : bill.totalAmount;
-        const billStatus = bill.status;
-        const remarksData = bill.remarks || '';
+        const utilityBill = !isRent ? (bill as IUtilityBill) : undefined;
 
-        let ratesStr = '';
-        let threePhaseStr = '';
-        if (!isRent) {
-            const utilityBill = bill as IUtilityBill;
-            const eRate = utilityBill.electricity?.ratePerUnit || utilityBill.electricity?.rate || 19;
-            const wRate = utilityBill.water?.ratePerUnit || utilityBill.water?.rate || 0.30;
-            ratesStr = `Elec Rate: Rs ${eRate}/unit`;
-            if (utilityBill.threePhase && utilityBill.threePhase.amount > 0) {
-                const tpRate = utilityBill.threePhase.ratePerUnit || utilityBill.threePhase.rate || 19;
-                ratesStr += `, Three Phase Rate: Rs ${tpRate}/unit`;
-                threePhaseStr = `Three Phase Charge: Rs ${utilityBill.threePhase.amount.toLocaleString('en-IN')} (${utilityBill.threePhase.unitsConsumed} Units)\n`;
-            }
-            ratesStr += `, Water Rate: Rs ${wRate}/Litre.\n`;
-        }
+        const res = await shareBill({
+            billId: bill._id,
+            type: bill.type,
+            tenantName: tenant?.fullName,
+            roomNumber: (tenant?.roomId as any)?.roomNumber,
+            billingPeriod: isRent ? bill.rentForPeriod : bill.billingMonthBS,
+            billDateBS: bill.billDateBS,
+            totalAmount: amount,
+            remainingAmount: bill.remainingAmount,
+            totalOutstandingDue: financialSummary.totalDue,
+            status: bill.status,
+            electricity: utilityBill?.electricity,
+            water: utilityBill?.water,
+            threePhase: utilityBill?.threePhase,
+            serviceCharge: utilityBill?.serviceCharge,
+            securityCharge: utilityBill?.securityCharge,
+            remarks: bill.remarks,
+        });
 
-        const shareText = `${desc}. \n` +
-            `Total: Rs ${amount.toLocaleString('en-IN')}. \n` +
-            `Status: ${billStatus}.\n` +
-            threePhaseStr +
-            ratesStr +
-            (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) +
-            `View Full Details Here:`;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: desc, text: shareText, url: billUrl });
-            } catch (err) {
-                if ((err as Error).name !== 'AbortError') toast.error("Could not share the bill.");
-            }
-        } else {
-            try {
-                await navigator.clipboard.writeText(`${shareText} ${billUrl}`);
-                toast.success('Bill link copied to clipboard!');
-            } catch (err) { toast.error('Could not copy link.'); }
+        if (res.method === 'clipboard' && res.success) {
+            toast.success('Bill breakdown & link copied to clipboard!');
         }
     };
 

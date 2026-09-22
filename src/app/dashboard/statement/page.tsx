@@ -22,6 +22,7 @@ import { Receipt,Wallet, Zap, Calendar, Hash, CircleUserRound, Banknote, Droplet
 import { toast } from 'react-hot-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { shareBill } from '@/lib/formatBillShare';
 
 type CombinedBill = (IRentBill & { type: 'Rent' }) | (IUtilityBill & { type: 'Utility' });
 type Status = 'DUE' | 'PAID' | 'PARTIALLY_PAID' | 'OVERDUE';
@@ -295,20 +296,33 @@ const PremiumBillContent = ({ bill, user, onClose }: { bill: CombinedBill, user:
           </div>
           <div className="flex gap-2">
             <Button 
-                onClick={() => {
-                   const url = `${window.location.origin}/bill/${bill._id}`;
-                   let text = `Hello! Here is your ${bill.type} Bill for ${period}.\nTotal Amount: Rs ${totalAmount.toLocaleString()}\nRemaining Due: Rs ${(bill.remainingAmount ?? totalAmount).toLocaleString()}`;
-                   if (bill.type === 'Utility') {
-                     const utBill = bill as IUtilityBill;
-                     if (utBill.threePhase && utBill.threePhase.amount > 0) {
-                       text += `\nThree Phase Charge: Rs ${utBill.threePhase.amount.toLocaleString('en-IN')} (${utBill.threePhase.unitsConsumed} Units)`;
-                     }
-                   }
-                   if (navigator.share) {
-                        navigator.share({ title: `${bill.type} Bill`, text: text, url: url }).catch(console.error);
-                   } else {
-                        navigator.clipboard.writeText(`${text}\n${url}`);
-                        toast.success('Link copied to clipboard!', { icon: '🔗' });
+                onClick={async () => {
+                   const isRent = bill.type === 'Rent';
+                   const utBill = !isRent ? (bill as IUtilityBill) : undefined;
+                   const tenant = bill.tenantId as any;
+                   const room = bill.roomId as any;
+
+                   const res = await shareBill({
+                     billId: bill._id,
+                     type: bill.type,
+                     tenantName: tenant?.fullName,
+                     roomNumber: room?.roomNumber,
+                     billingPeriod: isRent ? (bill as any).rentForPeriod : (bill as any).billingMonthBS,
+                     billDateBS: (bill as any).billDateBS,
+                     totalAmount: totalAmount,
+                     remainingAmount: bill.remainingAmount,
+                     totalOutstandingDue: (bill as any).totalOutstandingDue,
+                     status: bill.status,
+                     electricity: utBill?.electricity,
+                     water: utBill?.water,
+                     threePhase: utBill?.threePhase,
+                     serviceCharge: utBill?.serviceCharge,
+                     securityCharge: utBill?.securityCharge,
+                     remarks: bill.remarks,
+                   });
+
+                   if (res.method === 'clipboard' && res.success) {
+                     toast.success('Bill breakdown & link copied to clipboard!');
                    }
                 }}
                 className="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 rounded-xl shadow-sm font-bold h-10 w-10 p-0 shrink-0 transition-all active:scale-95 flex items-center justify-center"

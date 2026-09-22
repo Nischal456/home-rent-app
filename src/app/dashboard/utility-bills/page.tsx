@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from 'usehooks-ts';
 import { toast } from 'react-hot-toast';
 import NepaliDate from 'nepali-date-converter';
+import { shareBill } from '@/lib/formatBillShare';
 
 // --- UI Components & Icons ---
 import { Button } from '@/components/ui/button';
@@ -126,60 +127,34 @@ export default function UtilityBillsPage() {
     const [selectedBill, setSelectedBill] = useState<UtilityBillData | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // ✅ DEFINITIVE FIX: New, robust, and professional link-sharing logic
+    // ✅ DEFINITIVE FIX: New, robust, and professional WhatsApp link-sharing logic
     const handleShare = async (bill: UtilityBillData) => {
         const tenant = bill.tenantId as IUser;
-        // This URL points to a public page you will create to display a single bill.
-        // For example: app/bill/[billId]/page.tsx
-        const billUrl = `${window.location.origin}/bill/${bill._id}`;
-        const billStatus = bill.status;
-        const totalA = bill.totalAmount;
-        const remainingA = bill.remainingAmount ?? totalA;
-        const remarksData = bill.remarks || '';
-        const eRate = bill.electricity?.ratePerUnit || bill.electricity?.rate || 19;
-        const wRate = bill.water?.ratePerUnit || bill.water?.rate || 0.30;
-        let ratesStr = `Elec Rate: Rs ${eRate}/unit`;
-        let threePhaseStr = '';
-        if (bill.threePhase && bill.threePhase.amount > 0) {
-            const tpRate = bill.threePhase.ratePerUnit || bill.threePhase.rate || 19;
-            ratesStr += `, Three Phase Rate: Rs ${tpRate}/unit`;
-            threePhaseStr = `Three Phase Charge: Rs ${bill.threePhase.amount.toLocaleString('en-IN')} (${bill.threePhase.unitsConsumed} Units)\n`;
-        }
-        ratesStr += `, Water Rate: Rs ${wRate}/Litre.\n`;
+        const room = bill.roomId as any;
+        const res = await shareBill({
+            billId: bill._id,
+            type: 'Utility',
+            tenantName: tenant?.fullName,
+            roomNumber: room?.roomNumber,
+            billingPeriod: bill.billingMonthBS,
+            billDateBS: bill.billDateBS,
+            totalAmount: bill.totalAmount,
+            remainingAmount: bill.remainingAmount,
+            totalOutstandingDue: (bill as any).totalOutstandingDue,
+            status: bill.status,
+            electricity: bill.electricity,
+            water: bill.water,
+            threePhase: bill.threePhase,
+            serviceCharge: bill.serviceCharge,
+            securityCharge: bill.securityCharge,
+            remarks: bill.remarks,
+        });
 
-        const shareText = `Utility Bill for ${tenant?.fullName || 'Tenant'} (${bill.billingMonthBS}). ` +
-            `Total: Rs ${totalA.toLocaleString('en-IN')}. ` +
-            `Remaining: Rs ${remainingA.toLocaleString('en-IN')}. ` +
-            `Status: ${billStatus}.\n` +
-            threePhaseStr +
-            ratesStr +
-            (remarksData ? `Remarks: ${remarksData}\n\n` : `\n`) +
-            `View Full Details Here:`;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `STG Tower Utility Bill`,
-                    text: shareText,
-                    url: billUrl,
-                });
-            } catch (err) {
-                // This catches if the user cancels the share, so no error toast is needed.
-                if ((err as Error).name !== 'AbortError') {
-                    console.error("Share failed:", err);
-                    toast.error("Could not share the bill.");
-                }
-            }
-        } else {
-            // Fallback for desktop browsers: copy link to clipboard
-            try {
-                await navigator.clipboard.writeText(billUrl);
-                toast.success('Bill link copied to clipboard!');
-            } catch (err) {
-                toast.error('Could not copy link.');
-            }
+        if (res.method === 'clipboard' && res.success) {
+            toast.success('Bill breakdown & link copied to clipboard!');
         }
     };
+
 
     const handleAction = async () => {
         if (!confirmation) return;
