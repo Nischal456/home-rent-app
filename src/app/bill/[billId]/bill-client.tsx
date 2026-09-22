@@ -190,7 +190,7 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
             {/* Content */}
             <CardContent className="p-4 sm:p-7 space-y-5 sm:space-y-6 print-content">
               {/* BILL FROM & BILL TO Section (matching print bill) */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm pt-1">
+              <div className="flex justify-between items-start gap-3 sm:gap-6 text-xs sm:text-sm pt-1">
                 <div>
                   <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">BILL FROM:</p>
                   <p className="font-black text-slate-900 text-sm sm:text-lg mt-0.5">STG Tower</p>
@@ -204,34 +204,40 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
                   {(bill.tenantId?.phoneNumber || bill.tenantId?.phone) && (
                     <p className="text-slate-500 text-[11px] sm:text-sm">{bill.tenantId?.phoneNumber || bill.tenantId?.phone}</p>
                   )}
-                  
-                  {/* Clean key-value table for Date, Billing Month, Status */}
-                  <div className="mt-2.5 w-full max-w-[210px] sm:max-w-[280px] space-y-1 text-[11px] sm:text-sm font-medium">
-                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
-                      <span className="font-bold text-slate-500 whitespace-nowrap">Date (B.S.) :</span>
-                      <span className="font-bold text-slate-900 whitespace-nowrap">{bill.billDateBS || 'Current'}</span>
-                    </div>
-                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
-                      <span className="font-bold text-slate-500 whitespace-nowrap">Billing Month :</span>
-                      <span className="font-bold text-slate-900 whitespace-nowrap">{billPeriod}</span>
-                    </div>
-                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
-                      <span className="font-bold text-slate-500 whitespace-nowrap">Status :</span>
-                      <span
-                        className={cn(
-                          "font-black whitespace-nowrap",
-                          bill.status === 'PAID'
-                            ? "text-emerald-600"
-                            : bill.status === 'PARTIALLY_PAID'
-                            ? "text-amber-600"
-                            : "text-rose-600"
-                        )}
-                      >
-                        {bill.status}
-                      </span>
-                    </div>
-                  </div>
                 </div>
+              </div>
+
+              {/* Clean key-value table for Date, Billing Month, Status (centered, close & professional) */}
+              <div className="flex justify-center pt-2 pb-0.5">
+                <table className="w-auto text-xs sm:text-sm">
+                  <tbody>
+                    <tr>
+                      <td className="font-bold pr-2.5 sm:pr-3 py-0.5 text-slate-500 whitespace-nowrap text-left">Date (B.S.) :</td>
+                      <td className="font-bold py-0.5 text-slate-900 whitespace-nowrap text-left">{bill.billDateBS || 'Current'}</td>
+                    </tr>
+                    <tr>
+                      <td className="font-bold pr-2.5 sm:pr-3 py-0.5 text-slate-500 whitespace-nowrap text-left">Billing Month :</td>
+                      <td className="font-bold py-0.5 text-slate-900 whitespace-nowrap text-left">{billPeriod}</td>
+                    </tr>
+                    <tr>
+                      <td className="font-bold pr-2.5 sm:pr-3 py-0.5 text-slate-500 whitespace-nowrap text-left">Status :</td>
+                      <td className="py-0.5 whitespace-nowrap text-left">
+                        <span
+                          className={cn(
+                            "font-black",
+                            bill.status === 'PAID'
+                              ? "text-emerald-600"
+                              : bill.status === 'PARTIALLY_PAID'
+                              ? "text-amber-600"
+                              : "text-rose-600"
+                          )}
+                        >
+                          {bill.status}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               <Separator />
