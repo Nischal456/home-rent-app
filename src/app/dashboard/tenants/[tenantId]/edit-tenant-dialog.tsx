@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, FileText, CheckCircle2, Phone, Calendar, ExternalLink, X, Plus, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle2, Phone, Calendar, ExternalLink, X, Plus, Sparkles, Image as ImageIcon, Receipt } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import NepaliDate from 'nepali-date-converter';
 
@@ -123,6 +123,7 @@ function uploadDirectToCloudinary(
 
 export function EditTenantDialog({ isOpen, onClose, tenant, onSuccess, onViewContract }: EditTenantDialogProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [rentAmount, setRentAmount] = useState('');
   const [leaseEndDate, setLeaseEndDate] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,6 +133,7 @@ export function EditTenantDialog({ isOpen, onClose, tenant, onSuccess, onViewCon
   useEffect(() => {
     if (tenant && isOpen) {
       setPhoneNumber(tenant.phoneNumber || tenant.phone || '');
+      setRentAmount(tenant.roomId?.rentAmount != null ? String(tenant.roomId.rentAmount) : '');
       if (tenant.leaseEndDate) {
         try {
           const d = new Date(tenant.leaseEndDate);
@@ -232,6 +234,7 @@ export function EditTenantDialog({ isOpen, onClose, tenant, onSuccess, onViewCon
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: phoneNumber.trim(),
+          rentAmount: rentAmount.trim() !== '' ? Number(rentAmount) : undefined,
           leaseEndDate: leaseEndDate ? new Date(leaseEndDate).toISOString() : null,
           contractDocument: contractUrl,
           contractName: contractName,
@@ -301,6 +304,30 @@ export function EditTenantDialog({ isOpen, onClose, tenant, onSuccess, onViewCon
               placeholder="e.g. 9841234567"
               className="h-12 rounded-2xl border-slate-200 font-semibold text-slate-900 focus:ring-blue-100"
             />
+          </div>
+
+          {/* Monthly Rent (Rs) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Receipt className="w-3.5 h-3.5 text-indigo-600" /> Monthly Rent (Rs)
+            </Label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">
+                Rs
+              </span>
+              <Input
+                type="number"
+                min="0"
+                step="100"
+                value={rentAmount}
+                onChange={(e) => setRentAmount(e.target.value)}
+                placeholder="e.g. 18600"
+                className="pl-11 h-12 rounded-2xl border-slate-200 font-semibold text-slate-900 focus:ring-blue-100"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">
+              Base recurring rent for unit {tenant?.roomId?.roomNumber || 'assigned room'}.
+            </p>
           </div>
 
           {/* Lease End Date */}

@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- Icons from lucide-react ---
-import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building, AlertCircle as AlertCircleIcon, CalendarDays, Droplets, ZapIcon, Wallet, ExternalLink } from 'lucide-react';
+import { Loader2, Wrench, FileText, CreditCard, Hourglass, AlertTriangle, CheckCircle, Receipt, XCircle, ArrowRight, Zap, Building, AlertCircle as AlertCircleIcon, CalendarDays, Droplets, ZapIcon, Wallet, ExternalLink, QrCode, MessageSquare } from 'lucide-react';
 
 // --- Animation with Framer Motion ---
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
@@ -57,6 +57,26 @@ const StatusBadge = ({ status }: { status: Status }) => {
   };
   const config = statusConfig[status] || { text: status, icon: null, className: "bg-slate-100/80 text-slate-700" };
   return <Badge variant="outline" className={cn("inline-flex items-center gap-1.5 font-bold tracking-wide rounded-full px-2.5 py-0.5 backdrop-blur-md shadow-sm", config.className)}>{config.icon}<span>{config.text}</span></Badge>;
+};
+
+const formatNepaliDate = (date: Date | string | undefined): string => {
+  if (!date) return 'Not set';
+  try {
+    return new NepaliDate(new Date(date)).format('YYYY MMMM DD');
+  } catch {
+    return 'Not set';
+  }
+};
+
+const getLeaseRemainingDays = (date: Date | string | undefined): number | null => {
+  if (!date) return null;
+  try {
+    const end = new Date(date).getTime();
+    const now = new Date().getTime();
+    return Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+  } catch {
+    return null;
+  }
 };
 
 const getBillIcon = (type: 'Rent' | 'Utility'): ReactNode => {
@@ -127,35 +147,109 @@ export function TenantDashboard() {
   const renderDueCardContent = () => {
     if (pendingPayment) {
       return (
-        <div className="flex flex-col h-full justify-between">
-          <div className="text-4xl md:text-5xl font-extrabold text-orange-600 tracking-tight drop-shadow-sm"><AnimatedNumber value={pendingPayment.amount} /></div>
-          <div className="flex items-center text-sm text-orange-700 font-bold mt-4 p-3 bg-orange-100/80 rounded-xl animate-pulse shadow-sm border border-orange-200">
-            <Hourglass className="mr-2 h-5 w-5" />
-            Payment Verification Pending
+        <div className="flex flex-col h-full justify-between gap-3">
+          <div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Submitted Amount</span>
+            <div className="text-3xl md:text-4xl font-extrabold text-orange-600 tracking-tight drop-shadow-sm mt-1">
+              <AnimatedNumber value={pendingPayment.amount} />
+            </div>
+          </div>
+          
+          <div className="p-3.5 bg-orange-50/90 rounded-2xl border border-orange-200/80 space-y-1 my-auto">
+            <div className="flex items-center text-xs font-bold text-orange-800">
+              <Hourglass className="mr-1.5 h-4 w-4 animate-spin text-orange-600" />
+              Payment Verification Pending
+            </div>
+            <p className="text-[11px] text-orange-700 font-medium leading-relaxed">
+              Admin is reviewing your deposit. Your bill will be marked as settled once verified.
+            </p>
+          </div>
+
+          <div className="text-center py-1">
+            <span className="text-xs font-semibold text-slate-400">Waiting for management confirmation</span>
           </div>
         </div>
       );
     }
     if (totalDue > 0) {
+      const rentTotal = rentBillsDue.reduce((sum, b) => sum + (b.remainingAmount ?? b.amount), 0);
+      const utilityTotal = utilityBillsDue.reduce((sum, b) => sum + (b.remainingAmount ?? b.totalAmount), 0);
+
       return (
-        <div className="flex flex-col h-full justify-between">
-          <div className="text-4xl md:text-5xl font-extrabold text-[#0B2863] tracking-tight drop-shadow-sm"><AnimatedNumber value={totalDue} /></div>
+        <div className="flex flex-col h-full justify-between gap-3.5">
+          <div>
+            <div className="flex items-baseline justify-between">
+              <div className="text-4xl md:text-5xl font-black text-[#0B2863] tracking-tight drop-shadow-sm">
+                <AnimatedNumber value={totalDue} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
+                NPR
+              </span>
+            </div>
+          </div>
+
+          {/* Mini Itemized Breakdown filling the vertical space */}
+          <div className="space-y-2 py-1 my-auto">
+            {rentBillsDue.length > 0 && (
+              <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-slate-50/90 border border-slate-100 hover:bg-slate-100/60 transition-colors">
+                <span className="font-semibold text-slate-600 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Rent ({rentBillsDue[0]?.rentForPeriod ?? 'Current'})
+                </span>
+                <span className="font-bold text-slate-900">
+                  Rs {rentTotal.toLocaleString('en-IN')}
+                </span>
+              </div>
+            )}
+            {utilityBillsDue.length > 0 && (
+              <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-slate-50/90 border border-slate-100 hover:bg-slate-100/60 transition-colors">
+                <span className="font-semibold text-slate-600 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Utilities ({utilityBillsDue[0]?.billingMonthBS ?? 'Current'})
+                </span>
+                <span className="font-bold text-slate-900">
+                  Rs {utilityTotal.toLocaleString('en-IN')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tactile High-End Pay Now Button */}
           <Button 
             size="lg" 
-            className="mt-5 w-full bg-gradient-to-r from-[#00B074] to-[#009b66] hover:from-[#009b66] hover:to-[#008255] text-white shadow-lg shadow-green-500/30 rounded-xl font-bold text-base h-12 transform-gpu active:scale-[0.98] transition-all" 
+            className="w-full bg-gradient-to-r from-[#00B074] to-[#009b66] hover:from-[#009b66] hover:to-[#008255] text-white shadow-lg shadow-green-500/25 rounded-xl font-bold text-base h-12 transform-gpu active:scale-[0.98] transition-all flex items-center justify-center gap-2 group" 
             onClick={() => setPaymentDialogOpen(true)}
           >
-            <CreditCard className="mr-2 h-5 w-5" />Pay Now
+            <CreditCard className="h-4 w-4 text-emerald-100 group-hover:scale-110 transition-transform" />
+            <span>Pay Now</span>
+            <ArrowRight className="h-4 w-4 ml-1 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
           </Button>
         </div>
       );
     }
     return (
-      <div className="flex flex-col h-full justify-between">
-        <div className="text-4xl md:text-5xl font-extrabold text-emerald-500 tracking-tight drop-shadow-sm"><AnimatedNumber value={0} /></div>
-        <div className="mt-5 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center">
-          <CheckCircle className="mr-2 h-5 w-5 text-emerald-500" />
-          <p className="text-sm font-bold text-emerald-700">All bills cleared!</p>
+      <div className="flex flex-col h-full justify-between gap-4">
+        <div>
+          <div className="text-4xl md:text-5xl font-black text-emerald-600 tracking-tight drop-shadow-sm">
+            <AnimatedNumber value={0} />
+          </div>
+          <span className="text-xs font-semibold text-slate-400 mt-1 block">Net Balance</span>
+        </div>
+        
+        <div className="p-4 bg-emerald-50/80 border border-emerald-100 rounded-2xl flex items-center gap-3 my-auto">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <CheckCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-emerald-900">All bills cleared!</p>
+            <p className="text-xs text-emerald-700 font-medium">You have no pending dues.</p>
+          </div>
+        </div>
+
+        <div className="text-center py-1">
+          <span className="text-xs font-semibold text-emerald-600 flex items-center justify-center gap-1">
+            <CheckCircle className="w-3.5 h-3.5" /> Account up to date
+          </span>
         </div>
       </div>
     );
@@ -246,12 +340,24 @@ export function TenantDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           
           <motion.div whileHover={{ y: -4, transition: { type: 'spring', stiffness: 300 } }} className="lg:col-span-1">
-            <Card className="h-full border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/70 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-white/50 border-b border-slate-100/50">
-                <CardTitle className="text-sm font-extrabold text-slate-500 uppercase tracking-wider">Total Amount Due</CardTitle>
-                <div className="p-2 bg-blue-50 rounded-xl"><CreditCard className="h-5 w-5 text-blue-600" /></div>
+            <Card className="h-full border border-white/80 shadow-[0_10px_35px_rgba(0,0,0,0.05)] bg-white/80 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between pb-3 bg-white/60 border-b border-slate-100/60">
+                <CardTitle className="text-xs font-black text-slate-500 uppercase tracking-wider">Total Amount Due</CardTitle>
+                {pendingPayment ? (
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/60 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                    Pending
+                  </span>
+                ) : totalDue > 0 ? (
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    {rentBillsDue.length + utilityBillsDue.length} {rentBillsDue.length + utilityBillsDue.length === 1 ? 'Bill Due' : 'Bills Due'}
+                  </span>
+                ) : (
+                  <div className="p-1.5 bg-emerald-50 rounded-xl"><CheckCircle className="h-4 w-4 text-emerald-600" /></div>
+                )}
               </CardHeader>
-              <CardContent className="pt-6 flex-1">
+              <CardContent className="p-5 md:p-6 flex-1 flex flex-col justify-between">
                 {renderDueCardContent()}
               </CardContent>
             </Card>
@@ -274,7 +380,20 @@ export function TenantDashboard() {
                 </div>
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <span className="font-semibold text-slate-500">Lease End Date</span>
-                  <span className="font-bold text-slate-700">{user?.leaseEndDate ? new NepaliDate(new Date(user.leaseEndDate)).format('MMM D, YYYY') : 'N/A'}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-slate-800">{formatNepaliDate(user?.leaseEndDate)}</span>
+                    {user?.leaseEndDate && (
+                      <span className="block text-[11px] font-semibold text-blue-600">
+                        {(() => {
+                          const days = getLeaseRemainingDays(user.leaseEndDate);
+                          if (days === null) return '';
+                          if (days < 0) return 'Expired';
+                          if (days === 0) return 'Ends today';
+                          return `${days} days remaining`;
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="font-semibold text-slate-500 flex items-center gap-1.5">
@@ -316,6 +435,62 @@ export function TenantDashboard() {
             </Card>
           </motion.div>
 
+        </motion.div>
+
+        {/* --- Rental Agreement Contract Card (Same as Admin) --- */}
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 }} className="w-full">
+          <Card className={cn(
+            "border shadow-[0_8px_30px_rgba(0,0,0,0.02)] rounded-[2.5rem] backdrop-blur-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all",
+            user?.contractDocument
+              ? "border-blue-200/70 bg-gradient-to-r from-blue-50/40 via-indigo-50/20 to-white/80"
+              : "border-amber-200/80 bg-gradient-to-r from-amber-50/40 via-orange-50/20 to-white/80"
+          )}>
+            <div className="flex items-center gap-4">
+              <div className={cn(
+                "w-12 h-12 rounded-[1.3rem] flex items-center justify-center shadow-inner flex-shrink-0",
+                user?.contractDocument ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600"
+              )}>
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-extrabold text-slate-800 text-lg tracking-tight">Rental Agreement Contract</h4>
+                  {user?.contractDocument ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-none text-[10px] font-bold tracking-widest uppercase">
+                      Active Contract
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-bold tracking-widest uppercase">
+                      No contract added
+                    </Badge>
+                  )}
+                  {user?.leaseEndDate && (
+                    <Badge className="bg-blue-100 text-blue-800 border-none text-[10px] font-bold tracking-widest uppercase">
+                      Lease End: {formatNepaliDate(user?.leaseEndDate)}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs font-semibold text-slate-500 mt-1">
+                  {user?.contractDocument
+                    ? `Attached: ${user.contractName || 'Agreement Document'} • Lease Period ends on ${formatNepaliDate(user.leaseEndDate)}`
+                    : user?.leaseEndDate 
+                      ? `Lease Period ends on ${formatNepaliDate(user.leaseEndDate)} • No contract document attached yet.`
+                      : 'No contract added yet. Please contact management.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+              {user?.contractDocument && (
+                <Button
+                  onClick={() => setIsViewerOpen(true)}
+                  className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl px-6 h-11 font-bold bg-[#0B2863] hover:bg-[#0B2863]/90 text-white shadow-md transition-all active:scale-95 text-xs"
+                >
+                  <FileText className="w-4 h-4" />
+                  View Contract
+                </Button>
+              )}
+            </div>
+          </Card>
         </motion.div>
 
         {/* --- Bottom Tables & Lists --- */}
@@ -361,6 +536,11 @@ export function TenantDashboard() {
                                 <p className="text-xs font-bold text-slate-400 mt-0.5">
                                   Issued: {new Date(bill.billDateAD).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>
+                                {((bill.paymentHistory && bill.paymentHistory.some((p: any) => p.remarks && p.remarks.trim())) || (bill.remarks && bill.remarks.trim())) && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md mt-1 border border-blue-100/80">
+                                    <MessageSquare className="w-2.5 h-2.5 text-blue-600" /> Admin Note
+                                  </span>
+                                )}
                               </div>
                             </div>
                             
@@ -408,6 +588,11 @@ export function TenantDashboard() {
                                   <Badge variant="secondary" className="bg-slate-100 text-[10px] text-slate-500 px-1.5 py-0 rounded-md border border-slate-200/50 shadow-sm flex items-center gap-1">
                                     <Droplets className="h-3 w-3 text-blue-400" /> + <ZapIcon className="h-3 w-3 text-yellow-500" />
                                   </Badge>
+                                  {((bill.paymentHistory && bill.paymentHistory.some((p: any) => p.remarks && p.remarks.trim())) || (bill.remarks && bill.remarks.trim())) && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100/80">
+                                      <MessageSquare className="w-2.5 h-2.5 text-blue-600" /> Admin Note
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>

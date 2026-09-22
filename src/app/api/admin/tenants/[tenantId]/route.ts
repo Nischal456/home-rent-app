@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect'; // This should point to your new, cached connection file
 import User from '@/models/User';
+import Room from '@/models/Room';
 import RentBill from '@/models/RentBill';
 import UtilityBill from '@/models/UtilityBill';
 import { IUser, IRentBill, IUtilityBill } from '@/types';
@@ -74,7 +75,24 @@ export async function PATCH(
       leaseStartDate,
       contractDocument,
       contractName,
+      rentAmount,
     } = body;
+
+    // Update Room rentAmount if specified
+    if (rentAmount !== undefined && rentAmount !== null && !isNaN(Number(rentAmount))) {
+      const parsedRent = Number(rentAmount);
+      if (parsedRent < 0) {
+        return NextResponse.json({ success: false, message: 'Rent amount cannot be negative.' }, { status: 400 });
+      }
+      const existingUser = await User.findById(tenantId);
+      if (existingUser?.roomId) {
+        await Room.findByIdAndUpdate(
+          existingUser.roomId,
+          { $set: { rentAmount: parsedRent } },
+          { new: true }
+        );
+      }
+    }
 
     const updateFields: any = {};
     if (hasThreePhaseMeter !== undefined) updateFields.hasThreePhaseMeter = Boolean(hasThreePhaseMeter);

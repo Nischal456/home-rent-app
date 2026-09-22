@@ -92,30 +92,42 @@ export function PaymentDialog({ isOpen, onClose, rentBillsDue, utilityBillsDue, 
           <div className="flex flex-col md:flex-row h-full">
 
             {/* Left Column: Premium QR Code Display */}
-            <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-6 md:p-10 bg-white relative">
-              {/* Radial Glow Effect */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,theme(colors.emerald.50)_0%,transparent_70%)] opacity-80 pointer-events-none"></div>
+            <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-5 sm:p-6 md:p-8 bg-white relative">
+              {/* Soft Ambient Radial Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,theme(colors.emerald.500/12)_0%,transparent_70%)] pointer-events-none"></div>
 
-              <div className="relative z-10 p-3 md:p-4 bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 mb-6 transform transition-transform duration-500 hover:scale-105">
-                <Image
-                  src="/payment-qr.png"
-                  alt="Payment QR Code"
-                  width={240}
-                  height={240}
-                  className="rounded-2xl pointer-events-none w-[200px] h-[200px] md:w-[280px] md:h-[280px]"
-                  onError={(e) => { e.currentTarget.src = 'https://placehold.co/240x240/f8fafc/94a3b8?text=QR+Code'; e.currentTarget.alt = 'QR code placeholder'; }}
-                  priority
-                />
+              {/* Big, Attractive QR Card with Subtle Gradient Framing */}
+              <div className="relative z-10 p-[3px] rounded-[2rem] md:rounded-[2.25rem] bg-gradient-to-b from-emerald-400/40 via-slate-200/60 to-teal-400/30 shadow-[0_16px_45px_rgba(16,185,129,0.13),0_6px_20px_rgba(0,0,0,0.04)] mb-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_20px_50px_rgba(16,185,129,0.18)]">
+                <div className="bg-white p-3 sm:p-3.5 md:p-4 rounded-[1.85rem] md:rounded-[2.1rem]">
+                  <div className="w-[245px] sm:w-[270px] md:w-[295px] aspect-[1083/1151] relative rounded-xl md:rounded-2xl overflow-hidden bg-white">
+                    <Image
+                      src="/payment-qr.png"
+                      alt="Payment QR Code"
+                      width={1083}
+                      height={1151}
+                      className="w-full h-full object-contain pointer-events-none"
+                      onError={(e) => { e.currentTarget.src = 'https://placehold.co/240x240/f8fafc/94a3b8?text=QR+Code'; e.currentTarget.alt = 'QR code placeholder'; }}
+                      priority
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="relative z-10 text-center space-y-2.5">
-                <h4 className="font-extrabold text-slate-900 flex items-center justify-center gap-2 text-lg md:text-xl">
-                  <QrCode className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" /> Scan to Pay
+              {/* Attractive Title & Badges */}
+              <div className="relative z-10 text-center space-y-2">
+                <h4 className="font-black text-slate-900 flex items-center justify-center gap-2 text-lg md:text-xl tracking-tight">
+                  <span className="p-1 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <QrCode className="w-5 h-5" />
+                  </span>
+                  Scan to Pay
                 </h4>
-                <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm font-bold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100/50 shadow-sm">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <div className="inline-flex items-center justify-center gap-1.5 text-xs md:text-sm font-bold text-emerald-800 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-1.5 rounded-full border border-emerald-200/70 shadow-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   Verified STG Tower Account
                 </div>
+                <p className="text-[11px] font-medium text-slate-400">
+                  Accepts eSewa, Khalti & all Mobile Banking apps
+                </p>
               </div>
             </div>
 

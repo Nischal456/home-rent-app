@@ -85,11 +85,12 @@ export async function GET(
           <div
             style={{
               display: 'flex',
+              flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
               width: '100%',
-              borderBottom: '2px solid #000000',
-              paddingBottom: 12,
+              borderBottom: '2px solid #0f172a',
+              paddingBottom: 14,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -114,12 +115,12 @@ export async function GET(
               )}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 40, fontWeight: '900', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontSize: 38, fontWeight: '900', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
                 {billHeadingTitle}
               </span>
-              <span style={{ fontSize: 18, fontWeight: '700', color: '#64748b', marginTop: 3 }}>
-                Bill
+              <span style={{ fontSize: 34, fontWeight: '800', color: '#64748b', letterSpacing: '0.5px', lineHeight: 1 }}>
+                BILL
               </span>
             </div>
           </div>
@@ -128,30 +129,31 @@ export async function GET(
           <div
             style={{
               display: 'flex',
+              flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
               width: '100%',
-              marginTop: 10,
+              marginTop: 12,
             }}
           >
             {/* BILL FROM */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '42%' }}>
               <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', letterSpacing: '0.5px' }}>
                 BILL FROM:
               </span>
               <span style={{ fontSize: 22, fontWeight: '900', color: '#0f172a', marginTop: 2 }}>
                 STG Tower
               </span>
-              <span style={{ fontSize: 15, fontWeight: '500', color: '#334155', marginTop: 2 }}>
+              <span style={{ fontSize: 15, fontWeight: '500', color: '#334155', marginTop: 2, whiteSpace: 'nowrap' }}>
                 Bhotebahal, Kathmandu
               </span>
-              <span style={{ fontSize: 14, fontWeight: '500', color: '#64748b', marginTop: 2 }}>
+              <span style={{ fontSize: 14, fontWeight: '500', color: '#64748b', marginTop: 2, whiteSpace: 'nowrap' }}>
                 stgtowerhouse@gmail.com
               </span>
             </div>
 
             {/* BILL TO + Date & Status table */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '55%' }}>
               <span style={{ fontSize: 13, fontWeight: '800', color: '#64748b', letterSpacing: '0.5px' }}>
                 BILL TO:
               </span>
@@ -167,29 +169,41 @@ export async function GET(
                 </span>
               ) : null}
 
-              {/* Date, Billing Month, Status rows */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+              {/* Date, Billing Month, Status aligned key-value table */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: 350,
+                  marginTop: 8,
+                }}
+              >
+                {/* Date row */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', whiteSpace: 'nowrap' }}>
                     Date (B.S.) :
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>
+                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap' }}>
                     {billDate}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+
+                {/* Billing Month row */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 3 }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', whiteSpace: 'nowrap' }}>
                     Billing Month :
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>
+                  <span style={{ fontSize: 14, fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap' }}>
                     {period}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', marginRight: 8 }}>
+
+                {/* Status row */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 3 }}>
+                  <span style={{ fontSize: 14, fontWeight: '700', color: '#64748b', whiteSpace: 'nowrap' }}>
                     Status :
                   </span>
-                  <span style={{ fontSize: 15, fontWeight: '900', color: statusColor }}>
+                  <span style={{ fontSize: 15, fontWeight: '900', color: statusColor, whiteSpace: 'nowrap' }}>
                     {statusText}
                   </span>
                 </div>

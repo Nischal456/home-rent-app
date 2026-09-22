@@ -30,6 +30,7 @@ import { RecordPaymentDialog } from '@/components/record-payment-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import { EditTenantDialog } from './edit-tenant-dialog';
+import { AdjustRentDialog } from './adjust-rent-dialog';
 import { ContractViewerDialog } from '@/components/contract-viewer-dialog';
 import {
     Building, Receipt, Zap, Calendar, Phone, AlertCircle, Download, ArrowLeft,
@@ -198,6 +199,7 @@ export default function TenantDetailPage() {
     const [isAddRentDialogOpen, setIsAddRentDialogOpen] = useState(false);
     const [isAddUtilityDialogOpen, setIsAddUtilityDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isAdjustRentOpen, setIsAdjustRentOpen] = useState(false);
     const [isViewerOpen, setIsViewerOpen] = useState(false);
 
     const handleToggleThreePhase = async () => {
@@ -526,7 +528,14 @@ export default function TenantDetailPage() {
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                         <InfoItem icon={<Building className="text-blue-500 h-5 w-5" />} label="Unit" value={roomInfo?.roomNumber} colorClass="bg-blue-50" />
-                        <InfoItem icon={<Receipt className="text-indigo-500 h-5 w-5" />} label="Rent" value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}` : 'N/A'} colorClass="bg-indigo-50" />
+                        <InfoItem 
+                            icon={<Receipt className="text-indigo-500 h-5 w-5" />} 
+                            label="Rent" 
+                            value={roomInfo ? `Rs ${roomInfo.rentAmount.toLocaleString()}` : 'N/A'} 
+                            colorClass="bg-indigo-50" 
+                            onClick={() => setIsAdjustRentOpen(true)}
+                            hint="Adjust"
+                        />
                         <InfoItem 
                             icon={<Phone className="text-emerald-500 h-5 w-5" />} 
                             label="Mobile" 
@@ -825,6 +834,18 @@ export default function TenantDetailPage() {
                         setIsEditDialogOpen(false);
                         setIsViewerOpen(true);
                     }}
+                />
+            )}
+
+            {tenant && (
+                <AdjustRentDialog
+                    isOpen={isAdjustRentOpen}
+                    onClose={() => setIsAdjustRentOpen(false)}
+                    tenantId={tenantId}
+                    tenantName={tenant.fullName}
+                    roomNumber={roomInfo?.roomNumber}
+                    currentRent={roomInfo?.rentAmount || 0}
+                    onSuccess={() => mutate()}
                 />
             )}
 

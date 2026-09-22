@@ -166,57 +166,60 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
           <Card className="w-full bg-white shadow-2xl rounded-3xl border border-slate-200/80 overflow-hidden print-card">
             
             {/* Header: Exact match to Print Bill / Share Bill Screenshot */}
-            <CardHeader className="p-6 sm:p-8 bg-white border-b-2 border-slate-900 print-header">
-              <div className="flex justify-between items-start gap-4">
+            <CardHeader className="p-4 sm:p-7 bg-white border-b-2 border-slate-900 print-header">
+              <div className="flex justify-between items-center gap-2 sm:gap-4">
                 <div className="flex items-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/logo.png"
                     alt="STG Tower"
-                    className="h-14 sm:h-18 w-auto object-contain max-w-[240px]"
+                    className="h-8 sm:h-12 w-auto object-contain max-w-[130px] sm:max-w-[220px]"
                   />
                 </div>
-                <div className="text-right">
-                  <h2 className="text-3xl sm:text-4xl font-black uppercase text-slate-900 tracking-tight leading-none print-title">
+                <div className="flex items-baseline gap-1.5 sm:gap-2.5 text-right shrink-0">
+                  <h2 className="text-lg sm:text-3xl font-black uppercase text-slate-900 tracking-tight leading-none print-title">
                     {isUtility ? 'UTILITY' : 'RENTAL'}
                   </h2>
-                  <p className="text-base sm:text-lg font-bold text-slate-500 mt-1">Bill</p>
+                  <span className="text-sm sm:text-2xl font-bold uppercase text-slate-500 tracking-normal leading-none">
+                    BILL
+                  </span>
                 </div>
               </div>
             </CardHeader>
 
             {/* Content */}
-            <CardContent className="p-6 sm:p-8 space-y-6 print-content">
+            <CardContent className="p-4 sm:p-7 space-y-5 sm:space-y-6 print-content">
               {/* BILL FROM & BILL TO Section (matching print bill) */}
-              <div className="grid grid-cols-2 gap-4 text-sm pt-1">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm pt-1">
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">BILL FROM:</p>
-                  <p className="font-black text-slate-900 text-base sm:text-lg mt-0.5">STG Tower</p>
-                  <p className="text-slate-600 font-medium">Bhotebahal, Kathmandu</p>
-                  <p className="text-slate-500 text-xs sm:text-sm">stgtowerhouse@gmail.com</p>
+                  <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">BILL FROM:</p>
+                  <p className="font-black text-slate-900 text-sm sm:text-lg mt-0.5">STG Tower</p>
+                  <p className="text-slate-600 font-medium text-xs sm:text-sm whitespace-nowrap">Bhotebahal, Kathmandu</p>
+                  <p className="text-slate-500 text-[11px] sm:text-sm whitespace-nowrap">stgtowerhouse@gmail.com</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">BILL TO:</p>
-                  <p className="font-black text-slate-900 text-base sm:text-lg mt-0.5">{bill.tenantId?.fullName || 'Tenant'}</p>
-                  <p className="text-slate-700 font-medium">Flat: {bill.roomId?.roomNumber || 'Apartment'}</p>
+                <div className="flex flex-col items-end text-right">
+                  <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">BILL TO:</p>
+                  <p className="font-black text-slate-900 text-sm sm:text-lg mt-0.5">{bill.tenantId?.fullName || 'Tenant'}</p>
+                  <p className="text-slate-700 font-medium text-xs sm:text-sm">Flat: {bill.roomId?.roomNumber || 'Apartment'}</p>
                   {(bill.tenantId?.phoneNumber || bill.tenantId?.phone) && (
-                    <p className="text-slate-500 text-xs sm:text-sm">{bill.tenantId?.phoneNumber || bill.tenantId?.phone}</p>
+                    <p className="text-slate-500 text-[11px] sm:text-sm">{bill.tenantId?.phoneNumber || bill.tenantId?.phone}</p>
                   )}
                   
-                  <div className="mt-3 space-y-0.5 text-xs sm:text-sm font-medium">
-                    <p className="text-slate-600">
-                      <span className="font-bold text-slate-500">Date (B.S.) :</span>{' '}
-                      <span className="font-bold text-slate-900">{bill.billDateBS || 'Current'}</span>
-                    </p>
-                    <p className="text-slate-600">
-                      <span className="font-bold text-slate-500">Billing Month :</span>{' '}
-                      <span className="font-bold text-slate-900">{billPeriod}</span>
-                    </p>
-                    <p className="text-slate-600">
-                      <span className="font-bold text-slate-500">Status :</span>{' '}
+                  {/* Clean key-value table for Date, Billing Month, Status */}
+                  <div className="mt-2.5 w-full max-w-[210px] sm:max-w-[280px] space-y-1 text-[11px] sm:text-sm font-medium">
+                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
+                      <span className="font-bold text-slate-500 whitespace-nowrap">Date (B.S.) :</span>
+                      <span className="font-bold text-slate-900 whitespace-nowrap">{bill.billDateBS || 'Current'}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
+                      <span className="font-bold text-slate-500 whitespace-nowrap">Billing Month :</span>
+                      <span className="font-bold text-slate-900 whitespace-nowrap">{billPeriod}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-1.5 sm:gap-2">
+                      <span className="font-bold text-slate-500 whitespace-nowrap">Status :</span>
                       <span
                         className={cn(
-                          "font-black",
+                          "font-black whitespace-nowrap",
                           bill.status === 'PAID'
                             ? "text-emerald-600"
                             : bill.status === 'PARTIALLY_PAID'
@@ -226,7 +229,7 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
                       >
                         {bill.status}
                       </span>
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -341,6 +344,33 @@ export default function PublicBillClient({ initialBill, billId }: PublicBillClie
                   <div className="flex justify-between items-center py-2 text-emerald-700">
                     <span className="text-sm font-bold">Paid Amount</span>
                     <span className="text-lg font-black">Rs {bill.paidAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+
+                {/* Payment History & Notes from Admin */}
+                {bill.paymentHistory && bill.paymentHistory.length > 0 && (
+                  <div className="pt-2 pb-2 space-y-2 border-t border-slate-200/60">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                      Payment History & Notes
+                    </span>
+                    <div className="space-y-1.5">
+                      {bill.paymentHistory.map((pmt: any, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-white border border-slate-200/80 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-800">
+                              {pmt.date ? new NepaliDate(new Date(pmt.date)).format('YYYY MMMM DD') : 'Payment Recorded'}
+                            </span>
+                            <span className="font-black text-emerald-600">Rs {Number(pmt.amount || 0).toLocaleString('en-IN')}</span>
+                          </div>
+                          {pmt.remarks && pmt.remarks.trim() !== '' && (
+                            <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-start gap-1.5 text-slate-700 bg-slate-50/80 p-2 rounded-lg">
+                              <span className="text-[10px] font-bold text-blue-700 shrink-0">Admin Note:</span>
+                              <p className="text-[11px] font-medium leading-relaxed">{pmt.remarks.trim()}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
